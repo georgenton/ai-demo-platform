@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./packages/db"
+    },
+    {
+      "path": "./packages/llm-adapter"
+    },
+    {
+      "path": "./packages/rag-core"
+    },
+    {
+      "path": "./apps/web"
+    }
+  ]
+}
