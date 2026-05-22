@@ -1,0 +1,4 @@
+# pre-commit: se ejecuta justo antes de registrar el commit (el "peaje").
+# Corre lint-staged -> linteo + formato SOLO sobre los archivos staged.
+# Es rapido a proposito; los tests completos los corre el CI, no el commit.
+npx lint-staged

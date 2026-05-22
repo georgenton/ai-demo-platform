@@ -1,0 +1,4 @@
+# commit-msg: valida que el MENSAJE del commit siga la convencion.
+# git pasa en "$1" la ruta al archivo temporal con el mensaje escrito.
+# commitlint lee ese archivo y rechaza el commit si el formato esta mal.
+npx commitlint --edit "$1"

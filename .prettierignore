@@ -4,3 +4,9 @@
 /.nx/cache
 /.nx/workspace-data
 .nx/self-healing
+
+# El lockfile lo gestiona npm — Prettier no debe reformatearlo
+package-lock.json
+
+# CLAUDE.md es la guía del proyecto, curada a mano — Prettier no la reformatea
+CLAUDE.md

@@ -12,6 +12,9 @@ Plataforma de demos incrementales que demuestra casos de uso de IA sobre infraes
 **Nutanix Enterprise AI (NAI)** on-premise. El objetivo inmediato es una reunión en ~15 días
 donde se presentarán los primeros demos a clientes potenciales (universidades y empresas en Ecuador).
 
+Más allá de la demo, este repositorio debe quedar como una **base sólida y bien estructurada**
+para seguir creciendo, y como **referencia de buenas prácticas para mentoría**.
+
 **Personas clave:**
 - **Edguitar** — socio comercial, vendedor senior de Nutanix. Cierra la venta del hardware y abre la puerta con el cliente. Tiene acceso a hardware NAI para pruebas en el corto plazo.
 - **Jorge** — arquitecto de soluciones, full stack developer, responsable técnico del proyecto.
@@ -238,7 +241,7 @@ Para búsquedas de similitud se usa `$queryRaw` de Prisma.
 2. **Demo 01 es la prioridad absoluta** — no empezar Demo 02 hasta que Demo 01 esté completamente funcional
 3. **Streaming primero** — la experiencia de ver tokens aparecer en tiempo real es parte del impacto del demo; nunca hacer respuestas bloqueantes en el chat
 4. **Variables de entorno validadas desde el inicio** — usar `@nestjs/config` con schema de validación
-5. **No over-engineer** — es un PoC/MVP; la solución más simple que funcione gana sobre la más elegante
+5. **Base sólida, sin over-engineering** — el proyecto tiene doble propósito: los demos para la reunión de ~15 días **y** quedar como base bien estructurada para crecer y referencia de buenas prácticas para mentoría. Por eso se invierte en estructura limpia, convenciones claras, documentación y patrones bien explicados — eso es el objetivo, no over-engineering. Lo que sí se evita es la **complejidad especulativa**: abstracciones, features o configuración que nadie necesita todavía. Regla práctica: cada pieza debe estar justificada hoy y quedar bien explicada
 6. **Compatibilidad NAI garantizada** — toda llamada al LLM pasa por `LLMAdapter`; el switch a NAI debe ser solo cambiar variables de entorno
 
 ---

@@ -1,0 +1,49 @@
+# -----------------------------------------------------------------------------
+# CI (Integración Continua) — el "portero automático" del repositorio.
+#
+# Cada vez que se abre/actualiza un Pull Request, o se integra algo a main,
+# GitHub ejecuta estas verificaciones. Si alguna falla, el PR queda marcado
+# en rojo y no debería integrarse. Así main siempre se mantiene sano.
+# -----------------------------------------------------------------------------
+name: CI
+
+# Cuándo se dispara el portero.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verificaciones:
+    name: Lint, typecheck y tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Traer el código del repositorio a la máquina temporal de GitHub.
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # 2) Instalar Node.js — misma versión mayor que usás en local (20).
+      #    'cache: npm' guarda las dependencias entre corridas para ir más rápido.
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 3) Instalar dependencias de forma limpia y reproducible desde el lockfile.
+      #    'npm ci' es como 'npm install' pero exacto al package-lock.json.
+      - name: Instalar dependencias
+        run: npm ci
+
+      # 4) ESLint — ¿hay errores de código?
+      - name: Lint
+        run: npm run lint
+
+      # 5) TypeScript — ¿compila todo el monorepo sin errores de tipos?
+      - name: Typecheck
+        run: npx nx run-many -t typecheck
+
+      # 6) Vitest — ¿pasan los tests?
+      - name: Tests
+        run: npm test
