@@ -21,12 +21,12 @@ jobs:
     steps:
       # 1) Traer el código del repositorio a la máquina temporal de GitHub.
       - name: Checkout del código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # 2) Instalar Node.js — misma versión mayor que usás en local (20).
       #    'cache: npm' guarda las dependencias entre corridas para ir más rápido.
       - name: Configurar Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: npm
