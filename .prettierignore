@@ -10,3 +10,6 @@ package-lock.json
 
 # CLAUDE.md es la guía del proyecto, curada a mano — Prettier no la reformatea
 CLAUDE.md
+
+# Código generado (Prisma client) — se regenera, no lo formateamos
+**/generated
