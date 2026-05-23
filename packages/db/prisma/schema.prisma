@@ -1,0 +1,30 @@
+// -----------------------------------------------------------------------------
+// Esquema de Prisma — la "fuente de verdad" de la base de datos.
+// Cada vez que cambies este archivo, corré `npm run db:migrate` y Prisma:
+//   1) genera la migración SQL (la guarda en prisma/migrations/),
+//   2) la aplica a Postgres,
+//   3) regenera el cliente TypeScript con tipos actualizados.
+// -----------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+
+  // El cliente se genera en packages/db/generated/client.
+  // Está en .gitignore — es código generado, se regenera con `npm run db:generate`.
+  output = "../generated/client"
+
+  // 'postgresqlExtensions' habilita declarar `extensions = [vector]` abajo,
+  // para que Prisma maneje `CREATE EXTENSION` en las migraciones.
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+
+  // Declaramos pgvector como extensión del schema. En la primera migración,
+  // Prisma emitirá `CREATE EXTENSION IF NOT EXISTS vector` automáticamente.
+  extensions = [vector]
+}
+
+// Los modelos (Document, Chunk) se agregan en la sub-pieza 3.

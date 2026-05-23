@@ -57,3 +57,6 @@ out
 .env
 .env.*
 !.env.example
+
+# Código generado por Prisma — se regenera con `npm run db:generate`.
+packages/db/generated

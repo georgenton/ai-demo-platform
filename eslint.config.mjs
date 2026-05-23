@@ -25,6 +25,7 @@ export default tseslint.config(
       '**/out-tsc',
       '**/next-env.d.ts', // lo regenera Next.js en cada build — no se toca
       '**/*.config.*', // archivos de config (webpack, next, vitest…) en JS
+      '**/generated', // código generado (Prisma client, etc.)
     ],
   },
 
