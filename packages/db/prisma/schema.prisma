@@ -27,4 +27,40 @@ datasource db {
   extensions = [vector]
 }
 
-// Los modelos (Document, Chunk) se agregan en la sub-pieza 3.
+// -----------------------------------------------------------------------------
+// Modelos
+// -----------------------------------------------------------------------------
+
+/// Un documento institucional subido por el usuario (PDF, Word, contrato…).
+/// Guardamos el contenido completo + sus chunks para hacer RAG.
+model Document {
+  id        String   @id @default(cuid())
+  name      String // nombre original del archivo subido
+  content   String // texto completo extraído (sin chunking)
+  demoId    String // a qué demo pertenece: 'rag', 'comparator', ...
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // se actualiza solo en cada UPDATE
+  chunks    Chunk[] // relación 1→N con sus fragmentos
+
+  // Filtrar documentos por demo será una consulta frecuente: índice explícito.
+  @@index([demoId])
+}
+
+/// Un fragmento de un Document. Cada Chunk será embebido como vector más
+/// adelante para habilitar búsqueda por significado.
+model Chunk {
+  id         String   @id @default(cuid())
+  content    String // el texto del fragmento (lo que se embedea)
+  index      Int // posición del chunk en el documento (0, 1, 2, …)
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  // ↑ Si se borra el Document, sus Chunks se borran en cascada — sin huérfanos.
+
+  // NOTA: la columna `embedding vector(N)` se agrega en otra migración cuando
+  // definamos el proveedor de embeddings (la dimensión N depende del modelo).
+  // Tipo Prisma: Unsupported("vector(N)"); búsquedas con $queryRaw + `<=>`.
+
+  // (documentId, index) es único — dos chunks no comparten posición en el
+  // mismo doc. El índice compuesto también sirve para listar chunks por doc.
+  @@unique([documentId, index])
+}
