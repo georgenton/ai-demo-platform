@@ -1,0 +1,55 @@
+# -----------------------------------------------------------------------------
+# Servicios de desarrollo local. Hoy: solo Postgres con la extensión pgvector
+# preinstalada (la base de datos que el Demo 01 usa para guardar documentos,
+# fragmentos y, más adelante, sus vectores de embeddings).
+#
+# Comandos útiles:
+#   docker compose up -d         → levanta los servicios en segundo plano
+#   docker compose ps            → ver estado
+#   docker compose logs -f       → ver logs en vivo
+#   docker compose down          → apagar (conserva los datos en el volumen)
+#   docker compose down -v       → apagar y BORRAR los datos (reset limpio)
+# -----------------------------------------------------------------------------
+
+services:
+  postgres:
+    # pgvector/pgvector:pg17 = imagen oficial de pgvector sobre Postgres 17.
+    # Pinear el tag (pg17) evita sorpresas si el tag "latest" cambia mañana.
+    image: pgvector/pgvector:pg17
+    container_name: ai-demo-postgres
+    restart: unless-stopped
+
+    # Variables que Postgres usa al inicializarse.
+    # Toman valor del .env del repo; si no existe, caen al default ('aidemo').
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aidemo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aidemo}
+      POSTGRES_DB: ${POSTGRES_DB:-aidemo}
+
+    # host:contenedor → Postgres queda accesible en localhost:5434.
+    # Usamos 5434 en el host porque 5432 (default de Postgres) suele estar
+    # ocupado por otros proyectos locales. Si lo cambiás, actualizá también
+    # DATABASE_URL en .env y .env.example.
+    ports:
+      - '5434:5432'
+
+    # Volumen nombrado: los datos persisten entre 'down' y 'up'.
+    # Para resetear todo desde cero: 'docker compose down -v'.
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    # Healthcheck: Compose marca el servicio 'healthy' cuando Postgres responde.
+    # Útil cuando sumemos otros servicios que necesiten esperarlo (ej: api).
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-aidemo} -d ${POSTGRES_DB:-aidemo}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+    name: ai-demo-postgres-data
