@@ -1,6 +1,8 @@
 // API pública del paquete @org/llm-adapter.
-// Por ahora solo expone los tipos; los singletons `chat` y `embeddings` se
-// agregan en el próximo commit junto con sus implementaciones.
+// Dos singletons (chat y embeddings) + factories + tipos. Ver ADR-0009.
+
+export { chat, createChatAdapter } from './lib/chat.js';
+export { embeddings, createEmbeddingsAdapter } from './lib/embeddings.js';
 
 export type {
   ChatAdapter,
