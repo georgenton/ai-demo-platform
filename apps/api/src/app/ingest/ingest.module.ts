@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
-// IngestModule — registra el controller, el service y los providers de
-// rag-core que el service necesita por inyección de dependencias.
+// IngestModule — registra el controller, los services y los providers de
+// rag-core que se inyectan en IngestService.
 //
 // Las clases de @org/rag-core no tienen el decorador @Injectable() (no
 // queremos acoplar el package a NestJS). Por eso las registramos con
@@ -18,11 +18,13 @@ import {
 
 import { IngestController } from './ingest.controller.js';
 import { IngestService } from './ingest.service.js';
+import { PdfTextExtractor } from './pdf-text-extractor.js';
 
 @Module({
   controllers: [IngestController],
   providers: [
     IngestService,
+    PdfTextExtractor,
     {
       // Defaults razonables para PDFs institucionales. Si más adelante
       // queremos demos con tamaños distintos, se inyecta por configuración.

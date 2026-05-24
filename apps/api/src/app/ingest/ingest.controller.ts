@@ -1,15 +1,33 @@
-// HTTP layer del /api/v1/ingest.
+// HTTP layer del /api/v1/ingest (JSON) y /api/v1/ingest/file (multipart).
 // El versionado URI lo configura main.ts (defaultVersion: '1'), así que este
 // controller no necesita decir explícitamente `version: '1'`.
 
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  HttpStatus,
+  ParseFilePipeBuilder,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
+import { IngestFileBodyDto } from './dto/ingest-file.dto.js';
 import { IngestRequestDto, IngestResponseDto } from './dto/ingest.dto.js';
 import { IngestService } from './ingest.service.js';
+import { PdfTextExtractor } from './pdf-text-extractor.js';
+
+/** 10 MB — un reglamento típico cabe holgado; archivos más grandes hoy son anomalía. */
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
 @Controller({ path: 'ingest' })
 export class IngestController {
-  constructor(private readonly ingestService: IngestService) {}
+  constructor(
+    private readonly ingestService: IngestService,
+    private readonly pdfExtractor: PdfTextExtractor,
+  ) {}
 
   /**
    * POST /api/v1/ingest
@@ -19,10 +37,47 @@ export class IngestController {
    *
    * Responde 201 con { documentId, chunkCount } cuando el documento se
    * indexó correctamente. 400 si el body no valida o el contenido no
-   * produjo chunks.
+   * produjo chunks. Para subir un PDF, ver POST /api/v1/ingest/file.
    */
   @Post()
   async ingest(@Body() dto: IngestRequestDto): Promise<IngestResponseDto> {
     return this.ingestService.ingest(dto);
+  }
+
+  /**
+   * POST /api/v1/ingest/file
+   *
+   * Body (multipart/form-data):
+   *   - file (binary, application/pdf, máx 10 MB)
+   *   - demoId (string)
+   *
+   * NestJS valida tamaño + mime type via ParseFilePipeBuilder; si falla,
+   * responde 422 antes de tocar el archivo. Si el PDF no tiene texto
+   * extraíble (típico de escaneos sin OCR), responde 400.
+   */
+  @Post('file')
+  @UseInterceptors(FileInterceptor('file'))
+  async ingestFile(
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addMaxSizeValidator({ maxSize: MAX_PDF_BYTES })
+        .addFileTypeValidator({ fileType: 'application/pdf' })
+        .build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY }),
+    )
+    file: Express.Multer.File,
+    @Body() body: IngestFileBodyDto,
+  ): Promise<IngestResponseDto> {
+    const text = await this.pdfExtractor.extractText(file.buffer);
+    if (!text) {
+      throw new BadRequestException(
+        'No se pudo extraer texto del PDF. ¿Es un escaneo sin OCR?',
+      );
+    }
+
+    return this.ingestService.ingest({
+      name: file.originalname,
+      content: text,
+      demoId: body.demoId,
+    });
   }
 }

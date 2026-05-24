@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "types": ["node"],
+    "types": ["node", "multer", "express"],
     "rootDir": "src",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
     "experimentalDecorators": true,
@@ -10,7 +10,7 @@
     "target": "es2021"
   },
   "include": ["src/**/*.ts"],
-  "exclude": [],
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],
   "references": [
     {
       "path": "../../packages/rag-core/tsconfig.lib.json"
