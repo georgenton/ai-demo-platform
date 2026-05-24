@@ -13,6 +13,9 @@
   "references": [
     {
       "path": "../llm-adapter/tsconfig.lib.json"
+    },
+    {
+      "path": "../db/tsconfig.lib.json"
     }
   ]
 }
