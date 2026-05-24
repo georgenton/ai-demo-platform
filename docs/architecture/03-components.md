@@ -112,17 +112,33 @@ C4Component
 
 ### `@org/rag-core` — `packages/rag-core`
 
-- **Estado:** placeholder. Por implementar.
-- **Componentes planeados:**
-  - **`Chunker`** — divide un texto en fragmentos. Strategy pattern:
-    cada estrategia (párrafo, ventana deslizante…) es una clase
-    intercambiable.
-  - **`EmbeddingService`** — convierte texto en vector. Habla con el
-    `LLMAdapter` por dentro.
-  - **`VectorStore`** — guarda y busca vectores en pgvector. Único lugar
-    que usa `$queryRaw` de Prisma.
-  - **`PromptBuilder`** — arma el prompt final: pregunta del usuario +
-    chunks relevantes + instrucciones del sistema.
+- **Hoy:** los cuatro componentes del pipeline implementados, con tests
+  sobre la lógica pura (`Chunker`, `PromptBuilder`, `EmbeddingService`).
+  La cobertura del `VectorStore` viene vía tests de integración cuando
+  `apps/api` lo use con la DB real corriendo.
+- **Componentes:**
+  - **`SlidingWindowChunker`** (implementa `ChunkerStrategy`) — ventana
+    deslizante por caracteres con solapamiento. Strategy pattern: futuras
+    estrategias (párrafo, ventana recursiva…) entran como clases nuevas.
+  - **`EmbeddingService`** — wrapper sobre `embeddings` de
+    `@org/llm-adapter` con batching (default 100 inputs por call).
+  - **`VectorStore`** — `saveChunks()` + `searchTopK()` con `$queryRaw`
+    sobre pgvector + índice HNSW. **El único lugar del proyecto que
+    escribe SQL crudo** (Repository pattern).
+  - **`PromptBuilder`** — `build({ question, chunks, systemPrompt? })`
+    devuelve `ChatMessage[]` listo para `chat.completeStream()`. Expone
+    `DEFAULT_SYSTEM_PROMPT` con las reglas anti-alucinación.
+- **API pública:**
+
+  ```ts
+  import {
+    SlidingWindowChunker,
+    EmbeddingService,
+    VectorStore,
+    PromptBuilder,
+    DEFAULT_SYSTEM_PROMPT,
+  } from '@org/rag-core';
+  ```
 
 ## Reglas de dependencia entre packages
 
