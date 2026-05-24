@@ -16,6 +16,7 @@
     }
   },
   "dependencies": {
+    "@org/llm-adapter": "^0.0.1",
     "tslib": "^2.3.0"
   }
 }
