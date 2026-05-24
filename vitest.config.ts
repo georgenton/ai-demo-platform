@@ -19,5 +19,11 @@ export default defineConfig({
     // Permite que `npm test` pase con éxito aunque TODAVÍA no haya tests escritos.
     // Sin esto, el CI fallaría solo por no tener tests — y aún no toca escribirlos.
     passWithNoTests: true,
+
+    // Excluye archivos compilados (dist/), node_modules y el caché de Nx.
+    // Sin esto, Vitest correría los tests dos veces: el .ts fuente Y el .js
+    // compilado que termina en .nx/cache/...; las dobles ejecuciones rompen
+    // los mocks que dependen de hoisting.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.nx/**'],
   },
 });
