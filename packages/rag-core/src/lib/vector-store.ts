@@ -15,7 +15,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-import { prisma } from '@org/db';
+import { Prisma, prisma } from '@org/db';
 
 export interface ChunkToSave {
   content: string;
@@ -39,35 +39,63 @@ export interface SearchOptions {
 
 export class VectorStore {
   /**
-   * Inserta chunks (con sus embeddings) para un Document existente, en una
-   * sola transacción — si falla uno, no se guarda ninguno.
+   * Inserta chunks (con sus embeddings) para un Document existente.
    *
-   * Quien llama es responsable de crear el Document padre primero
-   * (vía `prisma.document.create(...)`).
+   * Dos modos:
+   *   - **Sin `tx`** (modo standalone): abre su propia $transaction batched
+   *     — los chunks suceden todos o ninguno entre sí. Útil si quien llama
+   *     ya creó el Document por separado y solo quiere atomicidad chunk→chunk.
+   *   - **Con `tx`** (modo cooperativo): los INSERTs se ejecutan dentro de
+   *     la transacción interactiva externa. Quien llama tiene la
+   *     responsabilidad de también crear el Document dentro del mismo `tx`
+   *     — así Document + Chunks son atómicos juntos. Si algo en el callback
+   *     externo falla, Prisma rollbackea TODO (incluso el Document creado).
+   *     Es lo que IngestService usa para evitar Documents huérfanos.
    */
-  async saveChunks(documentId: string, chunks: ChunkToSave[]): Promise<void> {
+  async saveChunks(
+    documentId: string,
+    chunks: ChunkToSave[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
     if (chunks.length === 0) return;
 
-    await prisma.$transaction(
-      chunks.map((chunk) => {
-        // pgvector acepta el formato '[0.1,0.2,...]' y lo castea a vector.
-        const vectorStr = `[${chunk.embedding.join(',')}]`;
-        // NOTA: generamos el id con randomUUID() en lugar del default cuid()
-        // de Prisma. El default solo se aplica al usar `prisma.chunk.create`;
-        // con $executeRaw tenemos que generar el id en código de app.
-        // Cuando este package crezca, podemos consolidar usando @paralleldrive/cuid2.
-        return prisma.$executeRaw`
-          INSERT INTO "Chunk" (id, content, "index", "documentId", embedding)
-          VALUES (
-            ${randomUUID()},
-            ${chunk.content},
-            ${chunk.index},
-            ${documentId},
-            ${vectorStr}::vector
-          )
-        `;
-      }),
+    // Construimos el SQL de cada INSERT una sola vez; lo usan ambos modos.
+    const inserts = chunks.map((chunk) =>
+      this.buildChunkInsertSql(documentId, chunk),
     );
+
+    if (tx) {
+      // Ya estamos dentro de una transacción interactiva externa.
+      // Ejecutamos los INSERTs secuencialmente con el cliente transaccional.
+      for (const sql of inserts) {
+        await tx.$executeRaw(sql);
+      }
+    } else {
+      // Modo standalone — nuestra propia transacción batched.
+      await prisma.$transaction(inserts.map((sql) => prisma.$executeRaw(sql)));
+    }
+  }
+
+  /** Helper privado: construye el SQL de un INSERT de Chunk con su vector. */
+  private buildChunkInsertSql(
+    documentId: string,
+    chunk: ChunkToSave,
+  ): Prisma.Sql {
+    // pgvector acepta el formato '[0.1,0.2,...]' y lo castea a vector.
+    const vectorStr = `[${chunk.embedding.join(',')}]`;
+    // NOTA sobre el id: generamos UUID con node:crypto en lugar del
+    // @default(cuid()) del schema, que solo aplica al usar
+    // prisma.chunk.create. Con $executeRaw tenemos que poner el id a mano.
+    return Prisma.sql`
+      INSERT INTO "Chunk" (id, content, "index", "documentId", embedding)
+      VALUES (
+        ${randomUUID()},
+        ${chunk.content},
+        ${chunk.index},
+        ${documentId},
+        ${vectorStr}::vector
+      )
+    `;
   }
 
   /**
