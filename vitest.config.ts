@@ -24,6 +24,15 @@ export default defineConfig({
     // Sin esto, Vitest correría los tests dos veces: el .ts fuente Y el .js
     // compilado que termina en .nx/cache/...; las dobles ejecuciones rompen
     // los mocks que dependen de hoisting.
-    exclude: ['**/node_modules/**', '**/dist/**', '**/.nx/**'],
+    //
+    // Los integration tests (*.integration.test.ts) también se excluyen del
+    // run default — son lentos (levantan containers) y corren aparte con
+    // `npm run test:integration`. Eso mantiene el dev-loop ágil.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.nx/**',
+      '**/*.integration.test.ts',
+    ],
   },
 });

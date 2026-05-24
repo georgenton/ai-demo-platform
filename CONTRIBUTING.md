@@ -54,13 +54,14 @@ Escape de emergencia: `git commit --no-verify` (usar con criterio, no de rutina)
 
 ## Comandos de calidad
 
-| Comando              | Qué hace                                 |
-| -------------------- | ---------------------------------------- |
-| `npm run lint`       | ESLint sobre todo el repositorio         |
-| `npm run lint:fix`   | ESLint + auto-arreglo de lo que se pueda |
-| `npm test`           | corre los tests (Vitest)                 |
-| `npm run test:watch` | tests en modo vigilancia                 |
-| `npm run changeset`  | crea una nota de cambio (ver abajo)      |
+| Comando                    | Qué hace                                                      |
+| -------------------------- | ------------------------------------------------------------- |
+| `npm run lint`             | ESLint sobre todo el repositorio                              |
+| `npm run lint:fix`         | ESLint + auto-arreglo de lo que se pueda                      |
+| `npm test`                 | unit tests (rápidos, con mocks)                               |
+| `npm run test:watch`       | unit tests en modo vigilancia                                 |
+| `npm run test:integration` | integration tests contra Postgres real (testcontainers, ~15s) |
+| `npm run changeset`        | crea una nota de cambio (ver abajo)                           |
 
 Para `nx serve`, `nx build`, migraciones y demás, ver `CLAUDE.md`.
 
