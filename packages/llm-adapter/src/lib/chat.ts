@@ -14,7 +14,7 @@ import type { ChatAdapter, ChatConfig } from './types.js';
  * Lee las env vars de chat y arma un ChatConfig validado.
  * Lanza si falta algo obligatorio o si los valores son inválidos.
  */
-function readChatConfig(): ChatConfig {
+export function readChatConfig(): ChatConfig {
   const provider = process.env.CHAT_PROVIDER;
   if (!provider) {
     throw new Error('CHAT_PROVIDER no está definida en el entorno.');

@@ -6,7 +6,7 @@
 import { OpenAIEmbeddingsAdapter } from './providers/openai-embeddings.js';
 import type { EmbeddingsAdapter, EmbeddingsConfig } from './types.js';
 
-function readEmbeddingsConfig(): EmbeddingsConfig {
+export function readEmbeddingsConfig(): EmbeddingsConfig {
   const provider = process.env.EMBEDDINGS_PROVIDER;
   if (!provider) {
     throw new Error('EMBEDDINGS_PROVIDER no está definida en el entorno.');
