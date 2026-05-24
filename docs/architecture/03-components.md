@@ -88,13 +88,27 @@ C4Component
 
 ### `@org/llm-adapter` — `packages/llm-adapter`
 
-- **Estado:** placeholder. Por implementar.
-- **Diseño objetivo:** una interface `LLMAdapter` con métodos como
-  `complete(prompt): AsyncIterable<string>` y
-  `embed(text): Promise<number[]>`. Dos implementaciones:
-  `AnthropicAdapter` y `NaiAdapter`. La elección al arrancar la app vía
-  variable de entorno.
-- **Razón:** [`ADR-0004`](../adr/0004-llm-adapter-pattern.md).
+- **Hoy:** dos interfaces independientes (`ChatAdapter` y
+  `EmbeddingsAdapter`) expuestas como singletons lazy, configuradas
+  desde env vars `CHAT_*` / `EMBEDDINGS_*` al primer uso.
+- **Providers implementados:**
+  - `AnthropicChatAdapter` — chat en dev vía `@anthropic-ai/sdk`,
+    streaming por eventos `content_block_delta`.
+  - `OpenAICompatChatAdapter` — chat en prod (NAI) vía el SDK `openai`
+    con `baseURL` configurable.
+  - `OpenAIEmbeddingsAdapter` — embeddings; sirve tanto OpenAI nativo
+    como cualquier endpoint OpenAI-compat (NAI). Diferencia: el
+    `baseURL` del cliente.
+- **API pública:**
+
+  ```ts
+  import { chat, embeddings, type ChatMessage } from '@org/llm-adapter';
+  ```
+
+- **Razón del diseño:** [`ADR-0004`](../adr/0004-llm-adapter-pattern.md)
+  (patrón Adapter con env-driven provider) +
+  [`ADR-0009`](../adr/0009-split-llm-adapter.md) (split en dos
+  interfaces porque dev usa dos providers distintos).
 
 ### `@org/rag-core` — `packages/rag-core`
 
