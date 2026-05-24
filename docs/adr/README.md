@@ -1,0 +1,68 @@
+# Architecture Decision Records (ADRs)
+
+Cada archivo numerado en esta carpeta es un **ADR**: una decisión técnica
+importante del proyecto, capturada con su contexto.
+
+## ¿Por qué ADRs?
+
+Las decisiones técnicas grandes se olvidan rápido. Tres meses después,
+alguien va a preguntar _"¿por qué Prisma 6 si v7 existe?"_ o _"¿por qué
+pgvector y no Pinecone?"_. Sin ADRs, la respuesta queda en la cabeza de
+quien la tomó (o se pierde).
+
+Un ADR es un archivo corto que captura:
+
+- El **contexto** (qué problema estábamos resolviendo).
+- La **decisión** (qué se eligió).
+- Las **alternativas consideradas** (qué se descartó y por qué).
+- Las **consecuencias** (qué nos cuesta o nos habilita).
+
+## Formato
+
+Usamos **MADR** (Markdown ADR), uno de los formatos estándar:
+
+- Archivos numerados secuencialmente: `XXXX-titulo-en-kebab-case.md`.
+- Plantilla en [`0000-template.md`](./0000-template.md).
+
+## Índice
+
+| #    | Título                                                                                      | Estado   |
+| ---- | ------------------------------------------------------------------------------------------- | -------- |
+| 0001 | [Nx monorepo over multiple repos](./0001-nx-monorepo.md)                                    | Aceptado |
+| 0002 | [NestJS for the backend](./0002-nestjs-for-the-backend.md)                                  | Aceptado |
+| 0003 | [TypeScript first, Python later](./0003-typescript-first-python-later.md)                   | Aceptado |
+| 0004 | [LLM Adapter pattern](./0004-llm-adapter-pattern.md)                                        | Aceptado |
+| 0005 | [pgvector over a dedicated vector DB](./0005-pgvector-over-dedicated-vector-db.md)          | Aceptado |
+| 0006 | [Prisma 6 over Prisma 7](./0006-prisma-6-over-7.md)                                         | Aceptado |
+| 0007 | [Conventional Commits and branch-based PR flow](./0007-conventional-commits-and-pr-flow.md) | Aceptado |
+
+## Cuándo agregar un nuevo ADR
+
+Cuando alguno de estos pasa:
+
+- Estás eligiendo entre opciones técnicas con trade-offs reales (ej:
+  framework, librería, patrón).
+- Estás revirtiendo o cambiando una decisión previa.
+- En un PR review, la pregunta _"¿por qué se hizo así?"_ no tiene
+  respuesta inmediata.
+
+## Cómo agregar un ADR
+
+1. Copiá [`0000-template.md`](./0000-template.md) a
+   `XXXX-tu-decision.md` (número correlativo, kebab-case).
+2. Completá las secciones.
+3. Agregá la fila al índice de arriba.
+4. Commiteá con `docs(adr): add ADR-XXXX <titulo>`.
+
+## Estados posibles
+
+| Estado        | Significado                                               |
+| ------------- | --------------------------------------------------------- |
+| **Aceptado**  | La decisión está en vigor.                                |
+| **Superado**  | Hay un ADR más nuevo que lo reemplaza. Linkea al sucesor. |
+| **Rechazado** | Se consideró pero no se adoptó.                           |
+| **Propuesto** | En discusión, no decidida aún.                            |
+
+> Los ADRs **no se borran ni se editan retroactivamente** una vez
+> aceptados. Si la decisión cambia, se escribe un nuevo ADR que la
+> "supera" — el viejo queda como registro histórico.
