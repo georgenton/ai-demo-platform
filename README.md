@@ -10,13 +10,14 @@ base de referencia para **mentoría sobre cambio de stack** a TypeScript/RAG.
 
 ## Estado actual
 
-| Fase                                                    | Estado         |
-| ------------------------------------------------------- | -------------- |
-| Scaffolding del monorepo Nx                             | ✅             |
-| Tooling de calidad (lint, tests, CI, hooks, changesets) | ✅             |
-| Capa de DB del Demo 01 (Postgres + pgvector + Prisma)   | ✅             |
-| Implementación del Demo 01 (ingesta + chat)             | 🚧 en progreso |
-| Demos 02–04                                             | 🗓️ planeados   |
+| Fase                                                    | Estado       |
+| ------------------------------------------------------- | ------------ |
+| Scaffolding del monorepo Nx                             | ✅           |
+| Tooling de calidad (lint, tests, CI, hooks, changesets) | ✅           |
+| Capa de DB del Demo 01 (Postgres + pgvector + Prisma)   | ✅           |
+| Implementación del Demo 01 (ingesta + chat) backend     | ✅           |
+| Frontend Demo 01 (Claude Design + integración SSE)      | 🚧 siguiente |
+| Demos 02–04                                             | 🗓️ planeados |
 
 ## Quick start
 
