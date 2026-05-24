@@ -34,11 +34,11 @@ C4Component
 
 ### Módulos del backend
 
-| Módulo               | Responsabilidad                                                                                           | Estado             |
-| -------------------- | --------------------------------------------------------------------------------------------------------- | ------------------ |
-| `IngestModule`       | `POST /api/v1/ingest`: JSON `{name, content, demoId}` → chunks → embeddings → DB (con rollback).          | ✅ implementado    |
-| `ChatModule`         | `GET /api/v1/chat?q=...&demoId=...&topK=5` (SSE): embed → retrieval top-k → prompt → streaming de tokens. | ✅ implementado    |
-| `DemoRegistryModule` | Lista de demos disponibles con su metadata (qué docs cubre, qué prompt usar).                             | 🚧 por implementar |
+| Módulo               | Responsabilidad                                                                                                                          | Estado             |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `IngestModule`       | Dos endpoints: `POST /api/v1/ingest` (JSON) y `POST /api/v1/ingest/file` (multipart PDF via `unpdf`) → texto → chunks → embeddings → DB. | ✅ implementado    |
+| `ChatModule`         | `GET /api/v1/chat?q=...&demoId=...&topK=5` (SSE): embed → retrieval top-k → prompt → streaming de tokens.                                | ✅ implementado    |
+| `DemoRegistryModule` | Lista de demos disponibles con su metadata (qué docs cubre, qué prompt usar).                                                            | 🚧 por implementar |
 
 ### Reglas de diseño en `api`
 
