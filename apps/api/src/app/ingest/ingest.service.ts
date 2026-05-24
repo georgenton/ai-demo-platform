@@ -50,21 +50,27 @@ export class IngestService {
     this.logger.log(`Split into ${chunks.length} chunks`);
 
     // 2) Embeddings — el EmbeddingService batchea internamente si hace falta.
+    //    Lo hacemos ANTES de abrir la transacción: es la operación lenta
+    //    (HTTP a OpenAI) y no tiene sentido mantener una connection de la DB
+    //    bloqueada mientras esperamos al LLM provider.
     const vectors = await this.embeddings.embedMany(chunks);
 
-    // 3) Crear el Document.
-    const document = await prisma.document.create({
-      data: {
-        name: input.name,
-        content: input.content,
-        demoId: input.demoId,
-      },
-    });
+    // 3) + 4) Atomicidad real con una interactive transaction. Si algo dentro
+    //    del callback falla, Prisma rollbackea TODO automáticamente —
+    //    incluyendo el Document que ya hubiéramos creado. Sin esto antes
+    //    teníamos un compensating-action manual; ahora la atomicidad la da
+    //    el motor de la DB.
+    const result = await prisma.$transaction(async (tx) => {
+      const document = await tx.document.create({
+        data: {
+          name: input.name,
+          content: input.content,
+          demoId: input.demoId,
+        },
+      });
 
-    // 4) Guardar los chunks. Si falla, hacemos rollback del Document para no
-    //    dejar huérfanos. (No es transacción total porque VectorStore aún no
-    //    es tx-aware; lo refinaremos en otro PR. Compensation por ahora.)
-    try {
+      // VectorStore es tx-aware: cuando le pasamos el cliente transaccional,
+      // los INSERTs viajan dentro del mismo `tx` que el Document.create.
       await this.vectorStore.saveChunks(
         document.id,
         chunks.map((content, index) => ({
@@ -72,23 +78,19 @@ export class IngestService {
           index,
           embedding: vectors[index],
         })),
+        tx,
       );
-    } catch (err) {
-      this.logger.error(
-        `saveChunks falló para "${input.name}"; haciendo rollback del Document ${document.id}`,
-        err,
-      );
-      await prisma.document.delete({ where: { id: document.id } });
-      throw err;
-    }
+
+      return {
+        documentId: document.id,
+        chunkCount: chunks.length,
+      };
+    });
 
     this.logger.log(
-      `Ingested "${input.name}" → documentId=${document.id}, chunks=${chunks.length}`,
+      `Ingested "${input.name}" → documentId=${result.documentId}, chunks=${result.chunkCount}`,
     );
 
-    return {
-      documentId: document.id,
-      chunkCount: chunks.length,
-    };
+    return result;
   }
 }
