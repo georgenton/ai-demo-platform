@@ -122,10 +122,13 @@ C4Component
 
 ### `@org/rag-core` — `packages/rag-core`
 
-- **Hoy:** los cuatro componentes del pipeline implementados, con tests
-  sobre la lógica pura (`Chunker`, `PromptBuilder`, `EmbeddingService`).
-  La cobertura del `VectorStore` viene vía tests de integración cuando
-  `apps/api` lo use con la DB real corriendo.
+- **Hoy:** los cuatro componentes del pipeline implementados. Cobertura:
+  unit tests sobre la lógica pura (`Chunker`, `PromptBuilder`,
+  `EmbeddingService`) e **integration tests** del `VectorStore` contra
+  un Postgres+pgvector real vía `testcontainers` (corren con
+  `npm run test:integration`, también en el CI). Los integration tests
+  verifican el SQL real, la semántica del operador `<=>` y el rollback
+  de la transacción interactiva — cosas que los mocks no pueden cubrir.
 - **Componentes:**
   - **`SlidingWindowChunker`** (implementa `ChunkerStrategy`) — ventana
     deslizante por caracteres con solapamiento. Strategy pattern: futuras

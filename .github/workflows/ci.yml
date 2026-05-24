@@ -44,6 +44,13 @@ jobs:
       - name: Typecheck
         run: npx nx run-many -t typecheck
 
-      # 6) Vitest — ¿pasan los tests?
-      - name: Tests
+      # 6) Vitest — ¿pasan los tests unitarios (rápidos, con mocks)?
+      - name: Unit tests
         run: npm test
+
+      # 7) Integration tests — levantan un Postgres+pgvector real vía
+      #    testcontainers y ejercen el VectorStore contra él. GitHub-hosted
+      #    runners traen Docker preinstalado, así que testcontainers funciona
+      #    sin config extra.
+      - name: Integration tests
+        run: npm run test:integration
