@@ -75,10 +75,11 @@ C4Component
 
 ### `@org/db` — `packages/db`
 
-- **Hoy:** schema con `Document` y `Chunk`, migración inicial aplicada,
-  cliente Prisma singleton exportado.
-- **Pendiente:** agregar la columna `embedding vector(N)` en `Chunk`
-  cuando elijamos el modelo de embeddings.
+- **Hoy:** schema con `Document` y `Chunk` (incluyendo columna
+  `embedding vector(1536)` + índice HNSW con `vector_cosine_ops`),
+  migraciones aplicadas, cliente Prisma singleton exportado. La
+  dimensión 1536 viene del modelo OpenAI text-embedding-3-small —
+  ver [`ADR-0008`](../adr/0008-openai-embeddings-for-dev.md).
 - **API pública:**
 
   ```ts

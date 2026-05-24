@@ -56,9 +56,14 @@ model Chunk {
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   // ↑ Si se borra el Document, sus Chunks se borran en cascada — sin huérfanos.
 
-  // NOTA: la columna `embedding vector(N)` se agrega en otra migración cuando
-  // definamos el proveedor de embeddings (la dimensión N depende del modelo).
-  // Tipo Prisma: Unsupported("vector(N)"); búsquedas con $queryRaw + `<=>`.
+  // Embedding del chunk: vector(1536) por OpenAI text-embedding-3-small
+  // (ver docs/adr/0008-openai-embeddings-for-dev.md). Nullable porque
+  // durante la ingesta puede haber chunks recién creados sin embedding
+  // todavía. Prisma no maneja `vector` como tipo nativo — la columna se
+  // declara con Unsupported y las búsquedas de similitud se hacen con
+  // $queryRaw y el operador `<=>` (distancia coseno). El índice HNSW
+  // sobre esta columna se crea en la migración (Prisma no lo modela).
+  embedding Unsupported("vector(1536)")?
 
   // (documentId, index) es único — dos chunks no comparten posición en el
   // mismo doc. El índice compuesto también sirve para listar chunks por doc.
