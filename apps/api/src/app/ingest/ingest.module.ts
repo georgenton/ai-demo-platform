@@ -1,0 +1,43 @@
+// -----------------------------------------------------------------------------
+// IngestModule — registra el controller, el service y los providers de
+// rag-core que el service necesita por inyección de dependencias.
+//
+// Las clases de @org/rag-core no tienen el decorador @Injectable() (no
+// queremos acoplar el package a NestJS). Por eso las registramos con
+// `useFactory` — Nest crea la instancia llamando a la factory y la inyecta
+// donde corresponde por su tipo.
+// -----------------------------------------------------------------------------
+
+import { Module } from '@nestjs/common';
+
+import {
+  EmbeddingService,
+  SlidingWindowChunker,
+  VectorStore,
+} from '@org/rag-core';
+
+import { IngestController } from './ingest.controller.js';
+import { IngestService } from './ingest.service.js';
+
+@Module({
+  controllers: [IngestController],
+  providers: [
+    IngestService,
+    {
+      // Defaults razonables para PDFs institucionales. Si más adelante
+      // queremos demos con tamaños distintos, se inyecta por configuración.
+      provide: SlidingWindowChunker,
+      useFactory: (): SlidingWindowChunker =>
+        new SlidingWindowChunker({ size: 800, overlap: 100 }),
+    },
+    {
+      provide: EmbeddingService,
+      useFactory: (): EmbeddingService => new EmbeddingService(),
+    },
+    {
+      provide: VectorStore,
+      useFactory: (): VectorStore => new VectorStore(),
+    },
+  ],
+})
+export class IngestModule {}

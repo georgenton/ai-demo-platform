@@ -34,11 +34,11 @@ C4Component
 
 ### Módulos del backend
 
-| Módulo               | Responsabilidad                                                               | Estado             |
-| -------------------- | ----------------------------------------------------------------------------- | ------------------ |
-| `IngestModule`       | Subida de documentos. Texto → chunking → embeddings → guardar en pgvector.    | 🚧 por implementar |
-| `ChatModule`         | Pregunta → embed → retrieval top-k → prompt builder → streaming SSE.          | 🚧 por implementar |
-| `DemoRegistryModule` | Lista de demos disponibles con su metadata (qué docs cubre, qué prompt usar). | 🚧 por implementar |
+| Módulo               | Responsabilidad                                                                                  | Estado             |
+| -------------------- | ------------------------------------------------------------------------------------------------ | ------------------ |
+| `IngestModule`       | `POST /api/v1/ingest`: JSON `{name, content, demoId}` → chunks → embeddings → DB (con rollback). | ✅ implementado    |
+| `ChatModule`         | Pregunta → embed → retrieval top-k → prompt builder → streaming SSE.                             | 🚧 por implementar |
+| `DemoRegistryModule` | Lista de demos disponibles con su metadata (qué docs cubre, qué prompt usar).                    | 🚧 por implementar |
 
 ### Reglas de diseño en `api`
 
@@ -47,7 +47,17 @@ C4Component
   [`ADR-0004`](../adr/0004-llm-adapter-pattern.md).
 - **El chat siempre stremea.** Nunca respuesta bloqueante — la experiencia
   de ver los tokens aparecer es parte del impacto.
-- **Validación en el borde:** todo endpoint usa DTOs con `class-validator`.
+- **Versionado URI:** los controllers no declaran versión; `main.ts` setea
+  `defaultVersion: '1'` y todos heredan. Para sumar v2: solo el controller
+  que cambia lleva `@Controller({ path: '...', version: '2' })`.
+- **Validación en el borde:** `ValidationPipe` global con
+  `whitelist + forbidNonWhitelisted + transform`; todo endpoint usa DTOs
+  con `class-validator`.
+- **DI para componentes externos:** las clases de `@org/rag-core` no llevan
+  `@Injectable()` (no acoplamos los packages a NestJS). Se registran con
+  `useFactory` en cada módulo que las necesita.
+- **`prisma` se usa direct** (es ya un singleton de `@org/db`); no se envuelve
+  en DI. Tests lo mockean con `vi.mock`.
 - **Logging:** Logger de `@nestjs/common`, con prefijo por módulo.
 
 ---

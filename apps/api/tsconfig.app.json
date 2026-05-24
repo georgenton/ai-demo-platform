@@ -10,5 +10,16 @@
     "target": "es2021"
   },
   "include": ["src/**/*.ts"],
-  "exclude": []
+  "exclude": [],
+  "references": [
+    {
+      "path": "../../packages/rag-core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../packages/llm-adapter/tsconfig.lib.json"
+    },
+    {
+      "path": "../../packages/db/tsconfig.lib.json"
+    }
+  ]
 }
