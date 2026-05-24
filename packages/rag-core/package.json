@@ -19,5 +19,9 @@
     "@org/db": "^0.0.1",
     "@org/llm-adapter": "^0.0.1",
     "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^12.0.0",
+    "testcontainers": "^12.0.0"
   }
 }
