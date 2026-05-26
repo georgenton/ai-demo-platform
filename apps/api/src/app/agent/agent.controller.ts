@@ -6,12 +6,24 @@
 // con su payload JSON. La UI puede armar una visualización rica del
 // "razonamiento" del agente (SQL ejecutada, resultados, respuesta final).
 
-import { Body, Controller, Post, Sse, type MessageEvent } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Sse,
+  type MessageEvent,
+} from '@nestjs/common';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import type { AgentEvent } from './agent-events.js';
 import { AgentService } from './agent.service.js';
+import {
+  AgentHistoryQueryDto,
+  type AgentHistoryResponse,
+} from './dto/agent-history.dto.js';
 import { AgentQueryDto } from './dto/agent-query.dto.js';
 
 @Controller({ path: 'agent' })
@@ -35,6 +47,19 @@ export class AgentController {
     return from(this.agentService.streamAgent(dto)).pipe(
       map((event) => this.toMessageEvent(event)),
     );
+  }
+
+  /**
+   * GET /api/v1/agent/history
+   *
+   * Historial paginado de queries del agente, más recientes primero. Cada
+   * entrada incluye la pregunta, la SQL final, el resultado y un flag de
+   * éxito. Best-effort: si una request del agente se cayó por desconexión
+   * del cliente, puede no estar en este log.
+   */
+  @Get('history')
+  history(@Query() query: AgentHistoryQueryDto): Promise<AgentHistoryResponse> {
+    return this.agentService.findHistory(query);
   }
 
   /**

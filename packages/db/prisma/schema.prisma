@@ -159,3 +159,45 @@ enum ExamType {
   parcial_2 @map("parcial-2")
   final
 }
+
+/// Audit log de cada pregunta procesada por el AgentService (Demo 04).
+///
+/// Una fila por pregunta del usuario, NO una por tool_call. Si el agente
+/// llamó `run_sql` varias veces en un loop multi-vuelta, guardamos solo el
+/// resultado final consolidado (sql/rowCount del último call). Cuando aparezca
+/// la necesidad de auditar los pasos intermedios, agregamos una tabla hija
+/// AgentQueryStep — hoy es complejidad especulativa.
+///
+/// `success=false` puede deberse a:
+///   - Error del LLM (no respondió, max_tokens, etc.).
+///   - SQL rechazada por SafeSqlExecutor (verbo / tabla fuera de allowlist).
+///   - Excepción de Postgres al ejecutar.
+/// El `errorMessage` distingue el caso.
+///
+/// Best-effort: si la conexión SSE se cae, NO garantizamos guardar la entrada
+/// (no es transaccional con el response). Suficiente para auditoría tipo
+/// "qué preguntó la gente"; si en algún momento es regulatorio, vamos a
+/// outbox + worker.
+model AgentQuery {
+  id            String   @id @default(cuid())
+  /// Pregunta original en lenguaje natural.
+  question      String
+  /// SQL final que generó el LLM. Null si el agente nunca llegó a generar
+  /// una (ej: el LLM no usó tools, o falló antes).
+  sql           String?
+  /// Filas devueltas por la SQL final. Null si no se llegó a ejecutar.
+  rowCount      Int?
+  /// Duración total del agent loop end-to-end (incluye todas las vueltas).
+  durationMs    Int
+  /// El loop completó normalmente (stopReason=end_turn). False si falló o
+  /// se truncó por MAX_TURNS.
+  success       Boolean
+  /// Mensaje de error humano cuando success=false. Null en success=true.
+  errorMessage  String?
+  /// Cantidad de turns que ejecutó el loop (1 = el LLM respondió sin tools).
+  turns         Int
+  createdAt     DateTime @default(now())
+
+  // Consultar el historial es típicamente "los más recientes primero".
+  @@index([createdAt(sort: Desc)])
+}

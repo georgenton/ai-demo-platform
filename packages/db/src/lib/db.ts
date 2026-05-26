@@ -20,6 +20,7 @@ export {
   Prisma,
 } from '../../generated/client/client.js';
 export type {
+  AgentQuery,
   Chunk,
   Course,
   Document,
