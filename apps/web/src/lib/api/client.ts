@@ -43,8 +43,11 @@ export class ApiError extends Error {
  * Intenta parsear el body de un Response fallido como el formato de error
  * estándar de NestJS. Si el body no es JSON o no tiene esa forma, usamos
  * el `statusText` como fallback. Nunca lanza — siempre devuelve un mensaje.
+ *
+ * Exportada porque los demás clients (demos.ts, documents.ts, etc.) la
+ * reusan para mantener consistencia en cómo serializan errores HTTP.
  */
-async function extractErrorMessage(
+export async function extractErrorMessage(
   response: Response,
 ): Promise<{ message: string; payload?: ApiErrorPayload }> {
   try {
