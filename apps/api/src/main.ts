@@ -9,6 +9,7 @@
 
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './app/common/all-exceptions.filter.js';
@@ -46,10 +47,39 @@ async function bootstrap() {
   //   - logging diferenciado (5xx con stack, 4xx solo warn).
   app.useGlobalFilters(new AllExceptionsFilter());
 
+  // OpenAPI / Swagger UI. La spec se genera a partir de:
+  //   - decoradores @ApiTags/@ApiOperation/@ApiResponse en controllers
+  //   - decoradores @ApiProperty en DTOs (class-validator + class-transformer
+  //     ya están — sumamos los de @nestjs/swagger encima)
+  //
+  // Se sirve en:
+  //   GET /api/docs       → UI interactiva (Swagger UI)
+  //   GET /api/docs-json  → spec JSON cruda (para clientes generadores)
+  //
+  // Sin auth: estamos en dev/demo; cuando vaya a prod con cliente real, lo
+  // ponemos detrás de basic-auth o lo deshabilitamos en producción.
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('AI Demo Platform API')
+    .setDescription(
+      'Backend de la plataforma de demos sobre Nutanix Enterprise AI. ' +
+        'Ingest de documentos, chat RAG (Demo 01), comparador (Demo 02) y ' +
+        'agente NL→SQL (Demo 04). Streaming SSE en chat/compare/agent.',
+    )
+    .setVersion('1.0.0')
+    .addServer(`/${globalPrefix}/v1`, 'Default (v1)')
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup(`${globalPrefix}/docs`, app, document, {
+    jsonDocumentUrl: `${globalPrefix}/docs-json`,
+  });
+
   const port = process.env.PORT || 3000;
   await app.listen(port);
   Logger.log(
     `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`,
+  );
+  Logger.log(
+    `📖 OpenAPI docs:               http://localhost:${port}/${globalPrefix}/docs`,
   );
 }
 
