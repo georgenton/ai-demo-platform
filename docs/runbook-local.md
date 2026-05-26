@@ -140,6 +140,7 @@ npm run db:studio              # GUI web para inspeccionar la DB
 ```bash
 npm run db:migrate             # crear/aplicar nueva migración después de cambiar schema.prisma
 npm run db:generate            # regenerar el cliente de Prisma sin tocar la DB
+npm run db:seed                # popular la mini-DB académica del Demo 04 (determinístico)
 ```
 
 Si la DB queda en un estado raro (drift, datos basura de un test

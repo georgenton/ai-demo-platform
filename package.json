@@ -14,6 +14,7 @@
     "db:generate": "dotenv -e .env -- npx prisma generate --schema packages/db/prisma/schema.prisma",
     "db:migrate": "dotenv -e .env -- npx prisma migrate dev --schema packages/db/prisma/schema.prisma",
     "db:studio": "dotenv -e .env -- npx prisma studio --schema packages/db/prisma/schema.prisma",
+    "db:seed": "dotenv -e .env -- tsx packages/db/prisma/seed.ts",
     "postinstall": "npx prisma generate --schema packages/db/prisma/schema.prisma",
     "prepare": "husky"
   },
@@ -47,6 +48,7 @@
     "prettier": "^3.8.1",
     "prisma": "^6.19.3",
     "tslib": "^2.3.0",
+    "tsx": "^4.22.3",
     "typescript": "~5.9.2",
     "typescript-eslint": "^8.59.4",
     "vitest": "^4.1.7",
