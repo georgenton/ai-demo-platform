@@ -4,6 +4,7 @@
 // global tiene `transform: true`, así que con @Type(Number) convierte limit
 // y offset a number antes de validar.
 
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsInt,
@@ -15,16 +16,22 @@ import {
 } from 'class-validator';
 
 export class ListDocumentsQueryDto {
-  /** Filtra por demo. Si se omite, devuelve documentos de todos los demos. */
+  @ApiPropertyOptional({
+    description:
+      'Filtra por demo. Si se omite, devuelve docs de todos los demos.',
+    example: 'rag',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(50)
   demoId?: string;
 
-  /**
-   * Cantidad máxima de filas a devolver. Default 20 (vista típica de UI),
-   * tope 100 (evita que un cliente accidental tire una lista enorme).
-   */
+  @ApiPropertyOptional({
+    description: 'Máximo de filas. Default 20, tope 100.',
+    default: 20,
+    minimum: 1,
+    maximum: 100,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -32,7 +39,11 @@ export class ListDocumentsQueryDto {
   @Max(100)
   limit?: number;
 
-  /** Cuántas filas saltear desde el principio. Para paginación. */
+  @ApiPropertyOptional({
+    description: 'Cuántas filas saltear (paginación).',
+    default: 0,
+    minimum: 0,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()

@@ -15,6 +15,7 @@ import {
   Sse,
   type MessageEvent,
 } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -26,6 +27,7 @@ import {
 } from './dto/agent-history.dto.js';
 import { AgentQueryDto } from './dto/agent-query.dto.js';
 
+@ApiTags('Agent (Demo 04)')
 @Controller({ path: 'agent' })
 export class AgentController {
   constructor(private readonly agentService: AgentService) {}
@@ -43,6 +45,11 @@ export class AgentController {
    */
   @Post()
   @Sse()
+  @ApiOperation({
+    summary: 'Agente NL→SQL con tool use multi-vuelta (SSE eventos tipados)',
+    description:
+      'Recibe una pregunta, el LLM genera SQL contra el schema académico, ejecutamos read-only y stremeamos eventos tipados (token, tool_call, tool_result, done, error). Hasta MAX_TURNS=5 vueltas.',
+  })
   agent(@Body() dto: AgentQueryDto): Observable<MessageEvent> {
     return from(this.agentService.streamAgent(dto)).pipe(
       map((event) => this.toMessageEvent(event)),
@@ -58,6 +65,11 @@ export class AgentController {
    * del cliente, puede no estar en este log.
    */
   @Get('history')
+  @ApiOperation({
+    summary: 'Historial de queries del agente (audit log paginado)',
+    description:
+      'Las más recientes primero. Cada entrada incluye la SQL generada, rowCount, duración total, success, errorMessage si falló, y turns del loop.',
+  })
   history(@Query() query: AgentHistoryQueryDto): Promise<AgentHistoryResponse> {
     return this.agentService.findHistory(query);
   }

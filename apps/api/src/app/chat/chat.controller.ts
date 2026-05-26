@@ -7,12 +7,14 @@
 // como una `next` del Observable; cuando el iterable termina, completa.
 
 import { Controller, Query, Sse, type MessageEvent } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { ChatQueryDto } from './dto/chat.dto.js';
 import { ChatService } from './chat.service.js';
 
+@ApiTags('Chat (Demo 01)')
 @Controller({ path: 'chat' })
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
@@ -33,6 +35,12 @@ export class ChatController {
    *   es.onerror = () => es.close();
    */
   @Sse()
+  @ApiOperation({
+    summary:
+      'Chat con streaming SSE (token por token) sobre los documentos indexados',
+    description:
+      'Embebe la pregunta, recupera los topK chunks más cercanos por similitud coseno (pgvector) y stremea la respuesta del LLM. La respuesta es text/event-stream — usar EventSource desde el browser.',
+  })
   chat(@Query() query: ChatQueryDto): Observable<MessageEvent> {
     return from(this.chatService.streamChat(query)).pipe(
       map((token) => ({ data: token })),

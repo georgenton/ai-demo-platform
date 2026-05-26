@@ -6,12 +6,14 @@
 // cierra cuando el iterable termina.
 
 import { Body, Controller, Post, Sse, type MessageEvent } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { CompareService } from './compare.service.js';
 import { CompareRequestDto } from './dto/compare.dto.js';
 
+@ApiTags('Compare (Demo 02)')
 @Controller({ path: 'compare' })
 export class CompareController {
   constructor(private readonly compareService: CompareService) {}
@@ -32,6 +34,11 @@ export class CompareController {
    */
   @Post()
   @Sse()
+  @ApiOperation({
+    summary: 'Comparador de documentos con SSE streaming',
+    description:
+      'Recibe 2–5 documentIds + 1–10 dimensiones; recupera el contenido, arma prompt comparativo y stremea el análisis. Response es text/event-stream.',
+  })
   compare(@Body() dto: CompareRequestDto): Observable<MessageEvent> {
     return from(this.compareService.streamCompare(dto)).pipe(
       map((token) => ({ data: token })),

@@ -11,10 +11,12 @@
 // -----------------------------------------------------------------------------
 
 import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { DemoRegistryService } from './demo-registry.service.js';
-import type { DemoMetadata } from './demo-registry.types.js';
+import { DemoMetadata } from './demo-registry.types.js';
 
+@ApiTags('Demos')
 @Controller({ path: 'demos' })
 export class DemosController {
   constructor(private readonly registry: DemoRegistryService) {}
@@ -27,6 +29,8 @@ export class DemosController {
    * la UI decide qué mostrar con la metadata que llega.
    */
   @Get()
+  @ApiOperation({ summary: 'Listar el catálogo completo de demos' })
+  @ApiResponse({ status: 200, type: [DemoMetadata] })
   list(): readonly DemoMetadata[] {
     return this.registry.findAll();
   }
@@ -42,6 +46,9 @@ export class DemosController {
    * puerta a bugs sutiles ("se cayó la API" vs "el demo no existe").
    */
   @Get(':id')
+  @ApiOperation({ summary: 'Detalle de un demo por ID' })
+  @ApiResponse({ status: 200, type: DemoMetadata })
+  @ApiResponse({ status: 404, description: 'Demo no existe' })
   detail(@Param('id') id: string): DemoMetadata {
     const demo = this.registry.findOne(id);
     if (!demo) {

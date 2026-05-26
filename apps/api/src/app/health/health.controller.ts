@@ -19,6 +19,7 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { prisma } from '@org/db';
 
@@ -38,6 +39,7 @@ export interface HealthResponse {
   };
 }
 
+@ApiTags('Health')
 @Controller({ path: 'health', version: '1' })
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);
@@ -47,6 +49,17 @@ export class HealthController {
    * falla — convención de Kubernetes/Vercel/Lighthouse para monitoring.
    */
   @Get()
+  @ApiOperation({
+    summary: 'Health check del servicio (uptime + DB ping)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Servicio sano y dependencias responden.',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'El servicio está vivo pero la DB no responde.',
+  })
   @HttpCode(HttpStatus.OK)
   async check(): Promise<HealthResponse> {
     const db = await this.pingDatabase();

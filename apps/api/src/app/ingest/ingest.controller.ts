@@ -13,6 +13,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { IngestFileBodyDto } from './dto/ingest-file.dto.js';
 import { IngestRequestDto, IngestResponseDto } from './dto/ingest.dto.js';
@@ -22,6 +29,7 @@ import { PdfTextExtractor } from './pdf-text-extractor.js';
 /** 10 MB — un reglamento típico cabe holgado; archivos más grandes hoy son anomalía. */
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
+@ApiTags('Ingest')
 @Controller({ path: 'ingest' })
 export class IngestController {
   constructor(
@@ -40,6 +48,16 @@ export class IngestController {
    * produjo chunks. Para subir un PDF, ver POST /api/v1/ingest/file.
    */
   @Post()
+  @ApiOperation({
+    summary: 'Ingestar un documento (texto plano)',
+    description:
+      'Recibe el contenido como string, lo chunkea, genera embeddings y persiste todo atómicamente. Para PDFs usar POST /ingest/file.',
+  })
+  @ApiResponse({ status: 201, type: IngestResponseDto })
+  @ApiResponse({
+    status: 400,
+    description: 'Body inválido o sin chunks producidos.',
+  })
   async ingest(@Body() dto: IngestRequestDto): Promise<IngestResponseDto> {
     return this.ingestService.ingest(dto);
   }
@@ -56,6 +74,31 @@ export class IngestController {
    * extraíble (típico de escaneos sin OCR), responde 400.
    */
   @Post('file')
+  @ApiOperation({
+    summary: 'Ingestar un PDF (multipart)',
+    description:
+      'Sube un PDF, extrae el texto server-side con unpdf, y lo procesa igual que /ingest. Máx 10 MB, mime application/pdf.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file', 'demoId'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        demoId: { type: 'string', example: 'rag' },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, type: IngestResponseDto })
+  @ApiResponse({
+    status: 400,
+    description: 'PDF sin texto extraíble (escaneo sin OCR).',
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'Tamaño > 10MB o mime distinto de application/pdf.',
+  })
   @UseInterceptors(FileInterceptor('file'))
   async ingestFile(
     @UploadedFile(
