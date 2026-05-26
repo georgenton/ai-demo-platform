@@ -26,17 +26,18 @@ Usamos **MADR** (Markdown ADR), uno de los formatos estándar:
 
 ## Índice
 
-| #    | Título                                                                                      | Estado   |
-| ---- | ------------------------------------------------------------------------------------------- | -------- |
-| 0001 | [Nx monorepo over multiple repos](./0001-nx-monorepo.md)                                    | Aceptado |
-| 0002 | [NestJS for the backend](./0002-nestjs-for-the-backend.md)                                  | Aceptado |
-| 0003 | [TypeScript first, Python later](./0003-typescript-first-python-later.md)                   | Aceptado |
-| 0004 | [LLM Adapter pattern](./0004-llm-adapter-pattern.md)                                        | Aceptado |
-| 0005 | [pgvector over a dedicated vector DB](./0005-pgvector-over-dedicated-vector-db.md)          | Aceptado |
-| 0006 | [Prisma 6 over Prisma 7](./0006-prisma-6-over-7.md)                                         | Aceptado |
-| 0007 | [Conventional Commits and branch-based PR flow](./0007-conventional-commits-and-pr-flow.md) | Aceptado |
-| 0008 | [OpenAI text-embedding-3-small for dev embeddings](./0008-openai-embeddings-for-dev.md)     | Aceptado |
-| 0009 | [Split LLMAdapter into ChatAdapter + EmbeddingsAdapter](./0009-split-llm-adapter.md)        | Aceptado |
+| #    | Título                                                                                                            | Estado   |
+| ---- | ----------------------------------------------------------------------------------------------------------------- | -------- |
+| 0001 | [Nx monorepo over multiple repos](./0001-nx-monorepo.md)                                                          | Aceptado |
+| 0002 | [NestJS for the backend](./0002-nestjs-for-the-backend.md)                                                        | Aceptado |
+| 0003 | [TypeScript first, Python later](./0003-typescript-first-python-later.md)                                         | Aceptado |
+| 0004 | [LLM Adapter pattern](./0004-llm-adapter-pattern.md)                                                              | Aceptado |
+| 0005 | [pgvector over a dedicated vector DB](./0005-pgvector-over-dedicated-vector-db.md)                                | Aceptado |
+| 0006 | [Prisma 6 over Prisma 7](./0006-prisma-6-over-7.md)                                                               | Aceptado |
+| 0007 | [Conventional Commits and branch-based PR flow](./0007-conventional-commits-and-pr-flow.md)                       | Aceptado |
+| 0008 | [OpenAI text-embedding-3-small for dev embeddings](./0008-openai-embeddings-for-dev.md)                           | Aceptado |
+| 0009 | [Split LLMAdapter into ChatAdapter + EmbeddingsAdapter](./0009-split-llm-adapter.md)                              | Aceptado |
+| 0010 | [Web/API coupling: Next.js rewrites + duplicated types](./0010-web-api-coupling-rewrites-and-no-contracts-pkg.md) | Aceptado |
 
 ## Cuándo agregar un nuevo ADR
 

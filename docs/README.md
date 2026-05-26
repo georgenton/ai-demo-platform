@@ -6,17 +6,19 @@ lo que necesita y entienda **por qué** las cosas están como están.
 
 ## Contenido
 
-| Carpeta / archivo                  | De qué trata                                                                                                                    |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| [`architecture/`](./architecture/) | Manual de arquitectura siguiendo el modelo **C4** (Context → Containers → Components → Runtime flows).                          |
-| [`adr/`](./adr/)                   | **Architecture Decision Records**: cada decisión técnica importante con su contexto, alternativas consideradas y consecuencias. |
-| [`glossary.md`](./glossary.md)     | Términos del dominio (RAG, embeddings, chunking, etc.) en lenguaje simple.                                                      |
+| Carpeta / archivo                        | De qué trata                                                                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| [`architecture/`](./architecture/)       | Manual de arquitectura siguiendo el modelo **C4** (Context → Containers → Components → Runtime flows).                          |
+| [`adr/`](./adr/)                         | **Architecture Decision Records**: cada decisión técnica importante con su contexto, alternativas consideradas y consecuencias. |
+| [`runbook-local.md`](./runbook-local.md) | Paso a paso para levantar la stack en una máquina nueva y trabajar día a día (servicios, DB, tests, troubleshooting).           |
+| [`glossary.md`](./glossary.md)           | Términos del dominio (RAG, embeddings, chunking, etc.) en lenguaje simple.                                                      |
 
 ## Por dónde empezar
 
 - **Sos developer nuevo en el proyecto:**
-  [`/README.md`](../README.md) → [`/CONTRIBUTING.md`](../CONTRIBUTING.md) →
-  [`architecture/`](./architecture/).
+  [`/README.md`](../README.md) → [`runbook-local.md`](./runbook-local.md)
+  para levantar la stack → [`/CONTRIBUTING.md`](../CONTRIBUTING.md) para
+  el flujo de PRs → [`architecture/`](./architecture/) para el diseño.
 - **Sos mentee viniendo de otro stack:**
   [`glossary.md`](./glossary.md) primero, después
   [`architecture/01-system-context.md`](./architecture/01-system-context.md) y
