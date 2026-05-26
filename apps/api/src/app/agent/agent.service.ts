@@ -21,6 +21,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 
+import { prisma } from '@org/db';
 import { chat } from '@org/llm-adapter';
 import type {
   ChatRichMessage,
@@ -30,6 +31,10 @@ import type {
 } from '@org/llm-adapter';
 
 import type { AgentEvent } from './agent-events.js';
+import type {
+  AgentHistoryQueryDto,
+  AgentHistoryResponse,
+} from './dto/agent-history.dto.js';
 import type { AgentQueryDto } from './dto/agent-query.dto.js';
 import { SafeSqlExecutor } from './safe-sql-executor.js';
 
@@ -101,8 +106,16 @@ export class AgentService {
       { role: 'user', content: query.q },
     ];
 
+    const startedAt = Date.now();
     let turns = 0;
     let truncated = false;
+    // Audit log: trackeamos el último SQL y rowCount para guardarlos en
+    // AgentQuery al final. Si el LLM hace varias llamadas, guardamos la
+    // última (decisión documentada en el modelo Prisma).
+    let lastSql: string | null = null;
+    let lastRowCount: number | null = null;
+    let errorMessage: string | null = null;
+    let success = false;
 
     try {
       while (turns < MAX_TURNS) {
@@ -146,6 +159,7 @@ export class AgentService {
             if (event.name !== 'run_sql') {
               const errMsg = `Tool desconocido: "${event.name}". Solo se soporta "run_sql".`;
               yield { type: 'tool_error', error: errMsg };
+              errorMessage = errMsg;
               toolResults.push({
                 toolUseId: event.id,
                 content: errMsg,
@@ -156,11 +170,15 @@ export class AgentService {
 
             const input = event.input as { sql?: unknown };
             const sql = typeof input.sql === 'string' ? input.sql : '';
+            // Audit: guardamos el último SQL que el LLM intentó (haya tenido
+            // éxito o no — útil para diagnosticar fallos).
+            lastSql = sql;
             yield { type: 'tool_call', sql };
 
             const result = await this.executor.run(sql);
             if (!result.ok) {
               yield { type: 'tool_error', error: result.error };
+              errorMessage = result.error;
               toolResults.push({
                 toolUseId: event.id,
                 content: `Error ejecutando SQL: ${result.error}`,
@@ -169,6 +187,7 @@ export class AgentService {
               continue;
             }
 
+            lastRowCount = result.rowCount;
             yield {
               type: 'tool_result',
               rowCount: result.rowCount,
@@ -216,19 +235,93 @@ export class AgentService {
           continue;
         }
 
-        // end_turn / max_tokens / other → salimos.
+        // end_turn / max_tokens / other → salimos. Solo end_turn cuenta
+        // como éxito real (max_tokens es respuesta cortada, other es raro).
+        if (stopReason === 'end_turn') success = true;
         yield { type: 'done', turns, truncated };
         return;
       }
 
       // Salimos del while por límite de turns sin que el LLM diga end_turn.
       truncated = true;
+      errorMessage = `Agente cortado por límite de turns (MAX_TURNS=${MAX_TURNS}).`;
       this.logger.warn(`Agent hit MAX_TURNS=${MAX_TURNS} without end_turn`);
       yield { type: 'done', turns, truncated };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      errorMessage = message;
       this.logger.error(`Agent failed: ${message}`);
       yield { type: 'error', message };
+    } finally {
+      // Audit log best-effort. Si la persistencia falla, NO rompemos el
+      // generador — el cliente ya recibió su respuesta; el log es
+      // observabilidad, no parte del happy path.
+      await this.recordAudit({
+        question: query.q,
+        sql: lastSql,
+        rowCount: lastRowCount,
+        durationMs: Date.now() - startedAt,
+        success,
+        errorMessage,
+        turns,
+      });
+    }
+  }
+
+  /**
+   * Devuelve el historial de queries del agente (audit log) paginado, más
+   * recientes primero. Útil para mostrar en una UI "estas son las preguntas
+   * que el agente respondió" durante el demo al cliente.
+   */
+  async findHistory(
+    query: AgentHistoryQueryDto,
+  ): Promise<AgentHistoryResponse> {
+    const limit = query.limit ?? 20;
+    const offset = query.offset ?? 0;
+
+    const [rows, total] = await Promise.all([
+      prisma.agentQuery.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.agentQuery.count(),
+    ]);
+
+    return {
+      items: rows.map((r) => ({
+        id: r.id,
+        question: r.question,
+        sql: r.sql,
+        rowCount: r.rowCount,
+        durationMs: r.durationMs,
+        success: r.success,
+        errorMessage: r.errorMessage,
+        turns: r.turns,
+        createdAt: r.createdAt.toISOString(),
+      })),
+      total,
+      limit,
+      offset,
+    };
+  }
+
+  private async recordAudit(entry: {
+    question: string;
+    sql: string | null;
+    rowCount: number | null;
+    durationMs: number;
+    success: boolean;
+    errorMessage: string | null;
+    turns: number;
+  }): Promise<void> {
+    try {
+      await prisma.agentQuery.create({ data: entry });
+    } catch (err) {
+      // No propagamos: el insert del log no debe matar al stream del demo.
+      // Logueamos el error para que aparezca en los logs del server.
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to record AgentQuery audit: ${message}`);
     }
   }
 }

@@ -18,12 +18,30 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockStreamWithTools } = vi.hoisted(() => ({
+const {
+  mockStreamWithTools,
+  mockAgentQueryCreate,
+  mockAgentQueryFindMany,
+  mockAgentQueryCount,
+} = vi.hoisted(() => ({
   mockStreamWithTools: vi.fn(),
+  mockAgentQueryCreate: vi.fn(),
+  mockAgentQueryFindMany: vi.fn(),
+  mockAgentQueryCount: vi.fn(),
 }));
 
 vi.mock('@org/llm-adapter', () => ({
   chat: { streamWithTools: mockStreamWithTools },
+}));
+
+vi.mock('@org/db', () => ({
+  prisma: {
+    agentQuery: {
+      create: mockAgentQueryCreate,
+      findMany: mockAgentQueryFindMany,
+      count: mockAgentQueryCount,
+    },
+  },
 }));
 
 import { AgentService } from './agent.service.js';
@@ -47,6 +65,11 @@ describe('AgentService.streamAgent()', () => {
 
   beforeEach(() => {
     mockStreamWithTools.mockReset();
+    mockAgentQueryCreate.mockReset();
+    mockAgentQueryFindMany.mockReset();
+    mockAgentQueryCount.mockReset();
+    // Por defecto el insert del audit log succeeds — no nos rompe los tests.
+    mockAgentQueryCreate.mockResolvedValue({ id: 'audit-1' });
     executor = { run: vi.fn() } as unknown as SafeSqlExecutor;
     service = new AgentService(executor);
   });
@@ -243,5 +266,187 @@ describe('AgentService.streamAgent()', () => {
 
     const events = await collect(service.streamAgent({ q: 'algo' }));
     expect(events).toEqual([{ type: 'error', message: 'LLM caído' }]);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Audit log (AgentQuery)
+  // ---------------------------------------------------------------------------
+
+  describe('audit log', () => {
+    it('persiste una entrada con success=true cuando el loop termina con end_turn', async () => {
+      mockStreamWithTools
+        .mockReturnValueOnce(
+          asStream([
+            {
+              type: 'tool_use_complete',
+              id: 'toolu_1',
+              name: 'run_sql',
+              input: { sql: 'SELECT COUNT(*) FROM "Student"' },
+            },
+            { type: 'turn_end', stopReason: 'tool_use' },
+          ]),
+        )
+        .mockReturnValueOnce(
+          asStream([
+            { type: 'text_delta', text: 'Hay 50.' },
+            { type: 'turn_end', stopReason: 'end_turn' },
+          ]),
+        );
+
+      vi.mocked(executor.run).mockResolvedValueOnce({
+        ok: true,
+        rows: [{ count: 50 }],
+        rowCount: 1,
+        durationMs: 12,
+        truncated: false,
+      });
+
+      await collect(service.streamAgent({ q: '¿Cuántos estudiantes hay?' }));
+
+      expect(mockAgentQueryCreate).toHaveBeenCalledOnce();
+      const audit = mockAgentQueryCreate.mock.calls[0][0].data;
+      expect(audit).toMatchObject({
+        question: '¿Cuántos estudiantes hay?',
+        sql: 'SELECT COUNT(*) FROM "Student"',
+        rowCount: 1,
+        success: true,
+        errorMessage: null,
+        turns: 2,
+      });
+      expect(audit.durationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('persiste success=false con errorMessage cuando el LLM falla', async () => {
+      mockStreamWithTools.mockImplementation(() => {
+        throw new Error('LLM caído');
+      });
+
+      await collect(service.streamAgent({ q: 'algo' }));
+
+      const audit = mockAgentQueryCreate.mock.calls[0][0].data;
+      expect(audit).toMatchObject({
+        question: 'algo',
+        sql: null,
+        rowCount: null,
+        success: false,
+        errorMessage: 'LLM caído',
+        turns: 1,
+      });
+    });
+
+    it('persiste success=false con mensaje de MAX_TURNS cuando se trunca', async () => {
+      const toolUseTurn = () =>
+        asStream([
+          {
+            type: 'tool_use_complete' as const,
+            id: 'toolu_X',
+            name: 'run_sql' as const,
+            input: { sql: 'SELECT 1' },
+          },
+          { type: 'turn_end' as const, stopReason: 'tool_use' as const },
+        ]);
+      mockStreamWithTools
+        .mockReturnValueOnce(toolUseTurn())
+        .mockReturnValueOnce(toolUseTurn())
+        .mockReturnValueOnce(toolUseTurn())
+        .mockReturnValueOnce(toolUseTurn())
+        .mockReturnValueOnce(toolUseTurn());
+      vi.mocked(executor.run).mockResolvedValue({
+        ok: true,
+        rows: [],
+        rowCount: 0,
+        durationMs: 1,
+        truncated: false,
+      });
+
+      await collect(service.streamAgent({ q: 'infinite' }));
+
+      const audit = mockAgentQueryCreate.mock.calls[0][0].data;
+      expect(audit.success).toBe(false);
+      expect(audit.errorMessage).toMatch(/MAX_TURNS/);
+      expect(audit.turns).toBe(5);
+    });
+
+    it('si el insert del audit falla, NO rompe el stream del agente', async () => {
+      mockStreamWithTools.mockReturnValueOnce(
+        asStream([
+          { type: 'text_delta', text: 'hola' },
+          { type: 'turn_end', stopReason: 'end_turn' },
+        ]),
+      );
+      mockAgentQueryCreate.mockRejectedValueOnce(new Error('DB caída'));
+
+      // El stream debe completar sin re-throw, aunque el audit haya fallado.
+      const events = await collect(service.streamAgent({ q: 'algo' }));
+      expect(events).toContainEqual({ type: 'token', text: 'hola' });
+      expect(events).toContainEqual({
+        type: 'done',
+        turns: 1,
+        truncated: false,
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // findHistory
+  // ---------------------------------------------------------------------------
+
+  describe('findHistory()', () => {
+    it('devuelve items paginados con createdAt como ISO string', async () => {
+      mockAgentQueryFindMany.mockResolvedValue([
+        {
+          id: 'q1',
+          question: '¿Cuántos?',
+          sql: 'SELECT 1',
+          rowCount: 1,
+          durationMs: 200,
+          success: true,
+          errorMessage: null,
+          turns: 2,
+          createdAt: new Date('2026-01-01T00:00:00Z'),
+        },
+      ]);
+      mockAgentQueryCount.mockResolvedValue(1);
+
+      const result = await service.findHistory({});
+
+      expect(result).toEqual({
+        items: [
+          {
+            id: 'q1',
+            question: '¿Cuántos?',
+            sql: 'SELECT 1',
+            rowCount: 1,
+            durationMs: 200,
+            success: true,
+            errorMessage: null,
+            turns: 2,
+            createdAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        total: 1,
+        limit: 20,
+        offset: 0,
+      });
+
+      expect(mockAgentQueryFindMany.mock.calls[0][0]).toMatchObject({
+        orderBy: { createdAt: 'desc' },
+        skip: 0,
+        take: 20,
+      });
+    });
+
+    it('respeta limit/offset y devuelve total separado del length de items', async () => {
+      mockAgentQueryFindMany.mockResolvedValue([]);
+      mockAgentQueryCount.mockResolvedValue(99);
+
+      const result = await service.findHistory({ limit: 5, offset: 90 });
+
+      expect(result).toEqual({ items: [], total: 99, limit: 5, offset: 90 });
+      expect(mockAgentQueryFindMany.mock.calls[0][0]).toMatchObject({
+        skip: 90,
+        take: 5,
+      });
+    });
   });
 });
