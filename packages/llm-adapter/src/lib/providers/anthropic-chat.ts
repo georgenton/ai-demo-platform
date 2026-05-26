@@ -5,11 +5,24 @@
 // incluyen en messages. Acá hacemos la traducción: filtramos los mensajes con
 // role='system', los concatenamos y los pasamos en el parámetro `system` de
 // la API de Anthropic; el resto va como messages.
+//
+// Soporta dos modos:
+//   - `completeStream`: chat simple, devuelve solo texto.
+//   - `streamWithTools`: tool use (Demo 04). Mismo SSE-style stream pero
+//     emite eventos tipados (texto, pedidos de tool, fin de turno).
 // -----------------------------------------------------------------------------
 
 import Anthropic from '@anthropic-ai/sdk';
 
-import type { ChatAdapter, ChatConfig, ChatMessage } from '../types.js';
+import type {
+  AssistantStreamEvent,
+  ChatAdapter,
+  ChatConfig,
+  ChatMessage,
+  ChatRichMessage,
+  ChatTool,
+  StopReason,
+} from '../types.js';
 
 /** Default conservador: el LLM no devuelve más de 4096 tokens por respuesta. */
 const DEFAULT_MAX_TOKENS = 4096;
@@ -20,6 +33,10 @@ export class AnthropicChatAdapter implements ChatAdapter {
   constructor(private readonly config: ChatConfig) {
     this.client = new Anthropic({ apiKey: config.apiKey });
   }
+
+  // ---------------------------------------------------------------------------
+  // completeStream — modo simple (Demo 01 / Demo 02)
+  // ---------------------------------------------------------------------------
 
   async *completeStream(messages: ChatMessage[]): AsyncIterable<string> {
     // 1) Separamos system (Anthropic lo recibe aparte) del resto.
@@ -50,8 +67,6 @@ export class AnthropicChatAdapter implements ChatAdapter {
 
     // 3) Filtramos los eventos al tipo que nos importa: 'content_block_delta'
     //    con `delta.type === 'text_delta'`. Cada uno trae un trozo de texto.
-    //    (Otros tipos de delta — input_json_delta para tool use, etc. — los
-    //    manejamos cuando los necesitemos.)
     for await (const event of stream) {
       if (
         event.type === 'content_block_delta' &&
@@ -59,6 +74,152 @@ export class AnthropicChatAdapter implements ChatAdapter {
       ) {
         yield event.delta.text;
       }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // streamWithTools — modo con tool use (Demo 04)
+  // ---------------------------------------------------------------------------
+
+  async *streamWithTools(
+    messages: ChatRichMessage[],
+    tools: ChatTool[],
+  ): AsyncIterable<AssistantStreamEvent> {
+    // 1) Separamos system (Anthropic lo recibe aparte).
+    const systemContent = messages
+      .filter(
+        (m): m is { role: 'system'; content: string } => m.role === 'system',
+      )
+      .map((m) => m.content)
+      .join('\n\n');
+
+    // 2) Convertimos el resto al shape de Anthropic. Los tool_result usan
+    //    `tool_use_id` (snake_case) en el SDK; nosotros exponemos `toolUseId`.
+    const conversation = messages
+      .filter((m) => m.role !== 'system')
+      .map((m) => this.toAnthropicMessage(m));
+
+    // 3) Convertimos los tools a la forma que espera el SDK.
+    const anthropicTools = tools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      input_schema: t.inputSchema,
+    }));
+
+    // 4) Abrimos el stream.
+    const stream = await this.client.messages.create({
+      model: this.config.model,
+      max_tokens: DEFAULT_MAX_TOKENS,
+      system: systemContent || undefined,
+      tools: anthropicTools,
+      messages: conversation,
+      stream: true,
+    });
+
+    // 5) Acumuladores. Por índice de bloque guardamos el JSON parcial de un
+    //    tool_use (Anthropic lo manda en pedacitos via `input_json_delta`).
+    //    Cuando el bloque cierra, parseamos y emitimos `tool_use_complete`.
+    const toolUseBuffer = new Map<
+      number,
+      { id: string; name: string; jsonAcc: string }
+    >();
+    let stopReason: StopReason = 'other';
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_start') {
+        const block = event.content_block;
+        if (block.type === 'tool_use') {
+          toolUseBuffer.set(event.index, {
+            id: block.id,
+            name: block.name,
+            jsonAcc: '',
+          });
+        }
+      } else if (event.type === 'content_block_delta') {
+        if (event.delta.type === 'text_delta') {
+          yield { type: 'text_delta', text: event.delta.text };
+        } else if (event.delta.type === 'input_json_delta') {
+          const buf = toolUseBuffer.get(event.index);
+          if (buf) buf.jsonAcc += event.delta.partial_json;
+        }
+      } else if (event.type === 'content_block_stop') {
+        const buf = toolUseBuffer.get(event.index);
+        if (buf) {
+          // Si el LLM no emitió ningún input_json_delta (tool sin args),
+          // tratamos el input como objeto vacío para no fallar el parse.
+          const input = buf.jsonAcc ? JSON.parse(buf.jsonAcc) : {};
+          yield {
+            type: 'tool_use_complete',
+            id: buf.id,
+            name: buf.name,
+            input,
+          };
+          toolUseBuffer.delete(event.index);
+        }
+      } else if (event.type === 'message_delta') {
+        // El stop_reason canónico del turn llega acá.
+        if (event.delta.stop_reason) {
+          stopReason = this.mapStopReason(event.delta.stop_reason);
+        }
+      }
+    }
+
+    yield { type: 'turn_end', stopReason };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers privados
+  // ---------------------------------------------------------------------------
+
+  /** Mapea un ChatRichMessage al shape exacto que espera el SDK. */
+  private toAnthropicMessage(message: ChatRichMessage): Anthropic.MessageParam {
+    if (message.role === 'system') {
+      // Defensa: ya filtramos system arriba; este branch es por exhaustiveness.
+      throw new Error('system message should not reach toAnthropicMessage');
+    }
+
+    if (typeof message.content === 'string') {
+      return { role: message.role, content: message.content };
+    }
+
+    // Array de bloques. Convertimos cada uno al snake_case que espera el SDK.
+    const contentBlocks = message.content.map((block) => {
+      if (block.type === 'text') {
+        return { type: 'text' as const, text: block.text };
+      }
+      if (block.type === 'tool_use') {
+        return {
+          type: 'tool_use' as const,
+          id: block.id,
+          name: block.name,
+          input: block.input as Record<string, unknown>,
+        };
+      }
+      // tool_result
+      return {
+        type: 'tool_result' as const,
+        tool_use_id: block.toolUseId,
+        content: block.content,
+        is_error: block.isError,
+      };
+    });
+
+    return {
+      role: message.role,
+      content: contentBlocks,
+    } as Anthropic.MessageParam;
+  }
+
+  /** Mapea el stop_reason crudo del SDK al union tipado del adapter. */
+  private mapStopReason(raw: string): StopReason {
+    switch (raw) {
+      case 'end_turn':
+      case 'tool_use':
+      case 'max_tokens':
+      case 'stop_sequence':
+        return raw;
+      default:
+        return 'other';
     }
   }
 }

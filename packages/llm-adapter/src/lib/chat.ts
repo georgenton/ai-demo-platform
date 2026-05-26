@@ -83,4 +83,7 @@ export const chat: ChatAdapter = {
   completeStream(messages) {
     return getChat().completeStream(messages);
   },
+  streamWithTools(messages, tools) {
+    return getChat().streamWithTools(messages, tools);
+  },
 };

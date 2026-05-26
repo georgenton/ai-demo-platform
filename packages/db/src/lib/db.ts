@@ -14,8 +14,19 @@ import { PrismaClient } from '../../generated/client/client.js';
 
 // Re-exports útiles: consumidores (apps/api, etc.) acceden a los tipos de
 // modelo y al namespace Prisma directamente desde '@org/db'.
-export { Prisma } from '../../generated/client/client.js';
-export type { Chunk, Document } from '../../generated/client/client.js';
+export {
+  EnrollmentStatus,
+  ExamType,
+  Prisma,
+} from '../../generated/client/client.js';
+export type {
+  Chunk,
+  Course,
+  Document,
+  Enrollment,
+  Grade,
+  Student,
+} from '../../generated/client/client.js';
 
 // Tipado mínimo para colgar el singleton de `globalThis` sin pelearse con TS.
 const globalForPrisma = globalThis as unknown as {

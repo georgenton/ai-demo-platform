@@ -69,3 +69,93 @@ model Chunk {
   // mismo doc. El índice compuesto también sirve para listar chunks por doc.
   @@unique([documentId, index])
 }
+
+// -----------------------------------------------------------------------------
+// Schema académico sintético (Demo 04 — Agente con tool use)
+// -----------------------------------------------------------------------------
+//
+// Este sub-schema NO es producción ni viene de un cliente real: son tablas
+// "de jugar" con datos seedeados deterministicamente. Sirven para que el
+// agente del Demo 04 traduzca preguntas en lenguaje natural a SQL y las
+// ejecute contra algo concreto.
+//
+// Por qué vive en el mismo Postgres que el resto:
+//   - Es la DB compartida del proyecto; un solo container, un solo schema
+//     Prisma. Si en el futuro el cliente trae su propia DB académica, se
+//     migra a otro schema/datasource sin tocar el resto del backend.
+//   - El SafeSqlExecutor del Demo 04 usa una allowlist de tablas
+//     (Course, Student, Enrollment, Grade) — no puede tocar Document/Chunk
+//     aunque vivan al lado.
+// -----------------------------------------------------------------------------
+
+/// Una materia / asignatura (Cálculo I, Programación II…).
+model Course {
+  id          String       @id @default(cuid())
+  code        String       @unique // "CALC101", "PROG201", …
+  name        String // "Cálculo I", "Programación II"
+  credits     Int // créditos académicos (típicamente 3–6)
+  createdAt   DateTime     @default(now())
+  enrollments Enrollment[]
+}
+
+/// Un estudiante del sistema académico sintético.
+model Student {
+  id          String       @id @default(cuid())
+  fullName    String
+  email       String       @unique
+  enrolledAt  DateTime // fecha de matrícula al programa (no a un curso)
+  enrollments Enrollment[]
+}
+
+/// Inscripción de un estudiante a un curso en un período (semestre).
+/// Un estudiante puede tomar el mismo curso varias veces (en distintos
+/// términos), por eso el unique compuesto incluye `term`.
+model Enrollment {
+  id        String           @id @default(cuid())
+  studentId String
+  courseId  String
+  /// Identificador del período académico: '2024-2', '2025-1', '2025-2'.
+  term      String
+  status    EnrollmentStatus @default(enrolled)
+  createdAt DateTime         @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  grades  Grade[]
+
+  // Un estudiante no puede inscribirse dos veces al mismo curso en el mismo término.
+  @@unique([studentId, courseId, term])
+  @@index([term])
+  @@index([courseId, term])
+}
+
+/// Notas individuales de un Enrollment. Cada enrollment lleva 3 grades:
+/// parcial-1, parcial-2, final. Modelar las notas como tabla aparte (en
+/// vez de columnas en Enrollment) habilita queries más ricas para el demo:
+/// "quién aprobó el final pero reprobó la materia", "promedio del parcial-1
+/// vs final", etc. — joins de 3 tablas que lucen al agente.
+model Grade {
+  id           String     @id @default(cuid())
+  enrollmentId String
+  examType     ExamType
+  /// Nota 0–100. Float porque algunas instituciones usan decimales (74.5).
+  score        Float
+  gradedAt     DateTime   @default(now())
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  // Una sola nota de cada tipo por inscripción.
+  @@unique([enrollmentId, examType])
+  @@index([examType])
+}
+
+enum EnrollmentStatus {
+  enrolled // cursando o ya con notas
+  withdrawn // se dio de baja
+  completed // terminó (passed o failed se deriva del final)
+}
+
+enum ExamType {
+  parcial_1 @map("parcial-1")
+  parcial_2 @map("parcial-2")
+  final
+}
