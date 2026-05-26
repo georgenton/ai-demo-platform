@@ -11,8 +11,11 @@ import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app/app.module';
+import { AllExceptionsFilter } from './app/common/all-exceptions.filter.js';
 
 async function bootstrap() {
+  // Si las env vars son inválidas, ConfigModule (registrado en AppModule)
+  // hace que esto lance acá con la lista de campos faltantes. Falla rápida.
   const app = await NestFactory.create(AppModule);
 
   const globalPrefix = 'api';
@@ -36,6 +39,12 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Global error filter: cualquier excepción no manejada pasa por acá. Da:
+  //   - shape consistente del JSON de error (statusCode/message/path/timestamp)
+  //   - sin leak de stack al cliente
+  //   - logging diferenciado (5xx con stack, 4xx solo warn).
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   const port = process.env.PORT || 3000;
   await app.listen(port);

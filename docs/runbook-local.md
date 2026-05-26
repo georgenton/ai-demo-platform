@@ -57,10 +57,14 @@ El `.env` queda gitignored. Lo importante:
 - **`EMBEDDINGS_API_KEY`** — clave de OpenAI. _Sin esto el ingest no
   termina_ porque no puede vectorizar los chunks.
 
-> Si todavía no tenés keys reales: podés avanzar igual con todo lo que
-> no llame al LLM (DB, migraciones, tests unitarios, tests de
-> integración con testcontainers — esos levantan su propio Postgres).
-> Cuando las tengas, pegalas en el `.env` y ya está.
+> **El server valida las env vars al boot.** Si `CHAT_API_KEY` o
+> `EMBEDDINGS_API_KEY` están vacías, `nx serve api` falla con un error
+> claro y el server no arranca. Para desarrollo sin keys reales, poné un
+> placeholder no-vacío (ej. `sk-ant-placeholder`) como en `.env.example` —
+> el server arranca, todo lo que no toque al LLM funciona (health, demos,
+> documents/list, agent/history), y los endpoints que sí toquen al LLM
+> fallarán al llamar al provider con un mensaje del provider real. Cuando
+> tengas keys reales, las reemplazás y listo.
 
 ### 1.3 Levantar Postgres + pgvector
 
