@@ -61,6 +61,8 @@ export class DemoRegistryService {
       description:
         'El LLM genera SQL a partir de la pregunta y el sistema lo ejecuta contra los datos estructurados — preguntas analíticas en lenguaje natural.',
       audience: ['CIO', 'Rectorado', 'Dirección académica'],
+      // Backend listo (POST /api/v1/agent con SSE + tool use). Pasa a
+      // 'available' cuando lleguen los componentes UI de Claude Design.
       status: 'coming-soon',
       route: '/demo/agent',
     },
