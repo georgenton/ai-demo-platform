@@ -12,9 +12,13 @@
 //
 // El sidebar y el header son Client Components — usan hooks (usePathname,
 // useT, useTheme). El layout en sí es Server Component (no hooks).
+//
+// KeybindingsLayer (Client) envuelve la grilla para que los atajos
+// globales (?, Shift+P, g+r/c/a/s/h) estén montados en toda ruta del
+// shell, y para proveer el contexto del modo presentación al header.
 // -----------------------------------------------------------------------------
 
-import { Header, Sidebar } from '@/components/shell';
+import { Header, KeybindingsLayer, Sidebar } from '@/components/shell';
 
 export default function ShellLayout({
   children,
@@ -22,21 +26,23 @@ export default function ShellLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="app-shell">
-      <Sidebar />
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
-          overflow: 'hidden',
-        }}
-      >
-        <Header />
-        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-          {children}
+    <KeybindingsLayer>
+      <div className="app-shell">
+        <Sidebar />
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <Header />
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            {children}
+          </div>
         </div>
       </div>
-    </div>
+    </KeybindingsLayer>
   );
 }
