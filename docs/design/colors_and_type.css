@@ -1,0 +1,441 @@
+/* =============================================================================
+   AI Demo Platform — Colors & Type
+   ----------------------------------------------------------------------------
+   Brand foundations for the AI Demo Platform: a series of enterprise-AI demos
+   running on Nutanix Enterprise AI on-premise infrastructure, aimed at
+   universities and companies in Ecuador.
+
+   Voice: technical, confident, bilingual (Spanish primary).
+   Vibe: on-prem infrastructure meets the academy — serious, but warm.
+   ========================================================================== */
+
+/* ---------- Webfonts ----------------------------------------------------- */
+/* IBM Plex family — engineered, technical, but humanist enough to feel warm
+   in Spanish-language academic contexts. Plex was designed for IBM's own
+   enterprise products, so it fits the "running on real infrastructure" tone.
+   Sourced from Google Fonts. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap');
+
+:root {
+  /* ---------- Color tokens --------------------------------------------- */
+
+  /* Lang-switch chip — defined as semantic so dark mode can override */
+  --lang-active-bg: var(--nai-navy-800);
+  --lang-active-fg: #ffffff;
+
+  /* Brand — deep navy from the existing hero bg, plus mint accent */
+  --nai-navy-950: #08152a;
+  --nai-navy-900: #0d1f3b;
+  --nai-navy-800: #142b4b; /* primary brand surface */
+  --nai-navy-700: #1d3a64;
+  --nai-navy-600: #2a4f80;
+  --nai-navy-500: #3e6aa3;
+  --nai-navy-400: #6890c2;
+  --nai-navy-300: #9bb6d6;
+  --nai-navy-200: #c8d6e6;
+  --nai-navy-100: #e3ebf4;
+  --nai-navy-50: #f3f6fb;
+
+  /* Mint — accent, used for "AI is doing something", success states, beams */
+  --nai-mint-700: #1f7a5a;
+  --nai-mint-600: #2e9a72;
+  --nai-mint-500: #43c194; /* primary accent */
+  --nai-mint-400: #6cd1ad;
+  --nai-mint-300: #98dec5;
+  --nai-mint-200: #c4ecdc;
+  --nai-mint-100: #e0f5ec;
+  --nai-mint-50: #effaf5;
+
+  /* Amber — used sparingly for "thinking", inference, and warning states */
+  --nai-amber-700: #a25a08;
+  --nai-amber-500: #e08a1f;
+  --nai-amber-300: #f4c47a;
+  --nai-amber-100: #fbeacf;
+
+  /* Crimson — destructive, error */
+  --nai-crimson-700: #9b1e3a;
+  --nai-crimson-500: #d23456;
+  --nai-crimson-300: #ec8aa0;
+  --nai-crimson-100: #fbe1e7;
+
+  /* Neutrals — cool grays, tinted slightly toward navy */
+  --nai-ink-950: #0a0f17;
+  --nai-ink-900: #141a25;
+  --nai-ink-800: #1f2733;
+  --nai-ink-700: #2e3744;
+  --nai-ink-600: #4a5564;
+  --nai-ink-500: #6b7585;
+  --nai-ink-400: #939ba8;
+  --nai-ink-300: #c1c6cf;
+  --nai-ink-200: #dde0e6;
+  --nai-ink-100: #ecedf1;
+  --nai-ink-50: #f6f7f9;
+  --nai-paper: #fbfbfa; /* warm off-white app background */
+  --nai-white: #ffffff;
+
+  /* ---------- Semantic tokens ------------------------------------------ */
+
+  --color-bg: var(--nai-paper);
+  --color-bg-elevated: var(--nai-white);
+  --color-bg-sunken: var(--nai-ink-50);
+  --color-bg-inverse: var(--nai-navy-800);
+
+  --color-surface: var(--nai-white);
+  --color-surface-hover: var(--nai-ink-50);
+  --color-surface-active: var(--nai-ink-100);
+  --color-surface-selected: var(--nai-navy-50);
+
+  --color-border: var(--nai-ink-200);
+  --color-border-strong: var(--nai-ink-300);
+  --color-border-subtle: var(--nai-ink-100);
+  --color-border-focus: var(--nai-navy-600);
+
+  --color-fg: var(--nai-ink-900); /* primary text */
+  --color-fg-muted: var(--nai-ink-600); /* secondary text, captions */
+  --color-fg-subtle: var(--nai-ink-500); /* metadata, hints */
+  --color-fg-disabled: var(--nai-ink-400);
+  --color-fg-inverse: var(--nai-white);
+  --color-fg-link: var(--nai-navy-700);
+
+  --color-accent: var(--nai-mint-500);
+  --color-accent-fg: var(--nai-navy-900); /* text on mint */
+  --color-accent-soft: var(--nai-mint-100);
+
+  --color-brand: var(--nai-navy-800);
+  --color-brand-fg: var(--nai-white);
+
+  --color-success: var(--nai-mint-600);
+  --color-success-bg: var(--nai-mint-100);
+  --color-warn: var(--nai-amber-500);
+  --color-warn-bg: var(--nai-amber-100);
+  --color-danger: var(--nai-crimson-500);
+  --color-danger-bg: var(--nai-crimson-100);
+  --color-info: var(--nai-navy-600);
+  --color-info-bg: var(--nai-navy-50);
+
+  /* ---------- Type tokens ---------------------------------------------- */
+
+  --font-sans:
+    'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-serif: 'IBM Plex Serif', ui-serif, Georgia, 'Times New Roman', serif;
+
+  /* Step scale — 1.200 modular ratio, anchored on 16px body. */
+  --text-3xs: 0.6875rem; /* 11px — micro labels, hot keys */
+  --text-2xs: 0.75rem; /* 12px — captions, badges */
+  --text-xs: 0.8125rem; /* 13px — secondary UI */
+  --text-sm: 0.875rem; /* 14px — dense UI */
+  --text-md: 1rem; /* 16px — body */
+  --text-lg: 1.125rem; /* 18px — large body, callouts */
+  --text-xl: 1.375rem; /* 22px — H4 */
+  --text-2xl: 1.75rem; /* 28px — H3 */
+  --text-3xl: 2.25rem; /* 36px — H2 */
+  --text-4xl: 3rem; /* 48px — H1 */
+  --text-5xl: 4rem; /* 64px — display */
+  --text-6xl: 5.25rem; /* 84px — hero display */
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tighter: -0.03em;
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-widest: 0.12em; /* eyebrows / KICKERS */
+
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---------- Spacing & radii ------------------------------------------ */
+
+  /* 4px base scale */
+  --space-0: 0;
+  --space-1: 0.25rem; /* 4 */
+  --space-2: 0.5rem; /* 8 */
+  --space-3: 0.75rem; /* 12 */
+  --space-4: 1rem; /* 16 */
+  --space-5: 1.25rem; /* 20 */
+  --space-6: 1.5rem; /* 24 */
+  --space-8: 2rem; /* 32 */
+  --space-10: 2.5rem; /* 40 */
+  --space-12: 3rem; /* 48 */
+  --space-16: 4rem; /* 64 */
+  --space-24: 6rem; /* 96 */
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-pill: 999px;
+
+  /* ---------- Shadows -------------------------------------------------- */
+
+  /* Cool, low-contrast — these are working tools, not floating cards in a
+     showcase. Shadows are subtle and ambient. */
+  --shadow-xs:
+    0 1px 0 0 rgba(20, 43, 75, 0.04), 0 1px 2px 0 rgba(20, 43, 75, 0.04);
+  --shadow-sm:
+    0 1px 2px 0 rgba(20, 43, 75, 0.04), 0 2px 6px -1px rgba(20, 43, 75, 0.06);
+  --shadow-md:
+    0 2px 4px 0 rgba(20, 43, 75, 0.04), 0 8px 20px -4px rgba(20, 43, 75, 0.08);
+  --shadow-lg:
+    0 4px 8px 0 rgba(20, 43, 75, 0.05), 0 18px 40px -8px rgba(20, 43, 75, 0.14);
+  --shadow-inset:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 0 rgba(20, 43, 75, 0.04);
+  --shadow-focus: 0 0 0 3px rgba(62, 106, 163, 0.28);
+
+  /* ---------- Motion --------------------------------------------------- */
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in: cubic-bezier(0.6, 0, 0.7, 0.3);
+  --ease-in-out: cubic-bezier(0.5, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+
+  --dur-instant: 80ms;
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-slow: 400ms;
+
+  /* ---------- Layout --------------------------------------------------- */
+
+  --container-sm: 640px;
+  --container-md: 960px;
+  --container-lg: 1200px;
+  --container-xl: 1440px;
+
+  --sidebar-w: 264px;
+  --header-h: 56px;
+}
+
+/* =============================================================================
+   Dark mode — for projector / auditorium use. Toggle via [data-theme="dark"]
+   on <html> or <body>. Same token names, different values.
+   ========================================================================== */
+
+[data-theme='dark'] {
+  --color-bg: #0a1220; /* slightly desaturated navy-black */
+  --color-bg-elevated: #0f1a2e;
+  --color-bg-sunken: #060c17;
+  --color-bg-inverse: var(--nai-white);
+
+  --lang-active-bg: var(--nai-mint-500);
+  --lang-active-fg: var(--nai-navy-950);
+
+  --color-surface: #121e34;
+  --color-surface-hover: #18263f;
+  --color-surface-active: #1e2f4d;
+  --color-surface-selected: #1d3257;
+
+  --color-border: #1f3050;
+  --color-border-strong: #2d456b;
+  --color-border-subtle: #172642;
+  --color-border-focus: var(--nai-mint-500);
+
+  --color-fg: #e6ecf5;
+  --color-fg-muted: #9aabc4;
+  --color-fg-subtle: #6e8099;
+  --color-fg-disabled: #4a5b76;
+  --color-fg-inverse: var(--nai-navy-900);
+  --color-fg-link: var(--nai-mint-400);
+
+  --color-accent: var(--nai-mint-500);
+  --color-accent-fg: var(--nai-navy-950);
+  --color-accent-soft: rgba(67, 193, 148, 0.14);
+
+  --color-brand: var(--nai-mint-500);
+  --color-brand-fg: var(--nai-navy-950);
+
+  --color-success: var(--nai-mint-500);
+  --color-success-bg: rgba(67, 193, 148, 0.14);
+  --color-warn: var(--nai-amber-300);
+  --color-warn-bg: rgba(224, 138, 31, 0.16);
+  --color-danger: var(--nai-crimson-300);
+  --color-danger-bg: rgba(210, 52, 86, 0.18);
+  --color-info: var(--nai-navy-300);
+  --color-info-bg: rgba(62, 106, 163, 0.16);
+
+  --shadow-xs: 0 1px 0 0 rgba(0, 0, 0, 0.4);
+  --shadow-sm:
+    0 1px 2px 0 rgba(0, 0, 0, 0.35), 0 2px 6px -1px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 40px -10px rgba(0, 0, 0, 0.6);
+  --shadow-inset:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.4);
+  --shadow-focus: 0 0 0 3px rgba(67, 193, 148, 0.35);
+}
+
+[data-theme='dark'] code {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--nai-mint-300);
+}
+[data-theme='dark'] pre {
+  background: #050a13;
+  color: #cbd5e1;
+}
+[data-theme='dark'] kbd {
+  background: var(--color-surface);
+  color: var(--color-fg-muted);
+  border-color: var(--color-border);
+}
+
+/* =============================================================================
+   Element-level defaults — drop the variables onto real selectors so a page
+   loading just this stylesheet already feels on-brand.
+   ========================================================================== */
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: var(--leading-normal);
+  color: var(--color-fg);
+  background: var(--color-bg);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+}
+
+/* Headings — tight, structural, never decorative */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--color-fg);
+  text-wrap: balance;
+}
+h1 {
+  font-size: var(--text-4xl);
+  letter-spacing: var(--tracking-tighter);
+}
+h2 {
+  font-size: var(--text-3xl);
+  letter-spacing: var(--tracking-tighter);
+}
+h3 {
+  font-size: var(--text-2xl);
+}
+h4 {
+  font-size: var(--text-xl);
+}
+h5 {
+  font-size: var(--text-lg);
+}
+h6 {
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+}
+
+p {
+  margin: 0;
+  line-height: var(--leading-relaxed);
+  text-wrap: pretty;
+}
+
+small {
+  font-size: var(--text-sm);
+  color: var(--color-fg-muted);
+}
+
+a {
+  color: var(--color-fg-link);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    text-decoration-color var(--dur-fast) var(--ease-out);
+}
+a:hover {
+  color: var(--nai-navy-900);
+  text-decoration-color: var(--color-accent);
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+}
+code {
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-xs);
+  background: var(--nai-ink-100);
+  color: var(--nai-navy-800);
+}
+pre {
+  font-size: var(--text-sm);
+  padding: var(--space-4);
+  background: var(--nai-navy-900);
+  color: var(--nai-ink-100);
+  border-radius: var(--radius-md);
+  overflow: auto;
+  line-height: var(--leading-snug);
+}
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+kbd {
+  font-size: var(--text-2xs);
+  padding: 2px 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  color: var(--color-fg-muted);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--color-border-subtle);
+  margin: var(--space-6) 0;
+}
+
+::selection {
+  background: var(--nai-mint-200);
+  color: var(--nai-navy-900);
+}
+
+/* Utility — eyebrow / KICKER label, used a lot in marketing-ish surfaces */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-fg-muted);
+}
+
+/* Citation block — referenced doc fragments in RAG responses */
+.citation {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--color-fg-muted);
+  border-left: 2px solid var(--color-accent);
+  padding-left: var(--space-3);
+}
