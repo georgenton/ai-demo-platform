@@ -145,6 +145,8 @@ npm run db:studio              # GUI web para inspeccionar la DB
 npm run db:migrate             # crear/aplicar nueva migración después de cambiar schema.prisma
 npm run db:generate            # regenerar el cliente de Prisma sin tocar la DB
 npm run db:seed                # popular la mini-DB académica del Demo 04 (determinístico)
+npm run db:seed:demos          # cargar documentos sample para RAG/Comparator
+                               # (requiere `nx serve api` + API keys reales)
 ```
 
 Si la DB queda en un estado raro (drift, datos basura de un test
@@ -252,7 +254,46 @@ para que ESLint arregle lo que puede, después re-stage y re-commit.
 
 ---
 
-## 6) Referencias rápidas
+## 6) Preparar una demo en vivo
+
+Cuando vayas a presentar a un cliente, querés que la app **arranque ya
+con contenido** — sin que tengas que subir archivos en vivo. Flujo
+completo desde una máquina limpia:
+
+```bash
+# 1. Stack arriba
+docker compose up -d
+npm run db:migrate
+
+# 2. Seed académico (50 estudiantes, 10 cursos, 1.695 grades para Demo 04)
+npm run db:seed
+
+# 3. Backend en una terminal
+npx nx serve api
+
+# 4. Seed de documentos sample en OTRA terminal
+#    (requiere que el backend ya esté arriba en la 3)
+npm run db:seed:demos
+
+# 5. Frontend en una tercera terminal
+npx nx serve web
+```
+
+Cuando abrás `http://localhost:4200`:
+
+- **`/demo/rag`** ya tiene 3 documentos indexados (reglamento académico,
+  manual de matrículas, política de propiedad intelectual). Las
+  preguntas sugeridas tienen respuestas coherentes contra esos docs.
+- **`/demo/comparator`** ya tiene 3 contratos para seleccionar.
+- **`/demo/agent`** ya tiene la base académica seedeada para responder
+  preguntas sobre estudiantes, materias, inscripciones.
+
+El seed de demos es **idempotente** — si ya hay documentos con esos
+nombres, los skipea. Podés correrlo varias veces sin duplicar.
+
+---
+
+## 7) Referencias rápidas
 
 - Diseño general: [`architecture/`](./architecture/).
 - Decisiones de diseño: [`adr/`](./adr/).

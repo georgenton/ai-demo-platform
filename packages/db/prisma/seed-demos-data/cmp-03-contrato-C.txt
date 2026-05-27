@@ -1,0 +1,109 @@
+CONTRATO DE SERVICIOS DE MANTENIMIENTO INTEGRAL
+Proveedor: SERVICIOS TÉCNICOS INTEGRADOS S.A.S. (en adelante, EL PROVEEDOR)
+Contratante: UNIVERSIDAD MODELO (en adelante, LA UNIVERSIDAD)
+Referencia interna: SERV-2025-C
+
+CLÁUSULA PRIMERA — OBJETO
+
+1.1 EL PROVEEDOR se obliga a prestar servicios de mantenimiento preventivo
+y correctivo de la infraestructura física, sistemas eléctricos, redes de
+agua potable, sistemas de climatización y áreas verdes del campus
+principal de LA UNIVERSIDAD.
+
+1.2 El servicio incluye atención de 24/7 para emergencias, con tiempo de
+respuesta máximo de 2 horas para situaciones críticas y 8 horas para
+incidentes menores.
+
+CLÁUSULA SEGUNDA — PLAZO
+
+2.1 El contrato tiene una vigencia de 12 meses, contados desde la firma,
+renovable por períodos iguales mediante acuerdo escrito de ambas partes
+con 60 días de anticipación al vencimiento.
+
+2.2 Sin opción de prórroga automática: cada renovación requiere evaluación
+de cumplimiento del período anterior y acuerdo expreso sobre eventuales
+ajustes de condiciones.
+
+CLÁUSULA TERCERA — VALOR Y FORMA DE PAGO
+
+3.1 El valor total del contrato anual es de USD 144.000,00 (ciento cuarenta
+y cuatro mil dólares), no incluye IVA.
+
+3.2 La modalidad de pago es por cuotas trimestrales anticipadas:
+a) Primera cuota: contra firma del contrato — USD 36.000
+b) Segunda cuota: a los 90 días — USD 36.000
+c) Tercera cuota: a los 180 días — USD 36.000
+d) Cuarta cuota: a los 270 días — USD 36.000
+
+3.3 Los servicios extraordinarios fuera del alcance contratado se facturarán
+por separado, previa cotización aprobada por LA UNIVERSIDAD.
+
+CLÁUSULA CUARTA — PENALIZACIONES
+
+4.1 Por cada hora de demora en la respuesta a emergencias críticas
+(superior a las 2 horas comprometidas), se aplicará una multa de USD 200.
+
+4.2 Por incumplimiento del cronograma de mantenimiento preventivo
+mensual, se aplicará una multa del 2,0% del valor mensual del contrato
+(USD 240) por cada actividad omitida.
+
+4.3 No existe tope acumulado para las penalizaciones — se aplicarán por
+cada evento de incumplimiento mientras el contrato esté vigente.
+
+CLÁUSULA QUINTA — RESPONSABILIDADES Y SEGUROS
+
+5.1 La responsabilidad de EL PROVEEDOR se limita al monto total del
+contrato anual (USD 144.000), salvo en casos de dolo o negligencia grave
+debidamente comprobada.
+
+5.2 EL PROVEEDOR mantendrá vigentes los siguientes seguros:
+- Responsabilidad civil contra terceros: cobertura mínima USD 200.000
+- Accidentes laborales del personal asignado al servicio
+- Robo y daños a equipos propios utilizados en el servicio
+
+5.3 Las pólizas se presentarán al inicio del contrato y se mantendrán
+vigentes durante toda su ejecución.
+
+CLÁUSULA SEXTA — GARANTÍAS
+
+6.1 EL PROVEEDOR otorga garantía sobre los trabajos correctivos ejecutados
+por un período de 6 meses desde su conclusión, cubriendo defectos de
+ejecución pero no desgaste normal por uso.
+
+6.2 Los repuestos y equipos suministrados durante el servicio se rigen por
+la garantía original del fabricante, sin garantía adicional de EL
+PROVEEDOR.
+
+6.3 No se otorga garantía explícita sobre la calidad general del servicio
+de mantenimiento preventivo: este se evalúa contra el cumplimiento del
+cronograma y los indicadores de desempeño anexos.
+
+CLÁUSULA SÉPTIMA — RESCISIÓN
+
+7.1 Cualquiera de las partes podrá dar por terminado el contrato con un
+preaviso escrito de 30 días, sin requerir justificación específica ni
+generar derecho a indemnización.
+
+7.2 La terminación inmediata, sin preaviso, procede por incumplimientos
+graves debidamente comprobados:
+- Tres o más fallas críticas atendidas con incumplimiento del SLA
+- Personal de EL PROVEEDOR sin afiliación al seguro social
+- Comportamiento del personal contrario a las normas internas de LA
+  UNIVERSIDAD
+
+7.3 La terminación anticipada genera el pago proporcional de los servicios
+prestados hasta la fecha de finalización efectiva, contra entrega del
+informe final del estado de las instalaciones.
+
+CLÁUSULA OCTAVA — DISPOSICIONES FINALES
+
+8.1 Los anexos forman parte integral del contrato:
+- Anexo I: Cronograma de mantenimiento preventivo
+- Anexo II: Indicadores de desempeño y reportes mensuales
+- Anexo III: Listado del personal asignado al servicio
+
+8.2 Las controversias se resolverán mediante negociación directa entre
+las partes. De no lograrse acuerdo en 30 días, podrán acudir a arbitraje
+o a la justicia ordinaria.
+
+Suscrito en dos ejemplares, el día 22 de enero de 2025.
