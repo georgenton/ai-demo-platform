@@ -3,6 +3,7 @@
 // Mismo patrón lazy que chat.ts (ver allí el detalle del "por qué lazy").
 // -----------------------------------------------------------------------------
 
+import { FakeEmbeddingsAdapter } from './providers/fake-embeddings.js';
 import { OpenAIEmbeddingsAdapter } from './providers/openai-embeddings.js';
 import type { EmbeddingsAdapter, EmbeddingsConfig } from './types.js';
 
@@ -11,10 +12,24 @@ export function readEmbeddingsConfig(): EmbeddingsConfig {
   if (!provider) {
     throw new Error('EMBEDDINGS_PROVIDER no está definida en el entorno.');
   }
-  if (provider !== 'openai' && provider !== 'openai-compat') {
+  if (
+    provider !== 'openai' &&
+    provider !== 'openai-compat' &&
+    provider !== 'fake'
+  ) {
     throw new Error(
-      `EMBEDDINGS_PROVIDER inválido: "${provider}". Esperado: 'openai' o 'openai-compat'.`,
+      `EMBEDDINGS_PROVIDER inválido: "${provider}". Esperado: 'openai', 'openai-compat' o 'fake'.`,
     );
+  }
+
+  // Provider 'fake': no exigimos credenciales (ver comentario análogo en
+  // chat.ts). Placeholders para satisfacer el shape; el adapter los ignora.
+  if (provider === 'fake') {
+    return {
+      provider: 'fake',
+      apiKey: 'fake',
+      model: process.env.EMBEDDINGS_MODEL ?? 'fake-model',
+    };
   }
 
   const apiKey = process.env.EMBEDDINGS_API_KEY;
@@ -46,6 +61,8 @@ export function createEmbeddingsAdapter(
       // El mismo adapter sirve para OpenAI nativo y para endpoints
       // OpenAI-compatible (NAI). La diferencia es solo el baseURL del cliente.
       return new OpenAIEmbeddingsAdapter(config);
+    case 'fake':
+      return new FakeEmbeddingsAdapter(config);
     default: {
       const _exhaustive: never = config.provider;
       throw new Error(`Provider no manejado: ${String(_exhaustive)}`);
