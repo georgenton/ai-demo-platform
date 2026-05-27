@@ -1,0 +1,96 @@
+MANUAL DE MATRÍCULAS — VICERRECTORADO ACADÉMICO
+
+Versión 3.1 — vigente para el período 2025
+
+Sección 1 — Propósito y alcance
+
+Este manual operativo describe los procedimientos detallados que el estudiante
+debe seguir para formalizar su matrícula en cada período académico. Complementa
+las disposiciones del Reglamento Académico y aplica a estudiantes de pregrado,
+posgrado y educación continua.
+
+Sección 2 — Requisitos previos
+
+Para iniciar el proceso de matrícula el estudiante debe:
+
+a) No tener obligaciones económicas pendientes con la Universidad.
+b) Haber completado los trámites administrativos correspondientes al
+   período anterior (entrega de documentos, evaluaciones pendientes, etc.).
+c) Contar con la asignación de tutor académico vigente (estudiantes de
+   posgrado y de programas con tutoría obligatoria).
+
+Sección 3 — Procedimiento de matrícula ordinaria
+
+3.1 Acceso al sistema. El estudiante ingresa al portal académico
+(matriculas.universidad.edu) con su usuario institucional y contraseña.
+Si la contraseña fue olvidada, el sistema permite recuperarla a través
+del email institucional registrado.
+
+3.2 Selección de asignaturas. Una vez autenticado, el estudiante visualiza
+la malla curricular de su programa con las asignaturas disponibles para
+el período. El sistema marca automáticamente las asignaturas con
+prerrequisitos no cumplidos.
+
+3.3 Validación de cupos. Cada asignatura tiene un cupo máximo establecido
+por la Dirección de Carrera. Si el cupo está completo, el estudiante puede
+inscribirse en lista de espera y será notificado por email si se libera
+un cupo.
+
+3.4 Confirmación y pago. Después de la selección, el sistema genera la
+orden de pago correspondiente al número de créditos inscritos. El pago
+puede efectuarse por:
+- Transferencia bancaria a la cuenta institucional
+- Pago en línea con tarjeta de crédito o débito
+- Pago directo en la Tesorería de la Universidad
+
+3.5 Generación del comprobante. Una vez confirmado el pago, el sistema
+emite el comprobante oficial de matrícula que el estudiante puede
+descargar e imprimir.
+
+Sección 3.2 — Autorización del Vicerrectorado Académico
+
+La matrícula extraordinaria requiere autorización expresa del Vicerrectorado
+Académico conforme al Artículo 15 del Reglamento Académico. La solicitud
+debe presentarse mediante el formulario M-EX-01 disponible en la página
+institucional, acompañada de:
+
+- Justificación escrita del retraso
+- Copia del documento de identidad
+- Constancia de no adeudar valores a la Universidad
+
+El Vicerrectorado se pronuncia en un plazo máximo de 48 horas hábiles
+desde la recepción de la solicitud completa.
+
+Sección 4 — Cambios de asignatura
+
+El estudiante puede solicitar cambios de asignatura (retiros, adiciones
+o intercambios) durante la primera semana del período académico, sin
+recargo. Después de ese plazo, los retiros generan calificación cero y
+los adicionales no son autorizados.
+
+Sección 5 — Beneficios económicos
+
+5.1 Becas por mérito académico. Estudiantes con promedio igual o superior
+a 85 puntos en el semestre previo acceden automáticamente a una rebaja
+del 25% en el valor del crédito.
+
+5.2 Becas socioeconómicas. La oficina de Bienestar Estudiantil gestiona
+becas parciales según situación familiar comprobada. La solicitud se
+realiza con 60 días de anticipación al inicio del período.
+
+5.3 Pago por cuotas. Los valores de matrícula pueden fraccionarse en
+hasta 3 cuotas mensuales sin recargo, previa firma del compromiso
+correspondiente en Tesorería.
+
+Sección 6 — Contacto y soporte
+
+Para consultas sobre este manual o el proceso de matrícula, los canales
+oficiales son:
+
+- Mesa de ayuda académica: extensión 1100
+- Email institucional: matriculas@universidad.edu
+- Atención presencial: Secretaría Académica de cada facultad, lunes a
+  viernes de 8:00 a 16:00.
+
+Toda comunicación oficial sobre el proceso de matrícula se realiza
+únicamente a través del email institucional del estudiante.
