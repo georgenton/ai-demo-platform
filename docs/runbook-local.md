@@ -116,15 +116,21 @@ seguí al flujo diario.
 
 Dos procesos en dos terminales:
 
-| Comando            | Qué levanta                      | Puerto |
-| ------------------ | -------------------------------- | ------ |
-| `npx nx serve api` | Backend NestJS (con auto-reload) | 3000   |
-| `npx nx serve web` | Frontend Next.js (con HMR)       | 4200   |
+| Comando                    | Qué levanta                      | Puerto |
+| -------------------------- | -------------------------------- | ------ |
+| `npx nx serve api`         | Backend NestJS (con auto-reload) | 3000   |
+| `PORT=4200 npx nx dev web` | Frontend Next.js (con HMR)       | 4200   |
+
+> El target del web es `dev` (no `serve`) porque `@nx/next` sigue la
+> convención de Next.js: `next dev` para HMR, `next start` para prod.
+> El `PORT=4200` es obligatorio — sin esto, Next intenta arrancar en
+> 3000 (su default), choca con el backend y se va al 3001, lo que
+> rompe los `rewrites()` que apuntan a `:3000`.
 
 El frontend tiene `rewrites()` que proxea `/api/*` → el backend (ver
 [ADR-0010](./adr/0010-web-api-coupling-rewrites-and-no-contracts-pkg.md)),
-así que abrir `http://localhost:4200/demo/rag` te da la página debug
-con todo conectado.
+así que abrir `http://localhost:4200/demo/rag` te da la página con
+todo conectado.
 
 ### 2.2 Postgres
 
@@ -257,13 +263,33 @@ para que ESLint arregle lo que puede, después re-stage y re-commit.
 ## 6) Preparar una demo en vivo
 
 Cuando vayas a presentar a un cliente, querés que la app **arranque ya
-con contenido** — sin que tengas que subir archivos en vivo. Flujo
-completo desde una máquina limpia:
+con contenido** — sin que tengas que subir archivos en vivo. Hay un
+script que lo orquesta todo en un solo comando:
+
+```bash
+npm run demo:start
+```
+
+El script ejecuta los 6 pasos en orden, con health checks entre cada
+uno y progreso visible:
+
+1. Postgres + pgvector (docker compose)
+2. Migraciones Prisma (`migrate deploy`)
+3. Seed académico (50 estudiantes, ~1.700 grades para Demo 04)
+4. Backend NestJS en background (espera `/health` 200)
+5. Seed de documentos sample (3 RAG + 3 Comparator)
+6. Frontend Next.js en background (espera primer paint)
+
+Ctrl+C limpia backend y frontend; la DB queda arriba para la próxima
+vez. Los logs separados van a `/tmp/demo-api.log` y `/tmp/demo-web.log`,
+así la terminal principal solo muestra progreso.
+
+**Flujo manual paso a paso** (si preferís controlar cada parte):
 
 ```bash
 # 1. Stack arriba
 docker compose up -d
-npm run db:migrate
+npm run db:migrate:deploy
 
 # 2. Seed académico (50 estudiantes, 10 cursos, 1.695 grades para Demo 04)
 npm run db:seed
@@ -276,7 +302,7 @@ npx nx serve api
 npm run db:seed:demos
 
 # 5. Frontend en una tercera terminal
-npx nx serve web
+PORT=4200 npx nx dev web
 ```
 
 Cuando abrás `http://localhost:4200`:
