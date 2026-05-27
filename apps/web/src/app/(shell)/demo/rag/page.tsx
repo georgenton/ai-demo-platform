@@ -1,249 +1,301 @@
 // -----------------------------------------------------------------------------
-// Página debug del Demo 01 (RAG).
+// Demo 01 — RAG: Chat con documentos.
 //
-// Esta página NO es la UI final del demo — para eso llegarán los componentes
-// de Claude Design. Es una herramienta de desarrollo para verificar end-to-end:
+// Layout (kit):
+//   - Page header con eyebrow, title, subtitle y CTA "Subir documento".
+//   - Two-col: sidebar de documentos a la izquierda, chat shell a la derecha.
 //
-//   1) Que el ingest funciona (texto plano → indexado en pgvector).
-//   2) Que el chat con streaming SSE llega al browser token por token.
+// Wiring:
+//   - Documents: useDocuments({ demoId: 'rag' }) que envuelve listDocuments
+//     + deleteDocument + refresh.
+//   - Chat: useChatStream() de @/lib/api. Mantenemos histórico de messages
+//     en estado local; durante streaming pintamos un mensaje "vivo"
+//     adicional cuyo texto viene del hook.
 //
-// Cuando Jorge tenga las API keys reales (CHAT_API_KEY, EMBEDDINGS_API_KEY)
-// y arranque `nx serve api` + `nx serve web`, esta página le da el feedback
-// inmediato de que el pipeline completo (web → rewrites → NestJS → LLM)
-// está vivo, sin esperar a la UI final.
-//
-// Estilos: inline mínimos para mantener la página autosuficiente. No vale
-// la pena pulirla — es scratchpad, no producto.
+// Decisiones:
+//   - Greeting inicial del assistant viene de i18n (t('rag.greeting')).
+//   - 3 sugerencias clickeables debajo del composer — pone la sugerencia
+//     en el input pero NO la dispara automáticamente (el usuario decide).
+//   - Autoscroll: useRef + useEffect que scrollea al fondo cuando cambia
+//     la cantidad de mensajes o el texto del stream.
+//   - Citas: la burbuja del assistant parsea [[...]] como spans
+//     citation-inline. Si el LLM no emite ese formato, queda texto plano.
 // -----------------------------------------------------------------------------
 
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ApiError, ingestText, useChatStream } from '@/lib/api';
+import { Button, Eyebrow, Icon, Modal, Pill } from '@/components/ui';
+import { Bubble } from '@/components/demo/rag/Bubble';
+import { DocCard } from '@/components/demo/rag/DocCard';
+import { ThinkingBubble } from '@/components/demo/rag/ThinkingBubble';
+import { UploadPanel } from '@/components/demo/rag/UploadPanel';
+import { useDocuments } from '@/components/demo/rag/use-documents';
+import { useChatStream } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
-/** Demo al que apunta esta página. Hardcodeado porque es debug específico de RAG. */
-const DEMO_ID = 'rag';
-
-export default function DemoRagDebugPage() {
-  return (
-    <main style={styles.page}>
-      <h1 style={styles.title}>Demo 01 — RAG (debug)</h1>
-      <p style={styles.note}>
-        Página interna para verificar el pipeline end-to-end. La UI final del
-        demo llega vía Claude Design.
-      </p>
-
-      <IngestSection />
-      <ChatSection />
-    </main>
-  );
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
 }
 
-// ---------------------------------------------------------------------------
-// Ingest — sube texto plano al backend
-// ---------------------------------------------------------------------------
+const DEMO_ID = 'rag' as const;
 
-function IngestSection() {
-  const [name, setName] = useState('reglamento.txt');
-  const [content, setContent] = useState('');
-  const [status, setStatus] = useState<
-    | { kind: 'idle' }
-    | { kind: 'loading' }
-    | { kind: 'success'; documentId: string; chunkCount: number }
-    | { kind: 'error'; message: string }
-  >({ kind: 'idle' });
+export default function DemoRagPage() {
+  const { t, lang } = useT();
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setStatus({ kind: 'loading' });
+  // Documents
+  const {
+    documents,
+    status: docsStatus,
+    refresh,
+    remove,
+  } = useDocuments(DEMO_ID);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
 
-    try {
-      const result = await ingestText({ name, content, demoId: DEMO_ID });
-      setStatus({ kind: 'success', ...result });
-    } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? `${err.status} — ${err.message}`
-          : err instanceof Error
-            ? err.message
-            : 'Error desconocido';
-      setStatus({ kind: 'error', message });
+  // El primer doc disponible queda seleccionado por defecto.
+  useEffect(() => {
+    if (!selectedDocId && documents.length > 0) {
+      setSelectedDocId(documents[0].id);
     }
+  }, [documents, selectedDocId]);
+
+  // Upload modal
+  const [uploadOpen, setUploadOpen] = useState(false);
+
+  // Chat
+  const [history, setHistory] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const {
+    text: streamText,
+    status: chatStatus,
+    error: chatError,
+    start,
+  } = useChatStream();
+
+  // Greeting inicial — reemplaza el history cuando cambia el idioma.
+  useEffect(() => {
+    setHistory([{ role: 'assistant', text: t('rag.greeting') }]);
+  }, [lang, t]);
+
+  // Cuando un stream termina (done) o falla (error), movemos el texto
+  // streameado al history y dejamos `streamText` libre para el próximo
+  // turn. `prevStatus` evita procesar el mismo done dos veces.
+  const prevStatus = useRef(chatStatus);
+  useEffect(() => {
+    const was = prevStatus.current;
+    prevStatus.current = chatStatus;
+    if (was === 'streaming' && chatStatus === 'done' && streamText) {
+      setHistory((h) => [...h, { role: 'assistant', text: streamText }]);
+    } else if (was === 'streaming' && chatStatus === 'error') {
+      const msg = chatError ?? 'Error desconocido';
+      setHistory((h) => [...h, { role: 'assistant', text: `Error: ${msg}` }]);
+    }
+  }, [chatStatus, streamText, chatError]);
+
+  // Autoscroll al fondo del stream cada vez que cambia el contenido.
+  const streamRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (streamRef.current) {
+      streamRef.current.scrollTop = streamRef.current.scrollHeight;
+    }
+  });
+
+  // Mensajes que se pintan en pantalla: history + (si está streameando)
+  // una burbuja viva con el texto en curso.
+  const displayMessages = useMemo<
+    Array<ChatMessage & { streaming?: boolean }>
+  >(() => {
+    if (chatStatus === 'streaming' && streamText) {
+      return [
+        ...history,
+        { role: 'assistant', text: streamText, streaming: true },
+      ];
+    }
+    return history;
+  }, [history, chatStatus, streamText]);
+
+  function send() {
+    const q = input.trim();
+    if (!q || chatStatus === 'streaming') return;
+    setInput('');
+    setHistory((h) => [...h, { role: 'user', text: q }]);
+    start({ q, demoId: DEMO_ID });
   }
 
-  return (
-    <section style={styles.section}>
-      <h2 style={styles.h2}>1) Ingest (texto)</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <label style={styles.label}>
-          Nombre del documento
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={styles.input}
-            required
-          />
-        </label>
-        <label style={styles.label}>
-          Contenido
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Pegá el texto de prueba aquí…"
-            style={styles.textarea}
-            rows={6}
-            required
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={status.kind === 'loading'}
-          style={styles.button}
-        >
-          {status.kind === 'loading' ? 'Indexando…' : 'Ingestar'}
-        </button>
-      </form>
+  const suggested = [
+    t('rag.suggested.1'),
+    t('rag.suggested.2'),
+    t('rag.suggested.3'),
+  ];
 
-      {status.kind === 'success' && (
-        <p style={styles.success}>
-          ✓ Indexado: documentId={status.documentId}, chunks={status.chunkCount}
-        </p>
-      )}
-      {status.kind === 'error' && (
-        <p style={styles.error}>Error: {status.message}</p>
-      )}
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Chat — pregunta + stream de tokens
-// ---------------------------------------------------------------------------
-
-function ChatSection() {
-  const [question, setQuestion] = useState('');
-  const { text, status, error, start, reset } = useChatStream();
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    if (!question.trim()) return;
-    start({ q: question, demoId: DEMO_ID });
-  }
+  const isStreaming = chatStatus === 'streaming';
+  const showThinking = isStreaming && !streamText;
 
   return (
-    <section style={styles.section}>
-      <h2 style={styles.h2}>2) Chat (SSE streaming)</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <label style={styles.label}>
-          Pregunta
-          <input
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="¿Cuál es el horario de matrícula?"
-            style={styles.input}
-            required
-          />
-        </label>
-        <div style={styles.buttonRow}>
-          <button
-            type="submit"
-            disabled={status === 'streaming'}
-            style={styles.button}
-          >
-            {status === 'streaming' ? 'Streaming…' : 'Preguntar'}
-          </button>
-          <button type="button" onClick={reset} style={styles.buttonSecondary}>
-            Reset
-          </button>
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <div className="page-title-eyebrow">{t('rag.eyebrow')}</div>
+          <h1 className="page-title">{t('rag.title')}</h1>
+          <p className="page-subtitle">{t('rag.subtitle')}</p>
         </div>
-      </form>
+        <Button
+          variant="primary"
+          icon="upload"
+          size="lg"
+          onClick={() => setUploadOpen(true)}
+        >
+          {t('rag.upload')}
+        </Button>
+      </div>
 
-      <p style={styles.statusLine}>
-        Estado: <strong>{status}</strong>
-      </p>
+      <div className="two-col">
+        <aside className="two-col-side">
+          <Eyebrow>
+            {t('rag.docs.label')} · {documents.length}
+          </Eyebrow>
+          <div
+            className="scroll-area"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              flex: 1,
+            }}
+          >
+            {docsStatus === 'loading' && documents.length === 0 ? (
+              <DocsLoading />
+            ) : documents.length === 0 ? (
+              <div
+                role="button"
+                tabIndex={0}
+                className="drag-zone"
+                onClick={() => setUploadOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setUploadOpen(true);
+                  }
+                }}
+              >
+                <Icon name="upload-cloud" size={28} strokeWidth={1.4} />
+                <p style={{ fontSize: 13, marginTop: 8 }}>
+                  {t('rag.docs.empty')}
+                </p>
+              </div>
+            ) : (
+              documents.map((doc) => (
+                <DocCard
+                  key={doc.id}
+                  doc={doc}
+                  selected={doc.id === selectedDocId}
+                  onSelect={() => setSelectedDocId(doc.id)}
+                  onDelete={() => remove(doc.id)}
+                />
+              ))
+            )}
+          </div>
+        </aside>
 
-      {error && <p style={styles.error}>Error: {error}</p>}
+        <main className="two-col-main">
+          <div className="chat-shell">
+            <div className="chat-stream" ref={streamRef}>
+              <div className="chat-stream-header-fade" aria-hidden />
+              {displayMessages.map((message, i) => (
+                <Bubble
+                  key={i}
+                  role={message.role}
+                  text={message.text}
+                  streaming={message.streaming}
+                />
+              ))}
+              {showThinking && <ThinkingBubble label={t('rag.thinking')} />}
+            </div>
 
-      <pre style={styles.transcript}>{text || '(sin tokens todavía)'}</pre>
-    </section>
+            <div className="chat-composer">
+              <div className="chat-composer-inner">
+                <textarea
+                  className="chat-composer-input"
+                  placeholder={t('rag.composer.placeholder')}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      send();
+                    }
+                  }}
+                  rows={1}
+                  disabled={isStreaming}
+                />
+                <button
+                  type="button"
+                  className="send-btn"
+                  onClick={send}
+                  disabled={!input.trim() || isStreaming}
+                  aria-label={t('common.send')}
+                >
+                  <Icon
+                    name={isStreaming ? 'square' : 'arrow-up'}
+                    size={16}
+                    strokeWidth={2}
+                  />
+                </button>
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 6,
+                }}
+              >
+                {suggested.map((q) => (
+                  <Pill key={q} icon="sparkles" onClick={() => setInput(q)}>
+                    {q}
+                  </Pill>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <Modal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        title={t('rag.upload.title')}
+      >
+        <UploadPanel
+          demoId={DEMO_ID}
+          onSuccess={(response) => {
+            setUploadOpen(false);
+            refresh();
+            setSelectedDocId(response.documentId);
+          }}
+        />
+      </Modal>
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Estilos inline — mínimos, scratchpad
-// ---------------------------------------------------------------------------
-
-const styles = {
-  page: {
-    maxWidth: 720,
-    margin: '0 auto',
-    padding: '2rem 1rem',
-    fontFamily: 'system-ui, sans-serif',
-    color: '#1f2937',
-  },
-  title: { fontSize: '1.75rem', margin: 0 },
-  note: { color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' },
-  section: {
-    marginTop: '2rem',
-    padding: '1rem',
-    border: '1px solid #e5e7eb',
-    borderRadius: 8,
-  },
-  h2: { marginTop: 0, fontSize: '1.25rem' },
-  form: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.25rem',
-    fontSize: '0.875rem',
-  },
-  input: {
-    padding: '0.5rem 0.75rem',
-    border: '1px solid #d1d5db',
-    borderRadius: 4,
-    fontSize: '1rem',
-  },
-  textarea: {
-    padding: '0.5rem 0.75rem',
-    border: '1px solid #d1d5db',
-    borderRadius: 4,
-    fontSize: '1rem',
-    fontFamily: 'inherit',
-    resize: 'vertical' as const,
-  },
-  button: {
-    padding: '0.5rem 1rem',
-    background: '#2563eb',
-    color: 'white',
-    border: 'none',
-    borderRadius: 4,
-    fontSize: '1rem',
-    cursor: 'pointer',
-    alignSelf: 'flex-start',
-  },
-  buttonSecondary: {
-    padding: '0.5rem 1rem',
-    background: 'transparent',
-    color: '#2563eb',
-    border: '1px solid #2563eb',
-    borderRadius: 4,
-    fontSize: '1rem',
-    cursor: 'pointer',
-  },
-  buttonRow: { display: 'flex', gap: '0.5rem' },
-  statusLine: { fontSize: '0.875rem', color: '#374151', marginTop: '0.75rem' },
-  success: { color: '#047857', marginTop: '0.75rem' },
-  error: { color: '#b91c1c', marginTop: '0.75rem' },
-  transcript: {
-    marginTop: '0.75rem',
-    padding: '0.75rem',
-    background: '#f9fafb',
-    border: '1px solid #e5e7eb',
-    borderRadius: 4,
-    fontSize: '0.875rem',
-    whiteSpace: 'pre-wrap' as const,
-    wordBreak: 'break-word' as const,
-    minHeight: '4rem',
-  },
-} satisfies Record<string, React.CSSProperties>;
+/**
+ * Skeleton de la lista de documentos. Tres cards-gris animadas mientras
+ * `listDocuments` está en vuelo. Usamos la clase .skeleton del ui-kit (1.6s
+ * shimmer loop) — mucho mejor UX que un spinner solitario.
+ */
+function DocsLoading() {
+  return (
+    <>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="skeleton"
+          style={{ height: 64, borderRadius: 10 }}
+        />
+      ))}
+    </>
+  );
+}
