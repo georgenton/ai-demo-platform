@@ -13,9 +13,11 @@
     "changeset:status": "changeset status",
     "db:generate": "dotenv -e .env -- npx prisma generate --schema packages/db/prisma/schema.prisma",
     "db:migrate": "dotenv -e .env -- npx prisma migrate dev --schema packages/db/prisma/schema.prisma",
+    "db:migrate:deploy": "dotenv -e .env -- npx prisma migrate deploy --schema packages/db/prisma/schema.prisma",
     "db:studio": "dotenv -e .env -- npx prisma studio --schema packages/db/prisma/schema.prisma",
     "db:seed": "dotenv -e .env -- tsx packages/db/prisma/seed.ts",
     "db:seed:demos": "tsx packages/db/prisma/seed-demos.ts",
+    "demo:start": "bash scripts/demo-start.sh",
     "postinstall": "npx prisma generate --schema packages/db/prisma/schema.prisma",
     "prepare": "husky"
   },
