@@ -5,6 +5,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createEmbeddingsAdapter, readEmbeddingsConfig } from './embeddings.js';
+import { FakeEmbeddingsAdapter } from './providers/fake-embeddings.js';
 import { OpenAIEmbeddingsAdapter } from './providers/openai-embeddings.js';
 
 describe('readEmbeddingsConfig', () => {
@@ -71,6 +72,16 @@ describe('readEmbeddingsConfig', () => {
       baseUrl: 'http://nai:8080/v1',
     });
   });
+
+  it('provider=fake no exige API key ni modelo — devuelve placeholders', () => {
+    process.env.EMBEDDINGS_PROVIDER = 'fake';
+    // SIN EMBEDDINGS_API_KEY, SIN EMBEDDINGS_MODEL — deliberadamente.
+    expect(readEmbeddingsConfig()).toEqual({
+      provider: 'fake',
+      apiKey: 'fake',
+      model: 'fake-model',
+    });
+  });
 });
 
 describe('createEmbeddingsAdapter', () => {
@@ -93,5 +104,14 @@ describe('createEmbeddingsAdapter', () => {
       baseUrl: 'http://nai:8080/v1',
     });
     expect(adapter).toBeInstanceOf(OpenAIEmbeddingsAdapter);
+  });
+
+  it('devuelve FakeEmbeddingsAdapter para provider="fake"', () => {
+    const adapter = createEmbeddingsAdapter({
+      provider: 'fake',
+      apiKey: 'fake',
+      model: 'fake-model',
+    });
+    expect(adapter).toBeInstanceOf(FakeEmbeddingsAdapter);
   });
 });

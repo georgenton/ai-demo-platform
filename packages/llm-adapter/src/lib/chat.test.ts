@@ -15,6 +15,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createChatAdapter, readChatConfig } from './chat.js';
 import { AnthropicChatAdapter } from './providers/anthropic-chat.js';
+import { FakeChatAdapter } from './providers/fake-chat.js';
 import { OpenAICompatChatAdapter } from './providers/openai-compat-chat.js';
 
 describe('readChatConfig', () => {
@@ -81,6 +82,22 @@ describe('readChatConfig', () => {
       baseUrl: 'http://nai:8080/v1',
     });
   });
+
+  it('provider=fake no exige API key ni modelo — devuelve placeholders', () => {
+    process.env.CHAT_PROVIDER = 'fake';
+    // SIN CHAT_API_KEY, SIN CHAT_MODEL — deliberadamente.
+    expect(readChatConfig()).toEqual({
+      provider: 'fake',
+      apiKey: 'fake',
+      model: 'fake-model',
+    });
+  });
+
+  it('provider=fake respeta CHAT_MODEL si se setea explícitamente', () => {
+    process.env.CHAT_PROVIDER = 'fake';
+    process.env.CHAT_MODEL = 'mi-modelo-custom';
+    expect(readChatConfig().model).toBe('mi-modelo-custom');
+  });
 });
 
 describe('createChatAdapter', () => {
@@ -101,5 +118,14 @@ describe('createChatAdapter', () => {
       baseUrl: 'http://nai:8080/v1',
     });
     expect(adapter).toBeInstanceOf(OpenAICompatChatAdapter);
+  });
+
+  it('devuelve FakeChatAdapter para provider="fake"', () => {
+    const adapter = createChatAdapter({
+      provider: 'fake',
+      apiKey: 'fake',
+      model: 'fake-model',
+    });
+    expect(adapter).toBeInstanceOf(FakeChatAdapter);
   });
 });

@@ -137,11 +137,18 @@ export interface EmbeddingsAdapter {
 // Configuración (se construye desde env vars en chat.ts / embeddings.ts)
 // -----------------------------------------------------------------------------
 
-/** Proveedores soportados para chat. */
-export type ChatProvider = 'anthropic' | 'openai-compat';
+/** Proveedores soportados para chat.
+ *
+ * `fake` es una implementación determinística (ver providers/fake-chat.ts)
+ * que devuelve respuestas hardcoded sin llamar a ningún LLM real. Pensado
+ * para CI y tests E2E sin keys. NUNCA usar en producción — la responde
+ * solo lo que tiene precableado.
+ */
+export type ChatProvider = 'anthropic' | 'openai-compat' | 'fake';
 
-/** Proveedores soportados para embeddings. */
-export type EmbeddingsProvider = 'openai' | 'openai-compat';
+/** Proveedores soportados para embeddings. `fake` análogo al de chat:
+ * vectores determinísticos vía bag-of-words. */
+export type EmbeddingsProvider = 'openai' | 'openai-compat' | 'fake';
 
 /**
  * Configuración del ChatAdapter. Se construye desde:
