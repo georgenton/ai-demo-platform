@@ -23,6 +23,7 @@ import { buildSidebarDemos } from '@/lib/catalog/demos';
 import { useT } from '@/lib/i18n';
 
 import { LangSwitch } from './LangSwitch';
+import { PresentationToggle } from './PresentationToggle';
 import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
@@ -71,6 +72,7 @@ export function Header() {
 
       <LangSwitch />
       <ThemeToggle />
+      <PresentationToggle />
     </header>
   );
 }

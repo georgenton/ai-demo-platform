@@ -16,6 +16,17 @@
   font-family: var(--font-sans);
 }
 
+/* Modo presentación: la clase `presenting` se aplica al <html> desde
+   `usePresentationMode`. Oculta el sidebar y deja el contenido a ancho
+   completo. Pensado para proyectores donde queremos máximo espacio para
+   el demo, sin distracciones de navegación. */
+html.presenting .app-shell {
+  grid-template-columns: 1fr;
+}
+html.presenting .app-shell > .sidebar {
+  display: none;
+}
+
 .sidebar {
   background: var(--color-bg-sunken);
   border-right: 1px solid var(--color-border-subtle);

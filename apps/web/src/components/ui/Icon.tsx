@@ -50,12 +50,19 @@ const cache = new Map<string, LucideIcon | null>();
 function resolveIcon(name: string): LucideIcon | null {
   if (cache.has(name)) return cache.get(name) ?? null;
   const componentName = toPascalCase(name);
-  // LucideIcons exporta cada icono como named export. El tipo es opaco —
-  // hacemos un lookup tipo-laxo y filtramos por "es función".
+  // LucideIcons exporta cada icono como named export. Desde lucide-react
+  // ~v0.300 los iconos son objetos `forwardRef` (no functions), así que
+  // `typeof === 'function'` no alcanza — chequeamos también `object` no-null
+  // para aceptar forwardRef/memo. El lookup solo encuentra componentes
+  // (lucide no exporta otras cosas runtime), así que el riesgo de aceptar
+  // un objeto raro es nulo.
   const lookup = (LucideIcons as unknown as Record<string, unknown>)[
     componentName
   ];
-  const resolved = typeof lookup === 'function' ? (lookup as LucideIcon) : null;
+  const isComponent =
+    lookup != null &&
+    (typeof lookup === 'function' || typeof lookup === 'object');
+  const resolved = isComponent ? (lookup as LucideIcon) : null;
   cache.set(name, resolved);
   return resolved;
 }

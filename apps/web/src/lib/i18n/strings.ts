@@ -29,6 +29,21 @@ const STRINGS_ES = {
   'shell.dev': 'dev',
   'shell.theme.tip': 'Cambiar tema',
   'shell.lang.tip': 'Cambiar idioma',
+  'shell.presentation.enter': 'Modo presentación (Shift + P)',
+  'shell.presentation.exit': 'Salir del modo presentación (Shift + P)',
+
+  // --- Shortcuts (overlay con ? y cheatsheet)
+  'shortcuts.title': 'Atajos de teclado',
+  'shortcuts.footer':
+    'Los atajos no se disparan mientras escribís en un campo de texto.',
+  'shortcuts.goto.rag': 'Ir a Demo 01 — RAG',
+  'shortcuts.goto.comparator': 'Ir a Demo 02 — Comparador',
+  'shortcuts.goto.agent': 'Ir a Demo 04 — Agente',
+  'shortcuts.goto.corpus': 'Ir a Demo 03 — Corpus',
+  'shortcuts.goto.home': 'Ir al inicio',
+  'shortcuts.presentation': 'Modo presentación',
+  'shortcuts.help': 'Mostrar / ocultar esta ayuda',
+  'shortcuts.close': 'Cerrar diálogos',
 
   // --- Demo catalog
   'demos.rag.title': 'Chat con documentos',
@@ -183,6 +198,20 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'shell.dev': 'dev',
   'shell.theme.tip': 'Toggle theme',
   'shell.lang.tip': 'Change language',
+  'shell.presentation.enter': 'Presentation mode (Shift + P)',
+  'shell.presentation.exit': 'Exit presentation mode (Shift + P)',
+
+  'shortcuts.title': 'Keyboard shortcuts',
+  'shortcuts.footer':
+    'Shortcuts are disabled while you are typing in a text field.',
+  'shortcuts.goto.rag': 'Go to Demo 01 — RAG',
+  'shortcuts.goto.comparator': 'Go to Demo 02 — Comparator',
+  'shortcuts.goto.agent': 'Go to Demo 04 — Agent',
+  'shortcuts.goto.corpus': 'Go to Demo 03 — Corpus',
+  'shortcuts.goto.home': 'Go to home',
+  'shortcuts.presentation': 'Presentation mode',
+  'shortcuts.help': 'Show / hide this help',
+  'shortcuts.close': 'Close dialogs',
 
   'demos.rag.title': 'Document chat',
   'demos.rag.tagline': 'Ask a PDF in plain English',
