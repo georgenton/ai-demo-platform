@@ -1,114 +1,153 @@
 // -----------------------------------------------------------------------------
-// Demo 03 — Corpus académico (teaser).
+// Demo 03 — Corpus académico.
 //
-// Esta página NO consume backend (Demo 03 está bloqueado en la entrada de
-// Python/FastAPI — ver docs/adr/0011-demo-03-waits-for-python.md). Es una
-// pantalla de **roadmap visible para el cliente**: comunica que existe la
-// visión, qué hace el demo y cuándo aterriza.
+// Página funcional (reemplaza el teaser estático original). Capacidades:
+//   - Upload batch de PDFs (modal con drag/click multi-file).
+//   - Stats agregados: total + papers por año + top tópicos.
+//   - Búsqueda semántica sobre el corpus (SSE).
+//   - Resumen ejecutivo auto-generado por LLM (SSE map-reduce).
+//   - Listado paginado de papers con metadata.
 //
-// Layout (kit):
-//   1) Hero oscuro con CorpusViz, eyebrow "Próximamente · Q3 2026",
-//      título grande, descripción y dos CTAs (placeholder — no van a
-//      ninguna parte por ahora).
-//   2) Grid de 3 CapabilityCards (procesamiento masivo, clustering,
-//      evolución temporal).
-//   3) Timeline de roadmap con 6 milestones (3 done, 1 current, 2
-//      upcoming/highlight).
+// Composición:
+//   - useCorpusStats() para stats (total, year chart, top topics).
+//   - useCorpusPapers() para la tabla.
+//   - useCorpusSearch() / useCorpusSummary() dentro de sus components.
+//   - refreshKey: contador que la página incrementa post-upload; los
+//     children que dependen de él (stats card / papers list) refetchean.
 // -----------------------------------------------------------------------------
 
 'use client';
 
-import { Button, Eyebrow, Icon } from '@/components/ui';
-import { CapabilityCard } from '@/components/demo/corpus/CapabilityCard';
-import { CorpusViz } from '@/components/demo/corpus/CorpusViz';
-import { Milestone } from '@/components/demo/corpus/Milestone';
-import { useT } from '@/lib/i18n';
+import { useState } from 'react';
 
-const DATE_LABELS = {
-  mar: 'MAR 2026',
-  may: 'MAY 2026',
-  jun: 'JUN 2026',
-  jul: 'JUL 2026',
-  q3: 'Q3 2026',
-};
+import { Button, Eyebrow, Modal } from '@/components/ui';
+import { CorpusSearchSection } from '@/components/demo/corpus/CorpusSearchSection';
+import { CorpusSummarySection } from '@/components/demo/corpus/CorpusSummarySection';
+import { CorpusUploadPanel } from '@/components/demo/corpus/CorpusUploadPanel';
+import { PapersByYearChart } from '@/components/demo/corpus/PapersByYearChart';
+import { PapersList } from '@/components/demo/corpus/PapersList';
+import { TopTopicsList } from '@/components/demo/corpus/TopTopicsList';
+import { TotalPapersCard } from '@/components/demo/corpus/TotalPapersCard';
+import { useCorpusStats } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 export default function DemoCorpusPage() {
   const { t } = useT();
+
+  const [uploadOpen, setUploadOpen] = useState(false);
+  // refreshKey aumenta tras cada upload exitoso. Sus consumidores
+  // (stats card + papers list) reciben el valor como prop y refetchean.
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const {
+    data: stats,
+    status: statsStatus,
+    refetch: refetchStats,
+  } = useCorpusStats();
+
+  const total = stats?.totalPapers ?? 0;
+  const papersByYear = stats?.papersByYear ?? [];
+  const topTopics = stats?.topTopics ?? [];
+
+  // Sugerencias de búsqueda — keywords típicos de tesis ecuatorianas.
+  const suggested = [
+    t('corpus.search.s1'),
+    t('corpus.search.s2'),
+    t('corpus.search.s3'),
+  ];
+
+  function onUploadSuccess() {
+    refetchStats();
+    setRefreshKey((k) => k + 1);
+    // No cerramos el modal automático — el usuario quiere ver el tally.
+  }
+
   return (
-    <div className="page">
-      <div className="teaser-hero">
-        <CorpusViz />
-        <div className="teaser-eyebrow">
-          <Icon name="zap" size={11} strokeWidth={2.2} />
-          {t('corpus.eyebrow')}
-        </div>
-        <h1 className="teaser-title">{t('corpus.title')}</h1>
-        <p className="teaser-desc">{t('corpus.desc')}</p>
-        <div style={{ marginTop: 28, display: 'flex', gap: 10 }}>
-          <Button variant="accent" icon="bell" size="lg">
-            {t('corpus.notify')}
-          </Button>
-          <Button
-            variant="ghost"
-            iconRight="arrow-right"
-            size="lg"
-            style={{ color: 'rgba(255,255,255,0.85)' }}
+    <div
+      className="page"
+      style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 20,
+        }}
+      >
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <Eyebrow>{t('corpus.eyebrow')}</Eyebrow>
+          <h1
+            style={{
+              fontSize: 32,
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              margin: '4px 0 8px 0',
+            }}
           >
-            {t('corpus.roadmap')}
-          </Button>
+            {t('corpus.title')}
+          </h1>
+          <p
+            style={{
+              fontSize: 14,
+              color: 'var(--color-fg-muted)',
+              maxWidth: 720,
+              lineHeight: 1.55,
+              margin: 0,
+            }}
+          >
+            {t('corpus.subtitle')}
+          </p>
         </div>
+        <Button
+          variant="accent"
+          icon="upload-cloud"
+          onClick={() => setUploadOpen(true)}
+        >
+          {t('corpus.upload.button')}
+        </Button>
       </div>
 
+      {/* Stats row: total + year chart + top topics */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 18,
-          marginTop: 28,
+          gridTemplateColumns: '1fr 2fr 2fr',
+          gap: 14,
         }}
       >
-        <CapabilityCard
-          icon="layers-3"
-          title={t('corpus.cap1.title')}
-          body={t('corpus.cap1.body')}
+        <TotalPapersCard
+          total={total}
+          loading={statsStatus === 'loading' && !stats}
         />
-        <CapabilityCard
-          icon="git-branch-plus"
-          title={t('corpus.cap2.title')}
-          body={t('corpus.cap2.body')}
-        />
-        <CapabilityCard
-          icon="line-chart"
-          title={t('corpus.cap3.title')}
-          body={t('corpus.cap3.body')}
-        />
+        <PapersByYearChart data={papersByYear} />
+        <TopTopicsList data={topTopics} />
       </div>
 
-      <div style={{ marginTop: 32 }}>
-        <Eyebrow>{t('corpus.status')}</Eyebrow>
-        <div style={{ marginTop: 14, position: 'relative' }}>
-          {/* Línea vertical del timeline — atrás de los dots. */}
-          <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              left: 11,
-              top: 14,
-              bottom: 14,
-              width: 1,
-              background: 'var(--color-border)',
-            }}
-          />
-          <div className="col" style={{ gap: 16 }}>
-            <Milestone done label={t('corpus.m1')} date={DATE_LABELS.mar} />
-            <Milestone done label={t('corpus.m2')} date={DATE_LABELS.may} />
-            <Milestone current label={t('corpus.m3')} date={DATE_LABELS.may} />
-            <Milestone label={t('corpus.m4')} date={DATE_LABELS.jun} />
-            <Milestone label={t('corpus.m5')} date={DATE_LABELS.jul} />
-            <Milestone highlight label={t('corpus.m6')} date={DATE_LABELS.q3} />
-          </div>
-        </div>
+      {/* Search + Summary side by side on wide screens */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
+          gap: 14,
+        }}
+      >
+        <CorpusSearchSection suggested={suggested} disabled={total === 0} />
+        <CorpusSummarySection totalPapers={total} />
       </div>
+
+      {/* Listado paginado */}
+      <PapersList refreshKey={refreshKey} />
+
+      {/* Upload modal */}
+      <Modal
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        title={t('corpus.upload.modalTitle')}
+      >
+        <CorpusUploadPanel onSuccess={onUploadSuccess} />
+      </Modal>
     </div>
   );
 }
