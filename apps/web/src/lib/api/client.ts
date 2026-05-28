@@ -147,11 +147,26 @@ function buildChatUrl(query: ChatQuery): string {
 }
 
 /**
- * Suscribe al stream SSE de tokens del chat. El backend cierra la conexión
- * cuando el LLM termina; nosotros detectamos eso por `readyState === CLOSED`
- * dentro de `onerror` (EventSource no expone un "onComplete" propio — el
- * cierre limpio del server le llega como error). Diferenciamos cierre limpio
- * vs error real revisando readyState.
+ * Suscribe al stream SSE de tokens del chat.
+ *
+ * Cómo detectamos "fin feliz" vs "error real":
+ *   El backend cierra la conexión cuando el LLM termina. Para EventSource,
+ *   cualquier cierre del server dispara `onerror` — pero contrario a la
+ *   intuición, NO siempre con `readyState === CLOSED`. En la práctica el
+ *   browser pasa a `CONNECTING` (0) primero porque EventSource intenta
+ *   reconectar automáticamente; solo después de varios reintentos termina
+ *   en `CLOSED` (2). Si te quedás esperando a `CLOSED` para considerar
+ *   "done", **siempre** reportás "error" al final de cada respuesta exitosa.
+ *
+ *   Estrategia robusta: si ya recibimos al menos un token y después llega
+ *   `onerror`, asumimos que fue cierre limpio del server post-respuesta.
+ *   Solo reportamos error real cuando `onerror` dispara sin haber recibido
+ *   ningún token (típicamente 404, 401, CORS, network down).
+ *
+ *   Trade-off: si el stream falla MID-respuesta (raro: LLM error después
+ *   del primer token), lo vamos a reportar como "done" en lugar de error.
+ *   Aceptable — el usuario ve respuesta parcial sin Error UX espurio, y
+ *   los errores reales pre-token siguen reportándose.
  *
  * El handle devuelto permite cancelar manualmente la suscripción (por
  * ejemplo, si el componente se desmonta antes de que termine el stream).
@@ -167,6 +182,8 @@ export function subscribeToChat(
   const source = new EventSource(buildChatUrl(query));
 
   let closed = false;
+  let receivedAny = false;
+
   const closeOnce = () => {
     if (closed) return;
     closed = true;
@@ -174,20 +191,20 @@ export function subscribeToChat(
   };
 
   source.onmessage = (event: MessageEvent<string>) => {
+    receivedAny = true;
     handlers.onToken(event.data);
   };
 
   source.onerror = () => {
-    // CONNECTING (0) = reintentando; OPEN (1) = activo; CLOSED (2) = cerrado.
-    // El server cierra la conexión cuando el LLM termina — esto le llega al
-    // browser como un 'error' con readyState=CLOSED. Es el "fin feliz" del
-    // stream, no un error real.
-    if (source.readyState === EventSource.CLOSED) {
-      closeOnce();
+    closeOnce();
+    if (receivedAny) {
+      // Cerramos después de haber recibido tokens → asumimos completion limpio.
+      // EventSource transitions a CONNECTING/CLOSED tras el cierre del server;
+      // no podemos confiar en readyState para distinguir clean vs error.
       handlers.onDone?.();
       return;
     }
-    closeOnce();
+    // No vimos tokens y onerror disparó → error real (404, 401, network down).
     handlers.onError?.(new Error('Chat stream connection error'));
   };
 
