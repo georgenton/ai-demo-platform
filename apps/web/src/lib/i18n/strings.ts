@@ -54,6 +54,8 @@ const STRINGS_ES = {
   'demos.corpus.tagline': 'Tendencias en 500+ tesis',
   'demos.agent.title': 'Agente con datos',
   'demos.agent.tagline': 'Pregunta en español, genera SQL',
+  'demos.tutor.title': 'Tutor de inglés',
+  'demos.tutor.tagline': 'Practica inglés y mira el costo a escala',
 
   // --- Header
   'header.demo': 'Demo',
@@ -254,6 +256,8 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'demos.corpus.tagline': 'Trends across 500+ theses',
   'demos.agent.title': 'Data agent',
   'demos.agent.tagline': 'Ask in plain English, get SQL',
+  'demos.tutor.title': 'English tutor',
+  'demos.tutor.tagline': 'Practice English and see the cost at scale',
 
   'header.demo': 'Demo',
 

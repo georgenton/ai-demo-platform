@@ -3,10 +3,10 @@
 //
 // Es un service "datos planos" — sin dependencias externas, sin red, sin DB.
 // Los tests verifican:
-//   - El catálogo no está vacío y trae los IDs que prometemos en CLAUDE.md
-//     (rag, comparator, corpus, agent).
-//   - Los 4 demos del sprint Demo 03 quedaron en `available` — son los que
-//     se muestran funcionando en la reunión.
+//   - El catálogo trae los IDs del roadmap: los 4 del CLAUDE.md original
+//     (rag, comparator, corpus, agent) + tutor (Demo 05, ADR-0012).
+//   - Los 4 demos cerrados quedan en `available`; tutor en `coming-soon`
+//     mientras dura el sprint Demo 05.
 //   - findOne() devuelve el demo si existe y null si no.
 // -----------------------------------------------------------------------------
 
@@ -18,23 +18,25 @@ describe('DemoRegistryService', () => {
   const service = new DemoRegistryService();
 
   describe('findAll()', () => {
-    it('devuelve los 4 demos del roadmap (rag, comparator, corpus, agent)', () => {
+    it('devuelve los 5 demos del roadmap (rag, comparator, corpus, agent, tutor)', () => {
       const demos = service.findAll();
       const ids = demos.map((d) => d.id);
-      expect(ids).toEqual(['rag', 'comparator', 'corpus', 'agent']);
+      expect(ids).toEqual(['rag', 'comparator', 'corpus', 'agent', 'tutor']);
     });
 
-    it('marca los 4 demos del sprint como available', () => {
-      // Cierre del sprint Demo 03 (2026-05-28): los 4 demos del roadmap
-      // ya tienen UI funcional contra el backend. Si en algún momento se
-      // suma un demo nuevo "coming-soon", este test deja de aplicarse
-      // tal cual y conviene reescribirlo por id.
+    it('marca los 4 demos cerrados como available y tutor como coming-soon', () => {
+      // Sprint Demo 03 (2026-05-28): rag/comparator/corpus/agent quedaron
+      // 'available'. Sprint Demo 05 (en curso): tutor entró al catálogo
+      // como 'coming-soon' para que la UI lo muestre deshabilitado
+      // mientras se construye. Cuando termine el sprint Demo 05, tutor
+      // pasa a 'available' y este test cambia con él.
       const demos = service.findAll();
       const byId = Object.fromEntries(demos.map((d) => [d.id, d.status]));
       expect(byId.rag).toBe('available');
       expect(byId.comparator).toBe('available');
       expect(byId.corpus).toBe('available');
       expect(byId.agent).toBe('available');
+      expect(byId.tutor).toBe('coming-soon');
     });
 
     it('todos los demos traen los campos requeridos por la UI', () => {

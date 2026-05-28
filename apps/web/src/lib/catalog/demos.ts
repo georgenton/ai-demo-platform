@@ -42,6 +42,8 @@ export interface DemoCatalogEntry {
  *     sprint Demo 03 (PRs #42-#46). La versión con Python/FastAPI sigue
  *     siendo el target final, pero la versión con LLM APIs + pgvector
  *     que ya tenemos es suficiente para una demo seria.
+ *   - tutor: 'coming-soon' por ahora — sprint Demo 05 en curso. La UI
+ *     deshabilita la card mientras se construye. Ver ADR-0012.
  */
 export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
   {
@@ -63,6 +65,12 @@ export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
     route: '/demo/corpus',
   },
   { id: 'agent', icon: 'bot', status: 'live', route: '/demo/agent' },
+  {
+    id: 'tutor',
+    icon: 'graduation-cap',
+    status: 'coming-soon',
+    route: '/demo/tutor',
+  },
 ] as const;
 
 /**

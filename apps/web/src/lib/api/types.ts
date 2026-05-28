@@ -15,11 +15,14 @@
 // -----------------------------------------------------------------------------
 
 /**
- * Identificadores de los demos disponibles. Por ahora solo 'rag' (Demo 01).
- * Lo dejamos como union literal para que TypeScript autocomplete y rechace
- * IDs inválidos en tiempo de compilación.
+ * Identificadores de los demos disponibles. Lo dejamos como union literal
+ * para que TypeScript autocomplete y rechace IDs inválidos en tiempo de
+ * compilación.
+ *
+ * 'tutor' (Demo 05) entró como 'coming-soon' — la UI lo muestra
+ * deshabilitado mientras se construye. Ver ADR-0012.
  */
-export type DemoId = 'rag' | 'comparator' | 'corpus' | 'agent';
+export type DemoId = 'rag' | 'comparator' | 'corpus' | 'agent' | 'tutor';
 
 // ---------------------------------------------------------------------------
 // Ingest — POST /api/v1/ingest  (text/JSON)
