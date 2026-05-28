@@ -253,6 +253,11 @@ const STRINGS_ES = {
   'tutor.cost.onprem.caption': 'Costo variable: $0 por consulta',
   'tutor.cost.source':
     'Pricing: ${priceIn}/M input + ${priceOut}/M output · capturado {capturedAt}',
+  'tutor.voice.autoSpeak.label': 'Escuchar respuestas',
+  'tutor.voice.autoSpeak.tip':
+    'Cuando está activo, la app lee en voz alta cada respuesta del tutor (voz nativa del browser, sin API externa).',
+  'tutor.voice.mic.start': 'Hablar (mic encendido)',
+  'tutor.voice.mic.stop': 'Detener mic',
 } as const;
 
 const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
@@ -478,6 +483,11 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'tutor.cost.onprem.caption': 'Variable cost: $0 per query',
   'tutor.cost.source':
     'Pricing: ${priceIn}/M input + ${priceOut}/M output · captured {capturedAt}',
+  'tutor.voice.autoSpeak.label': 'Read replies aloud',
+  'tutor.voice.autoSpeak.tip':
+    "When on, the app reads each tutor reply aloud (browser's native voice, no external API).",
+  'tutor.voice.mic.start': 'Speak (mic on)',
+  'tutor.voice.mic.stop': 'Stop mic',
 };
 
 // ---------------------------------------------------------------------------

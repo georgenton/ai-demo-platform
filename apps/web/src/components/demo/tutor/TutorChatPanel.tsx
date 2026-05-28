@@ -40,6 +40,30 @@ const QUICK_STARTS: Record<TutorScenario, string[]> = {
   ],
 };
 
+/**
+ * Props relacionados con la voz. Es un objeto opcional — si la página no
+ * lo pasa, el panel no renderiza el botón mic ni el switch de auto-speak.
+ *
+ * `supported` representa lo que el browser puede hacer; los handlers son
+ * inertes si el browser no soporta. Mantenemos el switch visible aún si
+ * el reconocimiento no funciona, para que el demo pueda mostrarlo como
+ * "característica disponible" — fade gracioso por el `disabled`.
+ */
+export interface TutorVoiceProps {
+  recognitionSupported: boolean;
+  synthesisSupported: boolean;
+  isListening: boolean;
+  isSpeaking: boolean;
+  /** Texto parcial mientras el usuario habla (preview en el textarea). */
+  interimText: string;
+  /** True = auto-leer la respuesta del tutor cuando termina el stream. */
+  autoSpeak: boolean;
+  voiceError: string | null;
+  onMicToggle: () => void;
+  onAutoSpeakToggle: () => void;
+  onCancelSpeak: () => void;
+}
+
 export interface TutorChatPanelProps {
   history: TutorHistoryTurn[];
   streamingText: string;
@@ -54,6 +78,8 @@ export interface TutorChatPanelProps {
   onSend: () => void;
   onCancel: () => void;
   onReset: () => void;
+  /** Opcional — si no se pasa, el panel se renderiza sin voz. */
+  voice?: TutorVoiceProps;
 }
 
 export function TutorChatPanel({
@@ -70,6 +96,7 @@ export function TutorChatPanel({
   onSend,
   onCancel,
   onReset,
+  voice,
 }: TutorChatPanelProps) {
   const { t } = useT();
   const streamRef = useRef<HTMLDivElement>(null);
@@ -156,15 +183,45 @@ export function TutorChatPanel({
             ))}
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon="rotate-ccw"
-          onClick={onReset}
-          disabled={isStreaming || history.length === 0}
-        >
-          {t('tutor.reset')}
-        </Button>
+        <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+          {voice && voice.synthesisSupported && (
+            <button
+              type="button"
+              onClick={voice.onAutoSpeakToggle}
+              className={`badge ${
+                voice.autoSpeak ? 'badge-accent' : 'badge-neutral'
+              }`}
+              style={{
+                cursor: 'pointer',
+                padding: '4px 10px',
+                fontSize: 12,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                background: voice.autoSpeak ? 'var(--nai-mint-500)' : undefined,
+                color: voice.autoSpeak ? 'var(--nai-navy-900)' : undefined,
+              }}
+              aria-pressed={voice.autoSpeak}
+              title={t('tutor.voice.autoSpeak.tip')}
+            >
+              <Icon
+                name={voice.autoSpeak ? 'volume-2' : 'volume-x'}
+                size={14}
+                strokeWidth={2}
+              />
+              {t('tutor.voice.autoSpeak.label')}
+            </button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="rotate-ccw"
+            onClick={onReset}
+            disabled={isStreaming || history.length === 0}
+          >
+            {t('tutor.reset')}
+          </Button>
+        </div>
       </div>
 
       {/* Chat stream */}
@@ -200,7 +257,13 @@ export function TutorChatPanel({
             <textarea
               className="chat-composer-input"
               placeholder={t('tutor.composer.placeholder')}
-              value={inputValue}
+              value={
+                voice?.isListening && voice.interimText
+                  ? inputValue
+                    ? inputValue + ' ' + voice.interimText
+                    : voice.interimText
+                  : inputValue
+              }
               onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -211,6 +274,40 @@ export function TutorChatPanel({
               rows={1}
               disabled={isStreaming}
             />
+            {voice && voice.recognitionSupported && (
+              <button
+                type="button"
+                className="send-btn"
+                onClick={voice.onMicToggle}
+                disabled={isStreaming}
+                aria-pressed={voice.isListening}
+                aria-label={
+                  voice.isListening
+                    ? t('tutor.voice.mic.stop')
+                    : t('tutor.voice.mic.start')
+                }
+                title={
+                  voice.isListening
+                    ? t('tutor.voice.mic.stop')
+                    : t('tutor.voice.mic.start')
+                }
+                style={{
+                  background: voice.isListening
+                    ? 'var(--color-danger)'
+                    : undefined,
+                  color: voice.isListening
+                    ? 'var(--color-on-danger, #fff)'
+                    : undefined,
+                  marginRight: 6,
+                }}
+              >
+                <Icon
+                  name={voice.isListening ? 'mic-off' : 'mic'}
+                  size={16}
+                  strokeWidth={2}
+                />
+              </button>
+            )}
             <button
               type={isStreaming ? 'button' : 'submit'}
               className="send-btn"
@@ -241,6 +338,20 @@ export function TutorChatPanel({
           </div>
         </form>
       </div>
+
+      {voice?.voiceError && (
+        <div
+          style={{
+            padding: 12,
+            background: 'var(--color-danger-soft)',
+            color: 'var(--color-danger)',
+            borderRadius: 8,
+            fontSize: 13,
+          }}
+        >
+          {voice.voiceError}
+        </div>
+      )}
 
       {errorMessage && (
         <div
