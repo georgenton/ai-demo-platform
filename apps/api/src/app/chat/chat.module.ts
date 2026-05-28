@@ -36,5 +36,9 @@ import { ChatService } from './chat.service.js';
       useFactory: (): PromptBuilder => new PromptBuilder(),
     },
   ],
+  // CorpusModule (Demo 03) reusa ChatService para search semántico sobre
+  // el corpus (es exactamente el mismo flujo del RAG, solo cambia
+  // `demoId='corpus'` como filtro de vector search).
+  exports: [ChatService],
 })
 export class ChatModule {}
