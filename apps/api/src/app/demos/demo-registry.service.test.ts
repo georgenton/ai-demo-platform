@@ -5,7 +5,8 @@
 // Los tests verifican:
 //   - El catálogo no está vacío y trae los IDs que prometemos en CLAUDE.md
 //     (rag, comparator, corpus, agent).
-//   - Demo 01 (rag) está marcado como `available` — es el que se presenta.
+//   - Los 4 demos del sprint Demo 03 quedaron en `available` — son los que
+//     se muestran funcionando en la reunión.
 //   - findOne() devuelve el demo si existe y null si no.
 // -----------------------------------------------------------------------------
 
@@ -23,13 +24,17 @@ describe('DemoRegistryService', () => {
       expect(ids).toEqual(['rag', 'comparator', 'corpus', 'agent']);
     });
 
-    it('marca a Demo 01 (rag) como available y al resto como coming-soon', () => {
+    it('marca los 4 demos del sprint como available', () => {
+      // Cierre del sprint Demo 03 (2026-05-28): los 4 demos del roadmap
+      // ya tienen UI funcional contra el backend. Si en algún momento se
+      // suma un demo nuevo "coming-soon", este test deja de aplicarse
+      // tal cual y conviene reescribirlo por id.
       const demos = service.findAll();
       const byId = Object.fromEntries(demos.map((d) => [d.id, d.status]));
       expect(byId.rag).toBe('available');
-      expect(byId.comparator).toBe('coming-soon');
-      expect(byId.corpus).toBe('coming-soon');
-      expect(byId.agent).toBe('coming-soon');
+      expect(byId.comparator).toBe('available');
+      expect(byId.corpus).toBe('available');
+      expect(byId.agent).toBe('available');
     });
 
     it('todos los demos traen los campos requeridos por la UI', () => {

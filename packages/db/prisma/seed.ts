@@ -16,7 +16,13 @@
 //   - Cada inscripción que tiene `final` registrado pasa a `status=completed`.
 //
 // Cómo correr:
-//   npm run db:seed
+//   Local:    npm run db:seed
+//   Railway:  npm run db:seed:railway   (requiere `railway login` + `railway link`)
+//
+// El script `:railway` corre `railway run` para inyectar las variables del
+// proyecto y resuelve DATABASE_URL ← DATABASE_PUBLIC_URL cuando existe
+// (Railway expone la URL pública con ese nombre; la interna solo funciona
+// dentro del contenedor).
 //
 // Idempotencia: borramos todo lo del schema académico ANTES de re-sembrar.
 // No tocamos Document/Chunk — esos son del Demo 01.

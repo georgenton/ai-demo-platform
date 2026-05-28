@@ -196,8 +196,24 @@ npm run db:seed:demos
 > manualmente al curl. Lo simple: subí los 6 PDFs vía UI desde la demo
 > autenticada (`/demo/rag` upload + `/demo/comparator` upload).
 
-El seed académico (Demo 04) ya corre automático en el `migrate deploy`
-del Dockerfile — los 50 estudiantes ya están cuando el backend arranca.
+El seed académico (Demo 04) corre automático en cada arranque del
+backend — el `CMD` del Dockerfile encadena `migrate deploy` + `tsx
+seed.ts` + `node main.js`, así que cuando Railway termina de
+deployar ya hay 50 estudiantes, 10 cursos y ~1700 grades listos en la
+DB. Es idempotente (PRNG seedeado), así que cada deploy regenera
+exactamente los mismos datos.
+
+Si necesitas re-sembrar manualmente sin re-deployar (ej. después de
+limpiar la DB a mano):
+
+```bash
+# Requiere `railway login` + `railway link` una sola vez.
+npm run db:seed:railway
+```
+
+El script resuelve `DATABASE_URL ← DATABASE_PUBLIC_URL` cuando existe,
+porque la URL interna (`postgres.railway.internal`) solo funciona
+dentro del contenedor.
 
 ---
 
