@@ -7,7 +7,7 @@ demo se nos vaya de las manos si algo falla.
 
 > Esto **no** es un script para leer literal. Es un mapa: qué orden
 > seguir, qué clickear, qué decir mientras streama el LLM, y qué
-> responder cuando el cliente pregunte algo difícil. Adaptá el tono al
+> responder cuando el cliente pregunte algo difícil. Adapta el tono al
 > interlocutor (rectorado vs. CIO vs. legal).
 
 ---
@@ -16,14 +16,14 @@ demo se nos vaya de las manos si algo falla.
 
 ### T-30 min — checklist técnico
 
-Corré esto en la máquina que va a proyectar:
+Corre esto en la máquina que va a proyectar:
 
 ```bash
 # Stack arriba con todo el contenido pre-cargado
 npm run demo:start
 ```
 
-El script tarda ~60s. Cuando termina, mostrá los tres URLs:
+El script tarda ~60s. Cuando termina, muestra los tres URLs:
 
 - Frontend: <http://localhost:4200>
 - Backend: <http://localhost:3000/api/v1>
@@ -36,18 +36,18 @@ inválidas en `.env` — el script lo dice claro cuando pasa.
 
 ### T-5 min — preparación del escenario
 
-1. **Cerrá pestañas distractoras.** El cliente solo debe ver la app y
+1. **Cierra pestañas distractoras.** El cliente solo debe ver la app y
    máximo una pestaña de "fuentes" si quieres mostrar un PDF original.
 2. **Modo claro** en el sistema. La app soporta dark mode pero la demo
    se ve más limpia en light, y los PDFs proyectan mejor.
-3. **Abrí estas pestañas, en este orden** (de izquierda a derecha):
+3. **Abre estas pestañas, en este orden** (de izquierda a derecha):
    - `http://localhost:4200` — landing
    - `http://localhost:4200/demo/rag` — Demo 01
    - `http://localhost:4200/demo/comparator` — Demo 02
    - `http://localhost:4200/demo/agent` — Demo 04
    - `http://localhost:4200/demo/corpus` — Demo 03
 4. **Zoom del navegador al 110–125%.** En proyector el default es chico.
-5. **Silenciá notificaciones** del sistema. Slack, mail, calendarios.
+5. **Silencia notificaciones** del sistema. Slack, mail, calendarios.
    Una notificación en el medio de un stream rompe el momento.
 
 ### Si el último ensayo dejó la DB sucia
@@ -134,18 +134,18 @@ Jorge toma el control de la pantalla.
 
 | #   | Acción                                                                  | Qué decir mientras pasa                                                                                                                                                                |
 | --- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Señalá el panel derecho con los 3 documentos                            | "Esto es lo que la institución cargó: el reglamento, el manual de matrículas, una política. Pueden ser cientos de docs — para la demo dejamos tres."                                   |
-| 2   | Clickeá la pill **"¿Cuál es el horario de matrícula?"**                 | "Esto es como Ctrl+F pero por significado, no por palabra exacta. El sistema busca los fragmentos relevantes en los documentos, los pasa al modelo, y el modelo responde citando."     |
-| 3   | Esperá el streaming                                                     | "Lo que ven ahora — el texto apareciendo — es el modelo generando token por token. No es animación; es la respuesta real, en tiempo real. Igual que ChatGPT, pero esto corre on-prem." |
-| 4   | Cuando termina, scrolleá a las **fuentes** (sección bajo la respuesta)  | "Acá ven cada fragmento que se usó para componer la respuesta, con el nombre del documento original y la posición. Auditable: cualquier persona puede ir al PDF original a verificar." |
-| 5   | (Opcional) clickeá la pill **"¿Qué dice sobre propiedad intelectual?"** | "Ahora hace lo mismo contra otro documento. No necesité decirle 'busca en propiedad intelectual' — entiende la intención por el contenido de la pregunta."                             |
+| 1   | Señala el panel derecho con los 3 documentos                            | "Esto es lo que la institución cargó: el reglamento, el manual de matrículas, una política. Pueden ser cientos de docs — para la demo dejamos tres."                                   |
+| 2   | Clickea la pill **"¿Cuál es el horario de matrícula?"**                 | "Esto es como Ctrl+F pero por significado, no por palabra exacta. El sistema busca los fragmentos relevantes en los documentos, los pasa al modelo, y el modelo responde citando."     |
+| 3   | Espera el streaming                                                     | "Lo que ven ahora — el texto apareciendo — es el modelo generando token por token. No es animación; es la respuesta real, en tiempo real. Igual que ChatGPT, pero esto corre on-prem." |
+| 4   | Cuando termina, scrollea a las **fuentes** (sección bajo la respuesta)  | "Acá ven cada fragmento que se usó para componer la respuesta, con el nombre del documento original y la posición. Auditable: cualquier persona puede ir al PDF original a verificar." |
+| 5   | (Opcional) clickea la pill **"¿Qué dice sobre propiedad intelectual?"** | "Ahora hace lo mismo contra otro documento. No necesité decirle 'busca en propiedad intelectual' — entiende la intención por el contenido de la pregunta."                             |
 
 ### Las 3 preguntas pre-cargadas
 
 | Pregunta                               | Qué destacar de la respuesta                                                                |
 | -------------------------------------- | ------------------------------------------------------------------------------------------- |
-| ¿Cuál es el horario de matrícula?      | Cita literal del manual + el rango de fechas. Mostrá las fuentes.                           |
-| ¿Cómo se solicita una recalificación?  | Proceso paso a paso reconstruido a partir del reglamento. Notá que **sintetiza**, no copia. |
+| ¿Cuál es el horario de matrícula?      | Cita literal del manual + el rango de fechas. Muestra las fuentes.                          |
+| ¿Cómo se solicita una recalificación?  | Proceso paso a paso reconstruido a partir del reglamento. Nota que **sintetiza**, no copia. |
 | ¿Qué dice sobre propiedad intelectual? | Resume la política en lenguaje accesible. Útil para pregunta a personal no-jurídico.        |
 
 ### Cómo cerrar este bloque
@@ -170,15 +170,15 @@ tercero es ruido intencional para mostrar que el operador elige.
 
 ### Flujo paso a paso
 
-| #   | Acción                                                                         | Qué decir                                                                                                                                   |
-| --- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Señalá los 3 contratos disponibles                                             | "Tres contratos. Vamos a comparar los dos primeros — son las ofertas competidoras de un mismo proyecto."                                    |
-| 2   | Selecciona **Contrato A** y **Contrato B** (checkboxes)                        | (silencio mientras seleccionas)                                                                                                             |
-| 3   | Mostrá las **dimensiones** ya cargadas: "Plazos de entrega" + "Penalizaciones" | "Las dimensiones de comparación son configurables — el equipo legal define qué le importa contrastar. Hoy dejamos plazos y penalizaciones." |
-| 4   | (Opcional) sumá una tercera dimensión: **"Forma de pago"**                     | "Puedo sumar dimensiones en el momento. El cliente las define con sus criterios."                                                           |
-| 5   | Clickeá **Comparar**                                                           | "Va a leer los dos contratos, extraer lo que dice cada uno por dimensión, y armar la tabla."                                                |
-| 6   | Mientras streama                                                               | "Otra vez, streaming en vivo. La salida es markdown estructurado — el legal lo puede pegar en Word o exportar."                             |
-| 7   | Cuando termina                                                                 | Scrolleá la tabla comparativa. Marcá una diferencia concreta (plazo o penalización).                                                        |
+| #   | Acción                                                                          | Qué decir                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Señala los 3 contratos disponibles                                              | "Tres contratos. Vamos a comparar los dos primeros — son las ofertas competidoras de un mismo proyecto."                                    |
+| 2   | Selecciona **Contrato A** y **Contrato B** (checkboxes)                         | (silencio mientras seleccionas)                                                                                                             |
+| 3   | Muestra las **dimensiones** ya cargadas: "Plazos de entrega" + "Penalizaciones" | "Las dimensiones de comparación son configurables — el equipo legal define qué le importa contrastar. Hoy dejamos plazos y penalizaciones." |
+| 4   | (Opcional) suma una tercera dimensión: **"Forma de pago"**                      | "Puedo sumar dimensiones en el momento. El cliente las define con sus criterios."                                                           |
+| 5   | Clickea **Comparar**                                                            | "Va a leer los dos contratos, extraer lo que dice cada uno por dimensión, y armar la tabla."                                                |
+| 6   | Mientras streama                                                                | "Otra vez, streaming en vivo. La salida es markdown estructurado — el legal lo puede pegar en Word o exportar."                             |
+| 7   | Cuando termina                                                                  | Scrollea la tabla comparativa. Marca una diferencia concreta (plazo o penalización).                                                        |
 
 ### Dimensiones disponibles en la UI
 
@@ -223,23 +223,23 @@ miniatura de un sistema académico real.
 
 | #   | Acción                                                                               | Qué decir                                                                                                                                                                           |
 | --- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Mostrá el panel izquierdo con las preguntas sugeridas                                | "Pre-cargué 6 preguntas típicas. Funcionan todas — para la demo voy con 3."                                                                                                         |
-| 2   | Clickeá **"¿Cuántos estudiantes hay en total?"** (la más simple)                     | "Empezamos por la fácil — para que entiendan el ciclo completo."                                                                                                                    |
-| 3   | Mostrá el panel central                                                              | "Acá ven los pasos: 1) el modelo recibe la pregunta, 2) genera el SQL, 3) el SQL se valida (solo SELECT, sin escrituras), 4) se ejecuta, 5) el modelo arma la respuesta natural."   |
-| 4   | Apuntá al **SQL generado** (visible en el log de pasos)                              | "Esto es el SQL real que se ejecutó. Auditable, revisable. Si el equipo de IT quiere ver qué hace el agente, está acá. Nada de cajas negras."                                       |
-| 5   | Clickeá **"¿Cuántos estudiantes reprobaron Cálculo II en 2025-1?"**                  | "Ahora algo concreto: una pregunta operativa del día a día. El modelo entiende 'Cálculo II', '2025-1', y arma el SQL apropiado."                                                    |
-| 6   | Clickeá **"¿Hay materias donde la mayoría aprobó parciales pero reprobó el final?"** | "Esta es la que muestra el valor. Es una pregunta que un decano hace en una reunión, y normalmente requiere que alguien escriba SQL a mano. Acá la respuesta llega en 10 segundos." |
+| 1   | Muestra el panel izquierdo con las preguntas sugeridas                               | "Pre-cargué 6 preguntas típicas. Funcionan todas — para la demo voy con 3."                                                                                                         |
+| 2   | Clickea **"¿Cuántos estudiantes hay en total?"** (la más simple)                     | "Empezamos por la fácil — para que entiendan el ciclo completo."                                                                                                                    |
+| 3   | Muestra el panel central                                                             | "Acá ven los pasos: 1) el modelo recibe la pregunta, 2) genera el SQL, 3) el SQL se valida (solo SELECT, sin escrituras), 4) se ejecuta, 5) el modelo arma la respuesta natural."   |
+| 4   | Apunta al **SQL generado** (visible en el log de pasos)                              | "Esto es el SQL real que se ejecutó. Auditable, revisable. Si el equipo de IT quiere ver qué hace el agente, está acá. Nada de cajas negras."                                       |
+| 5   | Clickea **"¿Cuántos estudiantes reprobaron Cálculo II en 2025-1?"**                  | "Ahora algo concreto: una pregunta operativa del día a día. El modelo entiende 'Cálculo II', '2025-1', y arma el SQL apropiado."                                                    |
+| 6   | Clickea **"¿Hay materias donde la mayoría aprobó parciales pero reprobó el final?"** | "Esta es la que muestra el valor. Es una pregunta que un decano hace en una reunión, y normalmente requiere que alguien escriba SQL a mano. Acá la respuesta llega en 10 segundos." |
 
 ### Cuidados al presentar
 
-- **Mencioná el guard explícitamente.** El cliente va a preguntar por
-  seguridad — anticipá: _"El agente solo puede generar SELECT. UPDATE,
+- **Menciona el guard explícitamente.** El cliente va a preguntar por
+  seguridad — anticipa: _"El agente solo puede generar SELECT. UPDATE,
   DELETE, DROP, INSERT — todo bloqueado en el validador antes de
   ejecutar."_
-- **No prometás SQL ilimitado.** Si el cliente pregunta "¿puede hacer
+- **No prometas SQL ilimitado.** Si el cliente pregunta "¿puede hacer
   cualquier query?" la respuesta es: _"Puede leer cualquier tabla que
   ustedes le expongan; nada más."_
-- **Si una pregunta falla en vivo**, no entres en pánico. Decí: _"El
+- **Si una pregunta falla en vivo**, no entres en pánico. Di: _"El
   modelo a veces necesita ajuste fino con el esquema real del cliente
   — esto es exactamente lo que afinamos en la implementación."_
 
@@ -264,7 +264,7 @@ ecuatorianos pre-cargados (de SciELO, repositorio UCE, ESPOL, EPN o
 medRxiv). Cargarlos antes de la reunión — el upload procesa secuencial
 y tarda ~1-2 min por paper porque el LLM extrae título, año, autores y
 tópicos de cada uno. Cómo cargar: ver §3 del [runbook de
-deploy](./runbook-deploy.md) o usá la lista curada del último PR del
+deploy](./runbook-deploy.md) o usa la lista curada del último PR del
 sprint Demo 03.
 
 ### El concepto que hay que sembrar primero
@@ -277,14 +277,14 @@ sprint Demo 03.
 
 ### Flujo paso a paso
 
-| #   | Acción                                                                                                          | Qué decir mientras pasa                                                                                                                                                                                                                                                   |
-| --- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Señalá las cards arriba: total de papers, gráfico de papers por año, tópicos dominantes                         | "Estos números salen del corpus que ya cargamos. El gráfico de la izquierda muestra cuántos papers tenemos por año — sirve para ver cobertura temporal. La lista de la derecha son los tópicos que el sistema extrajo de cada paper, agregados por frecuencia."           |
-| 2   | Scrolleá a la lista de papers y mostrá un par de entradas con título, año, autor y chips de tópicos             | "Cada paper trae su metadata extraída automáticamente — el sistema lee el PDF, identifica título, año, autores y propone 3-5 tópicos. Sin etiquetado manual."                                                                                                             |
-| 3   | Volvé arriba y clickeá la pill **"¿Qué temas emergen en los últimos años?"** en el cuadro de búsqueda semántica | "Esta es la búsqueda semántica del corpus. Misma idea que el Demo 01, pero ahora el sistema busca a través de todo lo que cargamos, no en un solo documento."                                                                                                             |
-| 4   | Esperá el streaming de la respuesta — el LLM cita pasajes concretos de varios papers                            | "Notar que cita pasajes concretos de varios papers diferentes — el sistema encontró fragmentos relevantes en distintas tesis y los integra en una sola respuesta sintética."                                                                                              |
-| 5   | Bajá al panel **"Resumen ejecutivo del corpus"** y clickeá **Generar resumen**                                  | "Esta es la pieza más interesante para gestión académica. El sistema va a hacer un map-reduce: primero resume cada paper individualmente, después con todos los resúmenes en mano redacta un panorama de 2-3 párrafos del estado del arte. Tarda ~30-60s la primera vez." |
-| 6   | Mientras se genera, cuenta qué está pasando server-side; cuando aparece el resumen, léelo en voz alta           | "Esto es lo que un decano de investigación tarda días en armar a mano. Acá lo tienen en un minuto, con la posibilidad de regenerarlo cuando se cargan papers nuevos."                                                                                                     |
+| #   | Acción                                                                                                           | Qué decir mientras pasa                                                                                                                                                                                                                                                   |
+| --- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Señala las cards arriba: total de papers, gráfico de papers por año, tópicos dominantes                          | "Estos números salen del corpus que ya cargamos. El gráfico de la izquierda muestra cuántos papers tenemos por año — sirve para ver cobertura temporal. La lista de la derecha son los tópicos que el sistema extrajo de cada paper, agregados por frecuencia."           |
+| 2   | Scrollea a la lista de papers y muestra un par de entradas con título, año, autor y chips de tópicos             | "Cada paper trae su metadata extraída automáticamente — el sistema lee el PDF, identifica título, año, autores y propone 3-5 tópicos. Sin etiquetado manual."                                                                                                             |
+| 3   | Vuelve arriba y clickea la pill **"¿Qué temas emergen en los últimos años?"** en el cuadro de búsqueda semántica | "Esta es la búsqueda semántica del corpus. Misma idea que el Demo 01, pero ahora el sistema busca a través de todo lo que cargamos, no en un solo documento."                                                                                                             |
+| 4   | Espera el streaming de la respuesta — el LLM cita pasajes concretos de varios papers                             | "Notar que cita pasajes concretos de varios papers diferentes — el sistema encontró fragmentos relevantes en distintas tesis y los integra en una sola respuesta sintética."                                                                                              |
+| 5   | Baja al panel **"Resumen ejecutivo del corpus"** y clickea **Generar resumen**                                   | "Esta es la pieza más interesante para gestión académica. El sistema va a hacer un map-reduce: primero resume cada paper individualmente, después con todos los resúmenes en mano redacta un panorama de 2-3 párrafos del estado del arte. Tarda ~30-60s la primera vez." |
+| 6   | Mientras se genera, cuenta qué está pasando server-side; cuando aparece el resumen, léelo en voz alta            | "Esto es lo que un decano de investigación tarda días en armar a mano. Acá lo tienen en un minuto, con la posibilidad de regenerarlo cuando se cargan papers nuevos."                                                                                                     |
 
 ### Preguntas pre-cargadas que funcionan bien
 
@@ -444,13 +444,13 @@ Edguitar retoma. Tres cosas:
 
 ### A) Si algo se rompe en vivo
 
-| Síntoma                                               | Qué hacer                                                                                                                                                                                                                              |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| El chat queda en "streaming" para siempre             | API keys probablemente vencidas. **No intentes resolver en vivo.** Decí: _"Tenemos un problema de conectividad puntual con el proveedor de modelo de desarrollo — déjame mostrarles el siguiente demo y volvemos."_ Pasá al siguiente. |
-| El frontend muestra "Failed to fetch"                 | El backend se cayó. Igual que arriba — pasá al siguiente. Después de la reunión: `tail -n 50 /tmp/demo-api.log`.                                                                                                                       |
-| Una pregunta sugerida devuelve respuesta vacía o rara | _"Esto se afina con los documentos reales del cliente — usamos contenido de prueba para la demo."_ Pasá a la siguiente pregunta.                                                                                                       |
-| El comparator devuelve markdown sin formato           | El frontend no terminó de renderizar — esperá 2s más. Si no, refrescá la página (`Cmd+R`). Tenés que retomar la selección de contratos.                                                                                                |
-| El sistema entero está lento                          | Probablemente otro proceso está saturando el M1. Cerrá apps innecesarias y refrescá. **Nunca** intentes reiniciar el stack en vivo — son 60 segundos de pantalla en blanco.                                                            |
+| Síntoma                                               | Qué hacer                                                                                                                                                                                                                            |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| El chat queda en "streaming" para siempre             | API keys probablemente vencidas. **No intentes resolver en vivo.** Di: _"Tenemos un problema de conectividad puntual con el proveedor de modelo de desarrollo — déjame mostrarles el siguiente demo y volvemos."_ Pasa al siguiente. |
+| El frontend muestra "Failed to fetch"                 | El backend se cayó. Igual que arriba — pasa al siguiente. Después de la reunión: `tail -n 50 /tmp/demo-api.log`.                                                                                                                     |
+| Una pregunta sugerida devuelve respuesta vacía o rara | _"Esto se afina con los documentos reales del cliente — usamos contenido de prueba para la demo."_ Pasa a la siguiente pregunta.                                                                                                     |
+| El comparator devuelve markdown sin formato           | El frontend no terminó de renderizar — espera 2s más. Si no, refresca la página (`Cmd+R`). Tienes que retomar la selección de contratos.                                                                                             |
+| El sistema entero está lento                          | Probablemente otro proceso está saturando el M1. Cierra apps innecesarias y refresca. **Nunca** intentes reiniciar el stack en vivo — son 60 segundos de pantalla en blanco.                                                         |
 
 ### B) Cheatsheet de comandos
 
