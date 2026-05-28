@@ -30,19 +30,31 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# Layer cacheable: solo lockfile + package.json. Si no cambian, npm ci no
-# se reejecuta entre builds.
+# Layer cacheable: lockfile + TODOS los package.json del workspace. Si
+# ninguno cambia, npm ci no se reejecuta entre builds.
+#
+# Importante: con `npm workspaces`, `npm ci` necesita ver los package.json
+# de cada workspace para instalar sus deps. Si solo copio el root,
+# `npm ci` se saltea las deps de los packages (ej. @anthropic-ai/sdk y
+# openai en @org/llm-adapter), el build TS de los packages falla con
+# "Cannot find module @anthropic-ai/sdk". Hay que listar uno por uno —
+# COPY no soporta wildcards en paths intermedios.
 COPY package*.json ./
 COPY nx.json tsconfig.base.json ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/db/package.json packages/db/
+COPY packages/llm-adapter/package.json packages/llm-adapter/
+COPY packages/rag-core/package.json packages/rag-core/
 
 # `npm ci --ignore-scripts`: instala deps SIN correr el postinstall del root
 # (que llama a `prisma generate --schema packages/db/prisma/schema.prisma`).
 # A esta altura del Dockerfile el schema todavía NO está copiado, así que
 # correr postinstall acá falla con "file or directory not found".
 #
-# Es deliberado mantener este split — el `npm ci` queda cacheable por el
-# lockfile, y `prisma generate` se ejecuta abajo cuando ya tenemos todo
-# el repo en el filesystem.
+# Es deliberado mantener este split — el `npm ci` queda cacheable por los
+# package.json, y `prisma generate` se ejecuta abajo cuando ya tenemos
+# todo el repo en el filesystem.
 RUN npm ci --ignore-scripts
 
 # Ahora sí el resto del repo. .dockerignore filtra lo que no necesitamos.
