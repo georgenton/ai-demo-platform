@@ -77,7 +77,7 @@ export function PapersByYearChart({ data }: PapersByYearChartProps) {
                   fontSize: 12,
                 }}
                 labelStyle={{ color: 'var(--color-fg)', fontWeight: 600 }}
-                formatter={(value: number) => [value, t('corpus.chart.papers')]}
+                formatter={(value) => [String(value), t('corpus.chart.papers')]}
               />
               <Bar
                 dataKey="count"
