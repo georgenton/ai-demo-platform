@@ -41,5 +41,9 @@ import { PdfTextExtractor } from './pdf-text-extractor.js';
       useFactory: (): VectorStore => new VectorStore(),
     },
   ],
+  // CorpusModule (Demo 03) reusa la maquinaria de ingest para procesar
+  // papers académicos antes de extraerles metadata via LLM. Exportamos
+  // IngestService y PdfTextExtractor para que sean inyectables ahí.
+  exports: [IngestService, PdfTextExtractor],
 })
 export class IngestModule {}

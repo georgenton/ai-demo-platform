@@ -33,17 +33,62 @@ datasource db {
 
 /// Un documento institucional subido por el usuario (PDF, Word, contrato…).
 /// Guardamos el contenido completo + sus chunks para hacer RAG.
+///
+/// Los campos `year`, `authors`, `abstract` y la relación `topics` son
+/// usados SOLO por el Demo 03 (Corpus académico) — son opcionales para
+/// no afectar el resto de los demos (rag/comparator). El servicio de
+/// corpus los popula vía extracción LLM al momento de ingest; los demás
+/// servicios pueden seguir creando Documents sin tocarlos.
 model Document {
   id        String   @id @default(cuid())
   name      String // nombre original del archivo subido
   content   String // texto completo extraído (sin chunking)
-  demoId    String // a qué demo pertenece: 'rag', 'comparator', ...
+  demoId    String // a qué demo pertenece: 'rag', 'comparator', 'corpus', ...
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt // se actualiza solo en cada UPDATE
   chunks    Chunk[] // relación 1→N con sus fragmentos
 
+  // --- Metadata de corpus (Demo 03) — null para docs de otros demos ---
+  /// Año de publicación extraído por LLM del texto del paper. Null si el
+  /// LLM no encontró un año claro en el texto.
+  year      Int?
+  /// Autores extraídos por LLM. Array Postgres nativo. Vacío si no se
+  /// encontraron autores.
+  authors   String[] @default([])
+  /// Resumen / abstract del paper si el LLM lo identifica claramente.
+  abstract  String?
+
+  topics DocumentTopic[]
+
   // Filtrar documentos por demo será una consulta frecuente: índice explícito.
   @@index([demoId])
+  // Filtrar/agrupar por año para el gráfico de papers-by-year del Demo 03.
+  // Parcial implícito: docs sin year (otros demos) no inflan el índice.
+  @@index([demoId, year])
+}
+
+/// Tópico extraído por LLM de un Document del corpus. Cada paper tiene
+/// típicamente 3-5 tópicos (palabras o frases cortas en español). Sirven
+/// para el "Top tópicos" del Demo 03 — agregamos COUNT por topic.
+///
+/// Por qué tabla aparte y no array de strings en Document:
+///   - Permite COUNT y GROUP BY eficiente con índice en `topic`.
+///   - Más adelante podemos sumarle metadata por tópico (confidence del LLM,
+///     centroid de embedding) sin volver a migrar Document.
+model DocumentTopic {
+  id         String   @id @default(cuid())
+  documentId String
+  /// Topic en español, lowercased, una o dos palabras. Ej: "educación",
+  /// "machine learning", "salud pública". El servicio normaliza al insertar.
+  topic      String
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // Para "top tópicos" del corpus: SELECT topic, COUNT(*) GROUP BY topic.
+  @@index([topic])
+  // Para listar tópicos de un paper específico.
+  @@index([documentId])
 }
 
 /// Un fragmento de un Document. Cada Chunk será embebido como vector más
