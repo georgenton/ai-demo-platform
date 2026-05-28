@@ -44,7 +44,12 @@ const MAX_DIMENSIONS = 10;
 
 export default function DemoComparatorPage() {
   const { t, lang } = useT();
-  const { documents, status: docsStatus, refresh } = useDocuments(DEMO_ID);
+  const {
+    documents,
+    status: docsStatus,
+    refresh,
+    remove,
+  } = useDocuments(DEMO_ID);
   const { text, status: streamStatus, start } = useCompareStream();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -154,6 +159,15 @@ export default function DemoComparatorPage() {
                       selected={selected}
                       onToggle={() => toggleDoc(doc.id)}
                       disabled={atCap}
+                      onDelete={() => {
+                        // Si el doc estaba seleccionado, lo quitamos
+                        // primero — sino quedaría un id huérfano en
+                        // selectedIds tras el delete.
+                        setSelectedIds((ids) =>
+                          ids.filter((x) => x !== doc.id),
+                        );
+                        void remove(doc.id);
+                      }}
                     />
                   );
                 })

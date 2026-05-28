@@ -2,16 +2,21 @@
 // PapersList — tabla compacta de papers del corpus con paginación.
 //
 // Cada fila: nombre, año, autores (primer autor + et al. si hay varios),
-// tópicos como chips. Click en fila aún no hace nada (futuro: drawer con
-// el abstract).
+// tópicos como chips, y botón de eliminar a la derecha. El delete usa
+// optimistic UI local + refetch tras la confirmación del backend.
 // -----------------------------------------------------------------------------
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
 
 import { Button, Card, Eyebrow, EmptyState, Icon } from '@/components/ui';
-import { useCorpusPapers, type CorpusPaperItem } from '@/lib/api';
+import {
+  ApiError,
+  deleteDocument,
+  useCorpusPapers,
+  type CorpusPaperItem,
+} from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
 const PAGE_SIZE = 10;
@@ -19,9 +24,15 @@ const PAGE_SIZE = 10;
 export interface PapersListProps {
   /** Espejado para que la página padre pueda invalidar cuando hace upload. */
   refreshKey?: number;
+  /**
+   * Callback que se dispara cuando el usuario borra un paper de la lista.
+   * La página padre lo usa para invalidar las stats (total, charts) que
+   * viven en un hook distinto.
+   */
+  onPaperDeleted?: () => void;
 }
 
-export function PapersList({ refreshKey }: PapersListProps) {
+export function PapersList({ refreshKey, onPaperDeleted }: PapersListProps) {
   const { t } = useT();
   const { data, status, error, setQuery, refetch } = useCorpusPapers({
     limit: PAGE_SIZE,
@@ -129,7 +140,19 @@ export function PapersList({ refreshKey }: PapersListProps) {
             }}
           >
             {data.items.map((paper) => (
-              <PaperRow key={paper.id} paper={paper} />
+              <PaperRow
+                key={paper.id}
+                paper={paper}
+                onDeleted={() => {
+                  // Tras un delete exitoso refrescamos la lista local
+                  // y notificamos al padre para que invalide las stats
+                  // (total, papersByYear, topTopics). Si el delete
+                  // falla, PaperRow restaura el estado y muestra error
+                  // inline.
+                  refetch();
+                  onPaperDeleted?.();
+                }}
+              />
             ))}
           </ul>
 
@@ -168,10 +191,17 @@ export function PapersList({ refreshKey }: PapersListProps) {
 
 interface PaperRowProps {
   paper: CorpusPaperItem;
+  /** Notifica al padre tras un delete exitoso para que invalide la lista. */
+  onDeleted: () => void;
 }
 
-function PaperRow({ paper }: PaperRowProps) {
+function PaperRow({ paper, onDeleted }: PaperRowProps) {
   const { t } = useT();
+  const [deleting, setDeleting] = useState(false);
+  // `removed` = optimistic UI: ocultamos la fila localmente apenas el
+  // usuario clickea. Si el backend falla, restauramos.
+  const [removed, setRemoved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const authorsLine =
     paper.authors.length === 0
@@ -179,6 +209,29 @@ function PaperRow({ paper }: PaperRowProps) {
       : paper.authors.length === 1
         ? paper.authors[0]
         : `${paper.authors[0]} ${t('corpus.list.etAl')}`;
+
+  async function handleDelete(e: MouseEvent<HTMLButtonElement>) {
+    e.stopPropagation();
+    if (deleting) return;
+    setDeleting(true);
+    setRemoved(true);
+    setError(null);
+    try {
+      await deleteDocument(paper.id);
+      onDeleted();
+    } catch (err) {
+      // Restauramos la fila para que el usuario vea el error en contexto.
+      setRemoved(false);
+      const message = err instanceof ApiError ? err.message : String(err);
+      setError(message);
+
+      console.warn(`Falló delete de "${paper.name}":`, message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (removed) return null;
 
   return (
     <li
@@ -258,12 +311,60 @@ function PaperRow({ paper }: PaperRowProps) {
         )}
       </div>
 
-      <Icon
-        name="file-text"
-        size={16}
-        className="demo-item-icon"
-        style={{ color: 'var(--color-fg-muted)' }}
-      />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: 4,
+        }}
+      >
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          aria-label={t('rag.delete')}
+          title={t('rag.delete')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            padding: 6,
+            margin: 0,
+            borderRadius: 6,
+            cursor: deleting ? 'default' : 'pointer',
+            color: 'var(--color-fg-muted)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            opacity: deleting ? 0.5 : 1,
+            transition: 'background 120ms, color 120ms',
+          }}
+          onMouseEnter={(e) => {
+            if (deleting) return;
+            e.currentTarget.style.background = 'var(--color-danger-soft)';
+            e.currentTarget.style.color = 'var(--color-danger)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--color-fg-muted)';
+          }}
+        >
+          <Icon name="trash-2" size={16} strokeWidth={1.7} />
+        </button>
+        {error && (
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--color-danger)',
+              maxWidth: 180,
+              textAlign: 'right',
+            }}
+          >
+            {error}
+          </span>
+        )}
+      </div>
     </li>
   );
 }
