@@ -9,6 +9,13 @@
 export { ApiError, ingestPdf, ingestText, subscribeToChat } from './client';
 export { subscribeToCompare } from './compare';
 export { subscribeToAgent, getAgentHistory } from './agent';
+export {
+  fetchCorpusPapers,
+  fetchCorpusStats,
+  subscribeToCorpusSearch,
+  subscribeToCorpusSummary,
+  uploadCorpusBatch,
+} from './corpus';
 export { listDemos, getDemo } from './demos';
 export {
   deleteDocument,
@@ -22,12 +29,32 @@ export {
 // ---------------------------------------------------------------------------
 
 export { useChatStream } from './use-chat-stream';
+export { useCorpusPapers } from './use-corpus-papers';
+export { useCorpusSearch } from './use-corpus-search';
+export { useCorpusStats } from './use-corpus-stats';
+export { useCorpusSummary } from './use-corpus-summary';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export type { ChatStreamStatus, UseChatStreamResult } from './use-chat-stream';
+export type {
+  CorpusPapersStatus,
+  UseCorpusPapersResult,
+} from './use-corpus-papers';
+export type {
+  CorpusSearchStatus,
+  UseCorpusSearchResult,
+} from './use-corpus-search';
+export type {
+  CorpusStatsStatus,
+  UseCorpusStatsResult,
+} from './use-corpus-stats';
+export type {
+  CorpusSummaryStatus,
+  UseCorpusSummaryResult,
+} from './use-corpus-summary';
 export type {
   ApiErrorPayload,
   ChatQuery,
@@ -58,6 +85,21 @@ export type {
   ToolErrorEvent,
   ToolResultEvent,
 } from './types-agent';
+export type {
+  CorpusPaperItem,
+  CorpusPapersQuery,
+  CorpusPapersResponse,
+  CorpusSearchHandlers,
+  CorpusSearchQuery,
+  CorpusSearchSubscription,
+  CorpusStats,
+  CorpusSummaryHandlers,
+  CorpusSummarySubscription,
+  CorpusUploadItem,
+  CorpusUploadResponse,
+  PapersByYearItem,
+  TopTopicItem,
+} from './types-corpus';
 export type { DemoMetadata, DemoStatus } from './types-demos';
 export type {
   ChunkSummary,
