@@ -111,7 +111,7 @@ export function useKeybindings({
       if (isTypingTarget(event.target)) return;
 
       // Modificadores que NO usamos: cmd/meta, ctrl, alt. Si están
-      // presentes, no es un atajo nuestro — dejá pasar.
+      // presentes, no es un atajo nuestro — deja pasar.
       if (event.metaKey || event.ctrlKey || event.altKey) return;
 
       // Esc: cierra overlay si está abierto + cancela leader.
