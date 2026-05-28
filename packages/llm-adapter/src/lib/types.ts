@@ -21,11 +21,46 @@ export type ChatMessage = {
 };
 
 /**
+ * Conteo de tokens facturables por una llamada al LLM.
+ *
+ * Anthropic devuelve estos números explícitos en el stream (input_tokens en
+ * `message_start`, output_tokens cumulativos en cada `message_delta`).
+ * OpenAI-compat los devuelve si activamos `stream_options.include_usage`.
+ * El fake los estima (chars / 4) para que los tests y el demo se vean
+ * coherentes incluso sin proveedor real.
+ *
+ * Demo 05 los usa para alimentar el cost calculator en pantalla.
+ */
+export interface ChatUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+/**
+ * Resultado de `completeStreamWithUsage`: un stream de tokens (igual que
+ * `completeStream`) + una promise que resuelve con el conteo final cuando
+ * el stream termina.
+ *
+ * Contrato: la promise solo resuelve si el consumidor itera el stream
+ * **completo**. Si lo cancela antes (early return / throw), la promise
+ * queda pendiente — los providers usan un fallback para evitarlo, pero
+ * el caller no debe contar con un valor en ese caso.
+ */
+export interface StreamWithUsage {
+  stream: AsyncIterable<string>;
+  usage: Promise<ChatUsage>;
+}
+
+/**
  * Adapter para chat / completions con streaming.
  *
- * Dos métodos:
+ * Tres métodos:
  *   - `completeStream`: streaming simple de texto. Útil para chat (Demo 01)
  *     y compare (Demo 02). No soporta tool use — devuelve solo tokens.
+ *   - `completeStreamWithUsage`: igual que `completeStream` pero además
+ *     reporta `inputTokens`/`outputTokens` al cierre. Lo usa Demo 05 para
+ *     pintar el contador de costo en vivo. Separado de `completeStream`
+ *     para no romper call sites que solo necesitan los tokens del texto.
  *   - `streamWithTools`: streaming con tool use (function calling). Necesario
  *     para Demo 04 (agente). El stream emite eventos tipados (texto, pedidos
  *     de tool, fin de turno con stop_reason). Cuando el LLM pide tools, el
@@ -34,6 +69,7 @@ export type ChatMessage = {
  */
 export interface ChatAdapter {
   completeStream(messages: ChatMessage[]): AsyncIterable<string>;
+  completeStreamWithUsage(messages: ChatMessage[]): StreamWithUsage;
   streamWithTools(
     messages: ChatRichMessage[],
     tools: ChatTool[],
