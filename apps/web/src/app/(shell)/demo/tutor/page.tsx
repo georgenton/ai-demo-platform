@@ -9,11 +9,14 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { TutorChatPanel } from '@/components/demo/tutor/TutorChatPanel';
 import { TutorCostPanel } from '@/components/demo/tutor/TutorCostPanel';
 import { TutorFeedbackPanel } from '@/components/demo/tutor/TutorFeedbackPanel';
+import { extractTip } from '@/components/demo/tutor/extract-tip';
+import { useSpeechRecognition } from '@/components/demo/tutor/use-speech-recognition';
+import { useSpeechSynthesis } from '@/components/demo/tutor/use-speech-synthesis';
 import { useTutorChat } from '@/components/demo/tutor/use-tutor-chat';
 import { useTutorPricing } from '@/components/demo/tutor/use-tutor-pricing';
 import { useT } from '@/lib/i18n';
@@ -43,6 +46,15 @@ export default function DemoTutorPage() {
     error: pricingError,
   } = useTutorPricing();
 
+  // -------------------------------------------------------------------------
+  // Voz (PR-D)
+  // -------------------------------------------------------------------------
+  const recognition = useSpeechRecognition();
+  const synthesis = useSpeechSynthesis();
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  // Refs para detectar transiciones del stream → trigger auto-speak.
+  const wasStreamingRef = useRef(false);
+
   const [level, setLevel] = useState<TutorLevel>('B1');
   const [scenario, setScenario] = useState<TutorScenario>('general');
   const [input, setInput] = useState('');
@@ -50,11 +62,64 @@ export default function DemoTutorPage() {
 
   const isStreaming = status === 'streaming';
 
+  // Cuando el reconocedor entrega un transcript final, lo movemos al input.
+  // Reseteamos el transcript del hook para que el próximo start() arranque
+  // con buffer limpio.
+  useEffect(() => {
+    if (recognition.transcript) {
+      setInput((prev) =>
+        prev ? prev + ' ' + recognition.transcript : recognition.transcript,
+      );
+      recognition.reset();
+    }
+  }, [recognition.transcript, recognition]);
+
+  // Auto-speak: cuando el stream pasa de 'streaming' a 'idle', tomamos el
+  // último mensaje del tutor (sin el tip) y lo leemos. Solo si autoSpeak
+  // está activo y el synthesis está disponible.
+  useEffect(() => {
+    if (
+      wasStreamingRef.current &&
+      !isStreaming &&
+      autoSpeak &&
+      synthesis.isSupported &&
+      history.length > 0
+    ) {
+      const lastTurn = history[history.length - 1];
+      if (lastTurn.role === 'assistant') {
+        const { body } = extractTip(lastTurn.content);
+        if (body) synthesis.speak(body);
+      }
+    }
+    wasStreamingRef.current = isStreaming;
+  }, [isStreaming, autoSpeak, synthesis, history]);
+
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed) return;
+    // Si el usuario manda mientras el mic está activo, lo apagamos primero.
+    if (recognition.isListening) recognition.stop();
     send(trimmed, { level, scenario });
     setInput('');
+  }
+
+  function handleMicToggle() {
+    if (recognition.isListening) {
+      recognition.stop();
+    } else {
+      // Si el tutor estaba hablando, lo cortamos — no queremos que el LLM
+      // siga sonando mientras el usuario habla.
+      synthesis.cancel();
+      recognition.start();
+    }
+  }
+
+  function handleAutoSpeakToggle() {
+    setAutoSpeak((on) => {
+      // Si lo apagamos en medio de un speak, cortamos lo que esté sonando.
+      if (on) synthesis.cancel();
+      return !on;
+    });
   }
 
   return (
@@ -90,6 +155,18 @@ export default function DemoTutorPage() {
             onSend={handleSend}
             onCancel={cancel}
             onReset={reset}
+            voice={{
+              recognitionSupported: recognition.isSupported,
+              synthesisSupported: synthesis.isSupported,
+              isListening: recognition.isListening,
+              isSpeaking: synthesis.isSpeaking,
+              interimText: recognition.interimTranscript,
+              autoSpeak,
+              voiceError: recognition.error,
+              onMicToggle: handleMicToggle,
+              onAutoSpeakToggle: handleAutoSpeakToggle,
+              onCancelSpeak: synthesis.cancel,
+            }}
           />
         </div>
 
