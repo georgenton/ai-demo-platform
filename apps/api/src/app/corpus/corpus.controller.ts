@@ -8,11 +8,15 @@
 
 import {
   Controller,
+  Get,
   HttpStatus,
   ParseFilePipeBuilder,
   Post,
+  Query,
+  Sse,
   UploadedFiles,
   UseInterceptors,
+  type MessageEvent,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -22,8 +26,20 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { from, type Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { ChatService } from '../chat/chat.service.js';
 
 import { CorpusIngestService } from './corpus-ingest.service.js';
+import { CorpusStatsService } from './corpus-stats.service.js';
+import { CorpusSummaryService } from './corpus-summary.service.js';
+import {
+  CorpusPapersQueryDto,
+  CorpusPapersResponseDto,
+} from './dto/corpus-papers.dto.js';
+import { CorpusSearchQueryDto } from './dto/corpus-search.dto.js';
+import { CorpusStatsResponseDto } from './dto/corpus-stats.dto.js';
 import { CorpusUploadResponseDto } from './dto/corpus-upload.dto.js';
 
 /** 10 MB por archivo — mismo límite que ingest base. */
@@ -36,7 +52,12 @@ const MAX_FILES_PER_REQUEST = 20;
 @ApiTags('Corpus (Demo 03)')
 @Controller({ path: 'corpus' })
 export class CorpusController {
-  constructor(private readonly corpusIngest: CorpusIngestService) {}
+  constructor(
+    private readonly corpusIngest: CorpusIngestService,
+    private readonly statsService: CorpusStatsService,
+    private readonly summaryService: CorpusSummaryService,
+    private readonly chatService: ChatService,
+  ) {}
 
   /**
    * POST /api/v1/corpus/upload
@@ -85,5 +106,97 @@ export class CorpusController {
     files: Express.Multer.File[],
   ): Promise<CorpusUploadResponseDto> {
     return this.corpusIngest.ingestBatch(files);
+  }
+
+  /**
+   * GET /api/v1/corpus/stats
+   *
+   * Agregaciones del corpus: total, papers por año, top 10 tópicos.
+   * Sin LLM en este endpoint — todo SQL, respuesta inmediata.
+   */
+  @Get('stats')
+  @ApiOperation({
+    summary: 'Stats agregados del corpus (sin LLM)',
+    description:
+      'Devuelve totalPapers, papersByYear[] y topTopics[]. Pensado para el bar chart de papers/año y el listado de top tópicos en el frontend del Demo 03.',
+  })
+  @ApiResponse({ status: 200, type: CorpusStatsResponseDto })
+  async stats(): Promise<CorpusStatsResponseDto> {
+    return this.statsService.stats();
+  }
+
+  /**
+   * GET /api/v1/corpus/papers?limit=20&offset=0
+   *
+   * Listado paginado de papers con sus tópicos joineados. Ordenado por
+   * fecha de ingest (más recientes primero) — útil para mostrar lo último
+   * que se subió en la lista del frontend.
+   */
+  @Get('papers')
+  @ApiOperation({
+    summary: 'Listado paginado de papers del corpus',
+    description:
+      'Devuelve los papers ordenados por fecha de ingest descendente, con sus tópicos como array. Sin abstract por default (es grande); para ver detalle de un paper usar GET /api/v1/documents/:id.',
+  })
+  @ApiResponse({ status: 200, type: CorpusPapersResponseDto })
+  async papers(
+    @Query() query: CorpusPapersQueryDto,
+  ): Promise<CorpusPapersResponseDto> {
+    return this.statsService.papers({
+      limit: query.limit,
+      offset: query.offset,
+    });
+  }
+
+  /**
+   * GET /api/v1/corpus/search?q=...&topK=5
+   *
+   * Búsqueda semántica sobre el corpus + respuesta del LLM citando los
+   * chunks relevantes. Es exactamente el mismo flujo del chat del Demo 01
+   * — delegamos al ChatService con `demoId='corpus'` hardcoded.
+   *
+   * Por qué un endpoint separado en lugar de pedir al cliente que pegue
+   * a /api/v1/chat con demoId='corpus': claridad en la API (cada demo en
+   * su namespace) + el cliente del Demo 03 no necesita saber del demoId.
+   */
+  @Sse('search')
+  @ApiOperation({
+    summary: 'Búsqueda semántica sobre el corpus (SSE streaming)',
+    description:
+      'Embebe la pregunta, busca chunks relevantes en pgvector (filtrados por demoId=corpus) y streamea la respuesta del LLM. Delegate del Chat del Demo 01.',
+  })
+  search(@Query() query: CorpusSearchQueryDto): Observable<MessageEvent> {
+    return from(
+      this.chatService.streamChat({
+        q: query.q,
+        demoId: 'corpus',
+        topK: query.topK,
+      }),
+    ).pipe(map((token) => ({ data: token })));
+  }
+
+  /**
+   * GET /api/v1/corpus/summary
+   *
+   * Resumen ejecutivo del corpus en 2-3 párrafos. Map-reduce con el LLM:
+   *   - Map: resume cada paper en 1-2 frases (paralelo, cap 50 papers).
+   *   - Reduce: con stats + resúmenes, redacta el panorama general.
+   *
+   * Tarda ~30-60s la primera vez para un corpus de 30-50 papers. Streamea
+   * el resumen final token a token al cliente.
+   *
+   * Si el corpus tiene menos de 3 papers, devuelve un mensaje fijo (no
+   * tiene sentido un resumen ejecutivo de tan poco).
+   */
+  @Sse('summary')
+  @ApiOperation({
+    summary: 'Resumen ejecutivo del corpus (SSE streaming)',
+    description:
+      'Map-reduce LLM: resume cada paper individualmente y después redacta el panorama del corpus en 2-3 párrafos. ~30-60s. Si total < 3 papers, devuelve mensaje fijo.',
+  })
+  summary(): Observable<MessageEvent> {
+    return from(this.summaryService.streamSummary()).pipe(
+      map((token) => ({ data: token })),
+    );
   }
 }
