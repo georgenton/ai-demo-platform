@@ -35,12 +35,23 @@ RUN apt-get update \
 COPY package*.json ./
 COPY nx.json tsconfig.base.json ./
 
-# `npm ci` es estricto al lockfile (CI-friendly). El postinstall del repo
-# corre `prisma generate`, así que el cliente queda generado acá.
-RUN npm ci
+# `npm ci --ignore-scripts`: instala deps SIN correr el postinstall del root
+# (que llama a `prisma generate --schema packages/db/prisma/schema.prisma`).
+# A esta altura del Dockerfile el schema todavía NO está copiado, así que
+# correr postinstall acá falla con "file or directory not found".
+#
+# Es deliberado mantener este split — el `npm ci` queda cacheable por el
+# lockfile, y `prisma generate` se ejecuta abajo cuando ya tenemos todo
+# el repo en el filesystem.
+RUN npm ci --ignore-scripts
 
 # Ahora sí el resto del repo. .dockerignore filtra lo que no necesitamos.
 COPY . .
+
+# Generamos el cliente de Prisma a mano — el postinstall normalmente hace
+# esto en local; acá lo replicamos explícitamente porque pasamos
+# --ignore-scripts arriba.
+RUN npx prisma generate --schema packages/db/prisma/schema.prisma
 
 # Build del api. Nx genera el output en `dist/apps/api/`.
 RUN npx nx build api --skip-nx-cache
