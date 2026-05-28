@@ -64,6 +64,27 @@ export class DemoRegistryService {
       status: 'available',
       route: '/demo/agent',
     },
+    {
+      // Demo 05 — Tutor de inglés conversacional con calculadora de costo.
+      // El único demo del catálogo cuya pieza diferenciadora NO son los datos
+      // del cliente sino el caso de negocio "build vs buy": chat tipo Loora
+      // + panel de costo en vivo que extrapola tokens a {alumnos, sesiones,
+      // semanas} y lo compara con NAI on-prem ($0 variable). Ver ADR-0012.
+      // Hoy 'coming-soon' — la UI lo muestra deshabilitado mientras se
+      // construye en los próximos PRs.
+      id: 'tutor',
+      title: 'Tutor de inglés con calculadora de costo',
+      tagline: 'Conversa en inglés y mira en vivo cuánto cuesta a escala',
+      description:
+        'Chat conversacional para practicar inglés con corrección estructurada (gramática, léxico, versión natural), entrada/salida por voz nativa del browser y una calculadora que proyecta el costo a N alumnos × M sesiones, comparado contra Anthropic comercial vs NAI on-prem.',
+      audience: [
+        'Centros de idiomas universitarios',
+        'Capacitación corporativa',
+        'CIO evaluando build vs buy',
+      ],
+      status: 'coming-soon',
+      route: '/demo/tutor',
+    },
   ];
 
   /** Devuelve todos los demos en el orden definido. */
