@@ -1,11 +1,18 @@
 # =============================================================================
 # .dockerignore — qué NO copiamos al builder.
 #
-# Mantener esto chico acelera builds (menos data al daemon) y evita filtrar
-# secretos (.env), archivos generados (dist, .next, .nx) o noise (logs).
+# Principio: minimizar las exclusiones a "cosas generadas que se reproducen
+# en el container" (node_modules, dist, .next, .nx) + secretos (.env) +
+# git/IDE. NO excluimos código fuente ni configs aunque "no se usen" — Nx
+# valida TypeScript project references del workspace completo al hacer
+# `nx build`, y si faltan archivos que los tsconfigs incluyen, falla con
+# "workspace is out of sync".
+#
+# El runtime final del Dockerfile copia solo dist/apps/api + node_modules +
+# prisma — la imagen no se infla por tener el source completo en el builder.
 # =============================================================================
 
-# Dependencias y artefactos: se regeneran adentro del builder.
+# Dependencias y artefactos generados: se reproducen adentro del builder.
 node_modules
 **/node_modules
 dist
@@ -15,37 +22,19 @@ dist
 .next
 **/.next
 
-# Tests y dev tooling — el runtime no los necesita.
-**/*.test.ts
-**/*.spec.ts
-**/*.integration.test.ts
-vitest.config.ts
-vitest.integration.config.ts
-
 # Configs locales / secretos.
 .env
 .env.local
 .env.*.local
 
-# IDE / OS / git.
+# Git e IDE: ruido sin valor para el build.
 .git
-.gitignore
 .vscode
 .idea
 .DS_Store
 *.swp
 
-# Docs y assets que no van al runtime del backend.
-docs
-README.md
-CONTRIBUTING.md
-LICENSE
-
-# Frontend completo — el contenedor del backend no lo necesita.
-apps/web
-
-# CI / scripts locales que no aplican al runtime.
+# CI / scripts / claude / husky: no aplican al runtime del backend.
 .github
 .husky
 .claude
-scripts
