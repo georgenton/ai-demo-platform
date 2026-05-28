@@ -138,7 +138,7 @@ export default function DemoCorpusPage() {
       </div>
 
       {/* Listado paginado */}
-      <PapersList refreshKey={refreshKey} />
+      <PapersList refreshKey={refreshKey} onPaperDeleted={refetchStats} />
 
       {/* Upload modal */}
       <Modal
