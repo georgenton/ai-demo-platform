@@ -7,6 +7,7 @@ import { AgentModule } from './agent/agent.module.js';
 import { ChatModule } from './chat/chat.module.js';
 import { CompareModule } from './compare/compare.module.js';
 import { validateEnv } from './config/env.schema.js';
+import { CorpusModule } from './corpus/corpus.module.js';
 import { DemosModule } from './demos/demos.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -29,6 +30,7 @@ import { IngestModule } from './ingest/ingest.module.js';
     AgentModule,
     ChatModule,
     CompareModule,
+    CorpusModule,
     DemosModule,
     DocumentsModule,
     HealthModule,
