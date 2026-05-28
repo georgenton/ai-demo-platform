@@ -10,7 +10,7 @@
 //     server-side — el cliente nunca ve el header ni su valor.
 //
 //   - Bonus: este proxy también funciona en dev. `BACKEND_URL` apunta a
-//     `http://localhost:3000` por default; si no tenés `INTERNAL_API_KEY`
+//     `http://localhost:3000` por default; si no tienes `INTERNAL_API_KEY`
 //     configurada, el header simplemente no se inyecta y el backend lo
 //     ignora (guard inactivo, ver internal-key.guard.ts).
 //

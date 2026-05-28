@@ -35,7 +35,7 @@ const STRINGS_ES = {
   // --- Shortcuts (overlay con ? y cheatsheet)
   'shortcuts.title': 'Atajos de teclado',
   'shortcuts.footer':
-    'Los atajos no se disparan mientras escribís en un campo de texto.',
+    'Los atajos no se disparan mientras escribes en un campo de texto.',
   'shortcuts.goto.rag': 'Ir a Demo 01 — RAG',
   'shortcuts.goto.comparator': 'Ir a Demo 02 — Comparador',
   'shortcuts.goto.agent': 'Ir a Demo 04 — Agente',
@@ -62,10 +62,10 @@ const STRINGS_ES = {
   'rag.eyebrow': 'Demo 01 · RAG',
   'rag.title': 'Chatea con tus documentos',
   'rag.subtitle':
-    'Subí un reglamento, manual o contrato y preguntale en lenguaje natural. La respuesta cita el artículo exacto del documento.',
+    'Sube un reglamento, manual o contrato y pregúntale en lenguaje natural. La respuesta cita el artículo exacto del documento.',
   'rag.upload': 'Subir documento',
   'rag.docs.label': 'Documentos indexados',
-  'rag.docs.empty': 'Arrastrá un PDF o hacé clic para subir',
+  'rag.docs.empty': 'Arrastra un PDF o haz clic para subir',
   'rag.greeting':
     '¿Sobre qué quieres preguntar? Puedo buscar en el reglamento académico, el manual de matrículas o la política de propiedad intelectual.',
   'rag.composer.placeholder': 'Pregunta sobre el documento…',
@@ -74,11 +74,11 @@ const STRINGS_ES = {
   'rag.suggested.2': '¿Cómo se solicita una recalificación?',
   'rag.suggested.3': '¿Qué dice sobre propiedad intelectual?',
   'rag.upload.title': 'Subir documento',
-  'rag.upload.drop': 'Arrastrá un PDF o hacé clic para subir',
+  'rag.upload.drop': 'Arrastra un PDF o haz clic para subir',
   'rag.upload.limits': 'Máx 10 MB · solo PDF',
-  'rag.upload.or': 'o pegá texto plano',
+  'rag.upload.or': 'o pega texto plano',
   'rag.upload.namePlaceholder': 'Nombre del documento',
-  'rag.upload.contentPlaceholder': 'Pegá el contenido aquí…',
+  'rag.upload.contentPlaceholder': 'Pega el contenido aquí…',
   'rag.upload.submit': 'Indexar',
   'rag.doc.fragments': 'fragmentos',
   'rag.delete': 'Eliminar',
@@ -87,7 +87,7 @@ const STRINGS_ES = {
   'cmp.eyebrow': 'Demo 02 · Comparador',
   'cmp.title': 'Comparador de documentos',
   'cmp.subtitle':
-    'Seleccioná 2–5 documentos, definí qué dimensiones querés comparar y obtené un análisis lado a lado con frases textuales y citas.',
+    'Selecciona 2–5 documentos, define qué dimensiones quieres comparar y obtén un análisis lado a lado con frases textuales y citas.',
   'cmp.generate': 'Generar análisis comparativo',
   'cmp.generating': 'Generando…',
   'cmp.step1.label': 'Documentos a comparar',
@@ -95,7 +95,7 @@ const STRINGS_ES = {
   'cmp.step1.more': 'Cargar más documentos',
   'cmp.step2.label': 'Dimensiones a comparar',
   'cmp.step2.hint': '{n} de 10',
-  'cmp.step2.empty': 'Sin dimensiones — agregá al menos una para empezar.',
+  'cmp.step2.empty': 'Sin dimensiones — agrega al menos una para empezar.',
   'cmp.step2.input': 'Por ejemplo: "plazos de entrega"…',
   'cmp.step2.add': 'Agregar',
   'cmp.step2.suggestions': 'Sugerencias',
@@ -106,14 +106,14 @@ const STRINGS_ES = {
   'cmp.step3.docsXdim': '{docs} documentos × {dims} dimensiones',
   'cmp.step3.ready.title': 'Listo para comparar',
   'cmp.step3.ready.body':
-    'Cuando hagas clic en Generar análisis comparativo, el LLM va a leer cada documento, evaluar las dimensiones que elegiste y armar un análisis lado a lado con citas textuales.',
+    'Cuando hagas clic en Generar análisis comparativo, el LLM leerá cada documento, evaluará las dimensiones que elegiste y armará un análisis lado a lado con citas textuales.',
   'cmp.step3.cita': 'cláusula',
 
   // --- Demo 03 (Corpus)
   'corpus.eyebrow': 'Demo 03 · Corpus',
   'corpus.title': 'Analiza tendencias en tu corpus académico',
   'corpus.subtitle':
-    'Cargá tesis o papers en PDF. El sistema extrae metadata (título, año, autores, tópicos), genera estadísticas agregadas, permite buscar por significado y redacta un resumen ejecutivo del estado del arte.',
+    'Carga tesis o papers en PDF. El sistema extrae metadata (título, año, autores, tópicos), genera estadísticas agregadas, permite buscar por significado y redacta un resumen ejecutivo del estado del arte.',
 
   'corpus.upload.button': 'Subir papers',
   'corpus.upload.modalTitle': 'Cargar papers al corpus',
@@ -128,7 +128,7 @@ const STRINGS_ES = {
 
   'corpus.stats.total': 'Papers en el corpus',
   'corpus.stats.totalHelp':
-    'Cargá más PDFs para enriquecer las estadísticas y mejorar el resumen ejecutivo.',
+    'Carga más PDFs para enriquecer las estadísticas y mejorar el resumen ejecutivo.',
   'corpus.chart.papersByYear': 'Papers por año',
   'corpus.chart.topTopics': 'Tópicos dominantes',
   'corpus.chart.papers': 'papers',
@@ -136,7 +136,7 @@ const STRINGS_ES = {
 
   'corpus.search.title': 'Búsqueda semántica',
   'corpus.search.desc':
-    'Preguntá en lenguaje natural — el sistema busca por significado en todos los papers, no por palabras exactas.',
+    'Pregunta en lenguaje natural — el sistema busca por significado en todos los papers, no por palabras exactas.',
   'corpus.search.placeholder': '¿Qué tendencias hay sobre…?',
   'corpus.search.submit': 'Buscar',
   'corpus.search.searching': 'Buscando…',
@@ -154,13 +154,13 @@ const STRINGS_ES = {
   'corpus.summary.thinking':
     'Leyendo papers y redactando el panorama. Esto tarda un minuto…',
   'corpus.summary.tooFew':
-    'Cargá al menos {min} papers para que el resumen ejecutivo sea significativo.',
+    'Carga al menos {min} papers para que el resumen ejecutivo sea significativo.',
 
   'corpus.list.title': 'Papers cargados',
   'corpus.list.loading': 'Cargando lista…',
   'corpus.list.emptyTitle': 'Todavía no hay papers',
   'corpus.list.emptyBody':
-    'Subí PDFs para empezar — el sistema extrae metadata automáticamente.',
+    'Sube PDFs para empezar — el sistema extrae metadata automáticamente.',
   'corpus.list.rangeLabel': '{from}-{to} de {total}',
   'corpus.list.prev': 'Anterior',
   'corpus.list.next': 'Siguiente',
@@ -177,7 +177,7 @@ const STRINGS_ES = {
   'agent.suggested': 'Preguntas sugeridas',
   'agent.empty.title': 'Listo para razonar',
   'agent.empty.body':
-    'Elegí una pregunta sugerida o escribí la tuya. El agente va a mostrar la SQL que genera, los resultados y la respuesta — paso por paso.',
+    'Elige una pregunta sugerida o escribe la tuya. El agente mostrará la SQL que genera, los resultados y la respuesta — paso por paso.',
   'agent.composer': 'Pregunta sobre estudiantes, materias, inscripciones…',
   'agent.schema': 'Schema accesible',
   'agent.schema.note':
@@ -424,7 +424,7 @@ export type Lang = 'es' | 'en';
 /**
  * Set completo de strings, indexado por lenguaje. El tipo de `STRINGS_ES`
  * (declarado `as const`) determina las keys válidas; `STRINGS_EN` está
- * tipado contra eso, así si agregás una key en `STRINGS_ES` y te olvidás
+ * tipado contra eso, así si agregas una key en `STRINGS_ES` y te olvidas
  * de `STRINGS_EN`, el compilador grita.
  */
 export const STRINGS: Record<Lang, typeof STRINGS_ES> = {
