@@ -82,14 +82,21 @@ ENV NODE_ENV=production
 
 # Copiamos solo lo necesario para correr:
 #   - package.json (para `node` resolva entry points si hace falta)
-#   - node_modules (incluye @prisma/client ya generado)
+#   - node_modules (incluye @prisma/client ya generado + symlinks
+#     `@org/*` → packages/* via npm workspaces)
 #   - apps/api/dist (output de webpack — ver webpack.config.js, escribe a
 #     `<apps/api>/dist`, NO al convencional `<root>/dist/apps/api/`)
-#   - prisma schema + migrations (para `migrate deploy` en boot)
+#   - packages/* enteros (con sus dist y package.json):
+#       Webpack marca los workspace packages (@org/db, @org/llm-adapter,
+#       @org/rag-core) como external — no los bundlea adentro de main.js.
+#       En runtime hace `require('@org/db')` que resuelve vía el symlink
+#       `node_modules/@org/db` → `packages/db/`. Si packages/ NO existe,
+#       el require falla con MODULE_NOT_FOUND. Por eso copiamos packages/
+#       completos (cada package.json apunta a su propio `dist/index.js`).
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
+COPY --from=builder /app/packages ./packages
 
 # Railway maneja el puerto; nuestro main.ts lo lee de $PORT.
 EXPOSE 3000
