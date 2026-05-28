@@ -21,7 +21,9 @@ import type {
   ChatMessage,
   ChatRichMessage,
   ChatTool,
+  ChatUsage,
   StopReason,
+  StreamWithUsage,
 } from '../types.js';
 
 /** Default conservador: el LLM no devuelve más de 4096 tokens por respuesta. */
@@ -75,6 +77,85 @@ export class AnthropicChatAdapter implements ChatAdapter {
         yield event.delta.text;
       }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // completeStreamWithUsage — chat + conteo de tokens (Demo 05)
+  //
+  // Igual que completeStream pero además parsea los tokens reales que reporta
+  // Anthropic en el stream:
+  //   - message_start → trae usage.input_tokens (final) en el primer evento.
+  //   - message_delta → trae usage.output_tokens (cumulativo) en cada update.
+  //   - message_stop → cierre, sin metadata adicional.
+  //
+  // Devolvemos un objeto con `stream` + `usage` (Promise). La promise resuelve
+  // cuando el stream cierra de forma normal. Si el caller hace early-break y
+  // no agota el stream, la promise queda pendiente — documentado en el
+  // contrato de StreamWithUsage.
+  // ---------------------------------------------------------------------------
+
+  completeStreamWithUsage(messages: ChatMessage[]): StreamWithUsage {
+    const systemContent = messages
+      .filter((m) => m.role === 'system')
+      .map((m) => m.content)
+      .join('\n\n');
+
+    const conversation = messages
+      .filter((m) => m.role !== 'system')
+      .map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      }));
+
+    // Capturamos referencias locales — evita aliasing `this` dentro del
+    // generator (el lint @typescript-eslint/no-this-alias no lo permite).
+    const client = this.client;
+    const model = this.config.model;
+
+    let resolveUsage!: (u: ChatUsage) => void;
+    let rejectUsage!: (e: unknown) => void;
+    const usage = new Promise<ChatUsage>((res, rej) => {
+      resolveUsage = res;
+      rejectUsage = rej;
+    });
+
+    async function* iterate(): AsyncIterable<string> {
+      let inputTokens = 0;
+      let outputTokens = 0;
+      try {
+        const sdkStream = await client.messages.create({
+          model,
+          max_tokens: DEFAULT_MAX_TOKENS,
+          system: systemContent || undefined,
+          messages: conversation,
+          stream: true,
+        });
+
+        for await (const event of sdkStream) {
+          if (event.type === 'message_start') {
+            // message_start.message.usage.input_tokens es el conteo final del
+            // input (ya tokenizó el prompt completo). output_tokens viene en 1
+            // (placeholder) — lo ignoramos y leemos los reales en los deltas.
+            inputTokens = event.message.usage.input_tokens;
+          } else if (event.type === 'content_block_delta') {
+            if (event.delta.type === 'text_delta') {
+              yield event.delta.text;
+            }
+          } else if (event.type === 'message_delta') {
+            // El usage de message_delta es cumulativo — el último gana.
+            if (event.usage?.output_tokens != null) {
+              outputTokens = event.usage.output_tokens;
+            }
+          }
+        }
+        resolveUsage({ inputTokens, outputTokens });
+      } catch (err) {
+        rejectUsage(err);
+        throw err;
+      }
+    }
+
+    return { stream: iterate(), usage };
   }
 
   // ---------------------------------------------------------------------------

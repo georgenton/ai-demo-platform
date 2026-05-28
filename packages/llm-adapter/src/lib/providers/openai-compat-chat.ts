@@ -15,6 +15,8 @@ import type {
   ChatMessage,
   ChatRichMessage,
   ChatTool,
+  ChatUsage,
+  StreamWithUsage,
 } from '../types.js';
 
 export class OpenAICompatChatAdapter implements ChatAdapter {
@@ -39,6 +41,55 @@ export class OpenAICompatChatAdapter implements ChatAdapter {
       const delta = chunk.choices[0]?.delta?.content;
       if (delta) yield delta;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // completeStreamWithUsage — Demo 05
+  //
+  // OpenAI (y NAI con NIM) reportan usage solo si activamos
+  // `stream_options.include_usage`. Cuando está activo, el último chunk del
+  // stream trae `usage: { prompt_tokens, completion_tokens, total_tokens }`.
+  // ---------------------------------------------------------------------------
+
+  completeStreamWithUsage(messages: ChatMessage[]): StreamWithUsage {
+    // Capturamos refs locales — evita aliasing `this` dentro del generator.
+    const client = this.client;
+    const model = this.config.model;
+
+    let resolveUsage!: (u: ChatUsage) => void;
+    let rejectUsage!: (e: unknown) => void;
+    const usage = new Promise<ChatUsage>((res, rej) => {
+      resolveUsage = res;
+      rejectUsage = rej;
+    });
+
+    async function* iterate(): AsyncIterable<string> {
+      let inputTokens = 0;
+      let outputTokens = 0;
+      try {
+        const stream = await client.chat.completions.create({
+          model,
+          messages: messages.map((m) => ({ role: m.role, content: m.content })),
+          stream: true,
+          stream_options: { include_usage: true },
+        });
+
+        for await (const chunk of stream) {
+          const delta = chunk.choices[0]?.delta?.content;
+          if (delta) yield delta;
+          if (chunk.usage) {
+            inputTokens = chunk.usage.prompt_tokens;
+            outputTokens = chunk.usage.completion_tokens;
+          }
+        }
+        resolveUsage({ inputTokens, outputTokens });
+      } catch (err) {
+        rejectUsage(err);
+        throw err;
+      }
+    }
+
+    return { stream: iterate(), usage };
   }
 
   // eslint-disable-next-line require-yield

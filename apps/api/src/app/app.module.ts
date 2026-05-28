@@ -12,6 +12,7 @@ import { DemosModule } from './demos/demos.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { HealthModule } from './health/health.module.js';
 import { IngestModule } from './ingest/ingest.module.js';
+import { TutorModule } from './tutor/tutor.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { IngestModule } from './ingest/ingest.module.js';
     DocumentsModule,
     HealthModule,
     IngestModule,
+    TutorModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -26,6 +26,8 @@ import type {
   ChatMessage,
   ChatRichMessage,
   ChatTool,
+  ChatUsage,
+  StreamWithUsage,
 } from '../types.js';
 
 export class FakeChatAdapter implements ChatAdapter {
@@ -43,6 +45,42 @@ export class FakeChatAdapter implements ChatAdapter {
     const lastUser = lastUserMessage(messages);
     const response = pickRagResponse(lastUser);
     yield* streamTokens(response);
+  }
+
+  // ---------------------------------------------------------------------------
+  // completeStreamWithUsage — Demo 05 (tutor) sin LLM real
+  //
+  // El fake no llama a ningún proveedor, así que no hay "usage real". Estimamos
+  // tokens con la regla heurística usada en toda la industria: ~4 chars por
+  // token en inglés / español. Es aproximada pero suficiente para que los
+  // tests del cost engine se vean coherentes y para que el demo en modo fake
+  // muestre un contador que se mueve.
+  // ---------------------------------------------------------------------------
+
+  completeStreamWithUsage(messages: ChatMessage[]): StreamWithUsage {
+    const lastUser = lastUserMessage(messages);
+    const response = pickTutorResponse(lastUser) ?? pickRagResponse(lastUser);
+
+    // Input = suma del contenido de todos los mensajes que viajan al LLM.
+    const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+    const usageValue: ChatUsage = {
+      inputTokens: estimateTokens(inputChars),
+      outputTokens: estimateTokens(response.length),
+    };
+
+    let resolveUsage!: (u: ChatUsage) => void;
+    const usage = new Promise<ChatUsage>((res) => {
+      resolveUsage = res;
+    });
+
+    async function* iterate(): AsyncIterable<string> {
+      for await (const tok of streamTokens(response)) {
+        yield tok;
+      }
+      resolveUsage(usageValue);
+    }
+
+    return { stream: iterate(), usage };
   }
 
   // ---------------------------------------------------------------------------
@@ -297,4 +335,40 @@ function djb2(str: string): number {
     h = ((h << 5) + h + str.charCodeAt(i)) | 0;
   }
   return h >>> 0;
+}
+
+// ============================================================================
+// Helpers — Demo 05 (tutor de inglés)
+// ============================================================================
+
+/**
+ * Aproximación tokens ↔ chars. La regla de la industria es ~4 chars por token
+ * para inglés/español (es lo que Anthropic y OpenAI documentan como heurística
+ * para estimación previa). Útil cuando no hay proveedor real que reporte
+ * usage exacto.
+ */
+function estimateTokens(chars: number): number {
+  return Math.max(1, Math.round(chars / 4));
+}
+
+/**
+ * Respuestas precableadas para Demo 05. El tutor responde a las pills
+ * de la UI: saludo, pregunta sobre el fin de semana, pregunta sobre hobbies.
+ * Si nada matchea devolvemos null y el caller cae al fallback genérico.
+ */
+function pickTutorResponse(text: string): string | null {
+  const t = text.toLowerCase();
+  if (t.includes('weekend') || t.includes('fin de semana')) {
+    return "That sounds nice! Tell me more — what did you do? Quick tip: when talking about the past, remember to use 'went' instead of 'go'.";
+  }
+  if (t.includes('hobby') || t.includes('hobbies')) {
+    return 'Hobbies are a great topic. What do you enjoy doing in your free time? Try to describe one activity in detail.';
+  }
+  if (t.includes('coffee') || t.includes('café') || t.includes('order')) {
+    return "Sure! Here's how a barista might respond: 'What size would you like, and is that for here or to go?' — Try ordering a small latte.";
+  }
+  if (t.includes('hello') || t.includes('hi') || t.includes('hola')) {
+    return 'Hello! How are you today? Let me know what you would like to practice — small talk, ordering food, or a job interview.';
+  }
+  return null;
 }

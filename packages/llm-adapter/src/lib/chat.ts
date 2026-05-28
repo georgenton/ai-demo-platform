@@ -105,6 +105,9 @@ export const chat: ChatAdapter = {
   completeStream(messages) {
     return getChat().completeStream(messages);
   },
+  completeStreamWithUsage(messages) {
+    return getChat().completeStreamWithUsage(messages);
+  },
   streamWithTools(messages, tools) {
     return getChat().streamWithTools(messages, tools);
   },

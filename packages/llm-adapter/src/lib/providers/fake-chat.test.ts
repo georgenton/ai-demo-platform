@@ -106,6 +106,44 @@ describe('FakeChatAdapter.completeStream', () => {
   });
 });
 
+describe('FakeChatAdapter.completeStreamWithUsage (Demo 05)', () => {
+  it('emite tokens en el stream y resuelve usage con tokens estimados (>0)', async () => {
+    const adapter = new FakeChatAdapter(cfg);
+    const msgs: ChatMessage[] = [
+      { role: 'user', content: 'Hello! How are you today?' },
+    ];
+    const { stream, usage } = adapter.completeStreamWithUsage(msgs);
+
+    let text = '';
+    for await (const tok of stream) text += tok;
+
+    const final = await usage;
+    expect(text.length).toBeGreaterThan(0);
+    expect(final.inputTokens).toBeGreaterThan(0);
+    expect(final.outputTokens).toBeGreaterThan(0);
+  });
+
+  it('input más largo → más inputTokens estimados', async () => {
+    const adapter = new FakeChatAdapter(cfg);
+    const short = adapter.completeStreamWithUsage([
+      { role: 'user', content: 'Hi' },
+    ]);
+    const long = adapter.completeStreamWithUsage([
+      { role: 'user', content: 'Hi'.repeat(500) },
+    ]);
+    // Vaciamos los streams para que la promesa resuelva.
+    for await (const _ of short.stream) {
+      void _;
+    }
+    for await (const _ of long.stream) {
+      void _;
+    }
+    const s = await short.usage;
+    const l = await long.usage;
+    expect(l.inputTokens).toBeGreaterThan(s.inputTokens);
+  });
+});
+
 describe('FakeChatAdapter.streamWithTools — primer turn', () => {
   it('pregunta "total de estudiantes" → tool_use con COUNT(*) FROM Student', async () => {
     const adapter = new FakeChatAdapter(cfg);
