@@ -39,19 +39,19 @@ export class DemoRegistryService {
       title: 'Comparador de documentos',
       tagline: 'Analiza dos contratos y dime las diferencias de riesgo',
       description:
-        'Sube dos o más documentos, elige las dimensiones a comparar (cláusulas, riesgos, diferencias) y obtené una tabla comparativa con las fuentes citadas.',
+        'Sube dos o más documentos, elige las dimensiones a comparar (cláusulas, riesgos, diferencias) y obtén una tabla comparativa con las fuentes citadas.',
       audience: ['Legal', 'Compras', 'Auditoría'],
-      status: 'coming-soon',
+      status: 'available',
       route: '/demo/comparator',
     },
     {
       id: 'corpus',
       title: 'Analizador de corpus académico',
-      tagline: 'Busca tendencias en 500 tesis de los últimos 5 años',
+      tagline: 'Detecta tendencias en colecciones de tesis y papers',
       description:
-        'Procesa colecciones grandes de documentos académicos para detectar tendencias, temas recurrentes y patrones a través del tiempo.',
+        'Carga tesis o papers en PDF y obtén estadísticas agregadas (papers por año, tópicos dominantes), búsqueda semántica sobre todo el corpus y un resumen ejecutivo del estado del arte generado por LLM.',
       audience: ['Vicerrectorado de investigación', 'Posgrado'],
-      status: 'coming-soon',
+      status: 'available',
       route: '/demo/corpus',
     },
     {
@@ -61,9 +61,7 @@ export class DemoRegistryService {
       description:
         'El LLM genera SQL a partir de la pregunta y el sistema lo ejecuta contra los datos estructurados — preguntas analíticas en lenguaje natural.',
       audience: ['CIO', 'Rectorado', 'Dirección académica'],
-      // Backend listo (POST /api/v1/agent con SSE + tool use). Pasa a
-      // 'available' cuando lleguen los componentes UI de Claude Design.
-      status: 'coming-soon',
+      status: 'available',
       route: '/demo/agent',
     },
   ];

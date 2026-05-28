@@ -1,9 +1,10 @@
 # ADR-0011 — Demo 03 (corpus académico) espera a la entrada de Python
 
-- **Estado:** Aceptado
-- **Fecha:** 2026-05-26
+- **Estado:** **Superseded** por el sprint Demo 03 (2026-05-28).
+  Ver "Update 2026-05-28" al final del archivo.
+- **Fecha original:** 2026-05-26
 - **Decisores:** Jorge
-- **Relacionado:** [ADR-0003](./0003-typescript-first-python-later.md) — esa decisión definió que Python entra _cuando_ y _dónde_ aporta valor real; este ADR lo aplica al caso concreto de Demo 03.
+- **Relacionado:** [ADR-0003](./0003-typescript-first-python-later.md) — esa decisión definió que Python entra _cuando_ y _dónde_ aporta valor real; este ADR lo aplicó al caso concreto de Demo 03.
 
 ## Contexto
 
@@ -143,6 +144,77 @@ contrato hoy.
 - [`ADR-0003`](./0003-typescript-first-python-later.md) — la decisión
   general de cuándo entra Python.
 - [`CLAUDE.md`](../../CLAUDE.md) — el contexto del proyecto donde
-  Demo 03 está descrito como "cuando entra FastAPI Python".
+  Demo 03 estaba descrito como "cuando entra FastAPI Python".
 - [`apps/api/src/app/demos/demo-registry.service.ts`](../../apps/api/src/app/demos/demo-registry.service.ts)
-  — entrada `corpus` con `status: 'coming-soon'`.
+  — entrada `corpus`, ahora con `status: 'available'`.
+
+---
+
+## Update 2026-05-28 — Supersedido por sprint Demo 03
+
+### Qué cambió
+
+Demo 03 entró funcional en TypeScript usando las APIs de Anthropic
+(Sonnet) y OpenAI (embeddings) en vez de modelos locales en Python.
+Cinco PRs (#42-#46) cubrieron:
+
+1. **Schema + ingest** — extensión de `Document` con
+   `year/authors/abstract`, nueva tabla `DocumentTopic`, pipeline
+   `CorpusIngestService` que reutiliza chunking + embeddings del Demo
+   01 y suma extracción LLM de metadata por paper.
+2. **Stats + search + summary** — endpoints `/corpus/stats`,
+   `/corpus/papers`, `/corpus/search` (SSE) y `/corpus/summary` (SSE
+   map-reduce que resume el corpus en 2-3 párrafos).
+3. **Frontend cliente + hooks** — métodos HTTP + `useCorpusStats`,
+   `useCorpusPapers`, `useCorpusSearch`, `useCorpusSummary`.
+4. **UI funcional** — `/demo/corpus` reemplazó el teaser con upload
+   batch (con loop one-by-one para sortear el límite 413 de Vercel),
+   bar chart de papers por año (Recharts), top tópicos, búsqueda
+   semántica y resumen ejecutivo.
+5. **Hardening** — `skipMagicNumbersValidation` para PDFs de
+   bioRxiv/medRxiv que NestJS rechazaba; botón eliminar en Comparator
+   y Corpus.
+
+### Por qué se hizo a pesar del ADR
+
+Tres factores combinados que **el ADR no había evaluado** en mayo:
+
+1. **El tope del corpus se ajustó a la realidad de la demo.** El ADR
+   original asumía "500 tesis". Con 20-50 papers ecuatorianos públicos
+   (SciELO, repositorios UCE/ESPOL/EPN, medRxiv), los costos de API
+   bajan a < USD 5 por corpus indexado y la latencia a 1-3s por paper.
+   Para una demo a clientes, **eso es suficiente** y se sostiene
+   económicamente.
+2. **El sprint estabilizó la arquitectura.** Reutilizar `Document`,
+   `Chunk` y el pipeline de embeddings del RAG significó que el código
+   nuevo del corpus es chico (~2K líneas, no 10K). Si Python entra
+   después, lo que sale es solo el `CorpusSummaryService` y la
+   extracción LLM de metadata — el resto del modelo de datos y el
+   search se quedan.
+3. **El cliente puede ver Demo 03 funcionando hoy.** El ADR original
+   asumía que la conversación con Python iba a llegar antes que la
+   reunión. Cambió el orden — la reunión se acerca y Python (NAI)
+   sigue dependiendo de Edguitar.
+
+### Qué pasa cuando entre Python
+
+Cuando llegue NAI, las piezas que migran son:
+
+- **Extracción de metadata por paper** — pasa a `pdfplumber` +
+  `sentence-transformers` para hacer batch local sin gastar API.
+- **Summary map-reduce** — el "map" puede correr en paralelo con
+  modelos locales; el "reduce" se queda con Sonnet o lo que NAI
+  hostee.
+- **Clustering temático real** — sklearn entra y reemplaza el
+  conteo simple de tópicos LLM-extracted.
+
+**Lo que NO migra:** schema, endpoints, frontend, hooks, UI. Toda la
+inversión del sprint queda como base estable.
+
+### Estado actualizado
+
+- `apps/api/src/app/demos/demo-registry.service.ts`: corpus en
+  `status: 'available'`.
+- `apps/web/src/lib/catalog/demos.ts`: corpus en `status: 'live'`.
+- Guion de demo (`docs/demo-script.md`) actualizado con Demo 03
+  funcional en lugar del teaser.
