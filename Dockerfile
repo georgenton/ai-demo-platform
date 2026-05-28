@@ -101,7 +101,20 @@ COPY --from=builder /app/packages ./packages
 # Railway maneja el puerto; nuestro main.ts lo lee de $PORT.
 EXPOSE 3000
 
-# Arranque: 1) aplica migraciones pendientes contra la DB, 2) levanta el
-# server. Si `migrate deploy` falla (drift, DB caída), el contenedor crashea
-# y Railway lo reinicia — preferimos eso a arrancar con DB en mal estado.
-CMD ["sh", "-c", "npx prisma migrate deploy --schema packages/db/prisma/schema.prisma && node apps/api/dist/main.js"]
+# Arranque:
+#   1) aplica migraciones pendientes contra la DB,
+#   2) re-siembra el schema académico del Demo 04 (idempotente — el seed
+#      borra y vuelve a crear Course/Student/Enrollment/Grade con un PRNG
+#      seedeado, así cada arranque deja exactamente los mismos 50
+#      estudiantes / 10 cursos / ~1700 grades). No toca Document/Chunk
+#      (Demos 01/02/03) ni AgentQuery (audit log) — esas se conservan
+#      entre deploys.
+#   3) levanta el server.
+#
+# Si cualquiera de los pasos falla (drift de migración, DB caída, seed
+# que tropieza), el contenedor crashea y Railway lo reinicia — preferimos
+# eso a arrancar con DB en mal estado.
+#
+# tsx vive en devDependencies pero no purgamos node_modules en runtime,
+# así que `npx tsx` resuelve sin red.
+CMD ["sh", "-c", "npx prisma migrate deploy --schema packages/db/prisma/schema.prisma && npx tsx packages/db/prisma/seed.ts && node apps/api/dist/main.js"]
