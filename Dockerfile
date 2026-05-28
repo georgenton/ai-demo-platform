@@ -83,11 +83,12 @@ ENV NODE_ENV=production
 # Copiamos solo lo necesario para correr:
 #   - package.json (para `node` resolva entry points si hace falta)
 #   - node_modules (incluye @prisma/client ya generado)
-#   - dist (output del build)
+#   - apps/api/dist (output de webpack — ver webpack.config.js, escribe a
+#     `<apps/api>/dist`, NO al convencional `<root>/dist/apps/api/`)
 #   - prisma schema + migrations (para `migrate deploy` en boot)
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
 
 # Railway maneja el puerto; nuestro main.ts lo lee de $PORT.
@@ -96,4 +97,4 @@ EXPOSE 3000
 # Arranque: 1) aplica migraciones pendientes contra la DB, 2) levanta el
 # server. Si `migrate deploy` falla (drift, DB caída), el contenedor crashea
 # y Railway lo reinicia — preferimos eso a arrancar con DB en mal estado.
-CMD ["sh", "-c", "npx prisma migrate deploy --schema packages/db/prisma/schema.prisma && node dist/apps/api/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema packages/db/prisma/schema.prisma && node apps/api/dist/main.js"]
