@@ -104,7 +104,14 @@ export class IngestController {
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addMaxSizeValidator({ maxSize: MAX_PDF_BYTES })
-        .addFileTypeValidator({ fileType: 'application/pdf' })
+        // Ver comentario análogo en corpus.controller.ts — desactivamos
+        // la validación de magic numbers porque rechaza PDFs válidos
+        // generados por herramientas no estándar (bioRxiv, medRxiv, etc.).
+        // El MIME del cliente sigue chequeado.
+        .addFileTypeValidator({
+          fileType: 'application/pdf',
+          skipMagicNumbersValidation: true,
+        })
         .build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY }),
     )
     file: Express.Multer.File,
