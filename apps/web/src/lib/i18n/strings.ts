@@ -120,9 +120,11 @@ const STRINGS_ES = {
   'corpus.upload.cta': 'Seleccionar PDFs',
   'corpus.upload.hint': 'Hasta 20 archivos por lote · máx 10 MB cada uno',
   'corpus.upload.selectMore': 'Seleccionar más archivos',
+  'corpus.upload.progress': 'Procesando {current} de {total}…',
   'corpus.upload.uploading': 'Procesando {n} archivo(s)…',
-  'corpus.upload.successCount': '{n} paper(s) indexados',
+  'corpus.upload.successCount': '{n} paper(s) indexados correctamente',
   'corpus.upload.failureCount': '{n} archivo(s) no se pudieron procesar',
+  'corpus.upload.failureMore': '…y {n} más',
 
   'corpus.stats.total': 'Papers en el corpus',
   'corpus.stats.totalHelp':
@@ -314,9 +316,11 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'corpus.upload.cta': 'Select PDFs',
   'corpus.upload.hint': 'Up to 20 files per batch · 10 MB max each',
   'corpus.upload.selectMore': 'Select more files',
+  'corpus.upload.progress': 'Processing {current} of {total}…',
   'corpus.upload.uploading': 'Processing {n} file(s)…',
-  'corpus.upload.successCount': '{n} paper(s) indexed',
+  'corpus.upload.successCount': '{n} paper(s) indexed successfully',
   'corpus.upload.failureCount': '{n} file(s) could not be processed',
+  'corpus.upload.failureMore': '…and {n} more',
 
   'corpus.stats.total': 'Papers in the corpus',
   'corpus.stats.totalHelp':
