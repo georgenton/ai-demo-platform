@@ -13,6 +13,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './app/common/all-exceptions.filter.js';
+import { InternalKeyGuard } from './app/common/internal-key.guard.js';
 
 async function bootstrap() {
   // Si las env vars son inválidas, ConfigModule (registrado en AppModule)
@@ -46,6 +47,17 @@ async function bootstrap() {
   //   - sin leak de stack al cliente
   //   - logging diferenciado (5xx con stack, 4xx solo warn).
   app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Auth simple por shared secret. En dev (sin INTERNAL_API_KEY) el guard
+  // queda inactivo; en prod (Railway) exige el header X-Internal-Key que
+  // inyecta el proxy de Next.js — ver apps/web/src/app/api/[...path]/route.ts.
+  app.useGlobalGuards(new InternalKeyGuard());
+
+  // CORS: en prod el frontend NO llama al backend desde el browser — todo va
+  // server-side por el proxy de Next. CORS no es la línea de defensa (lo es
+  // el InternalKeyGuard). Lo habilitamos abierto para que un curl o un test
+  // E2E externo puedan pegar al backend con la key correcta sin friction.
+  app.enableCors({ origin: true, credentials: false });
 
   // OpenAPI / Swagger UI. La spec se genera a partir de:
   //   - decoradores @ApiTags/@ApiOperation/@ApiResponse en controllers
