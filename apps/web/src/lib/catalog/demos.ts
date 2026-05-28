@@ -37,10 +37,11 @@ export interface DemoCatalogEntry {
  *
  * Status notes:
  *   - rag, comparator, agent: marcados 'live' — los tres tienen UI en
- *     este chain de PRs (5, 6, 7 respectivamente).
- *   - corpus: 'coming-soon' — el demo está bloqueado por la entrada de
- *     Python/FastAPI (ver docs/adr/0011-demo-03-waits-for-python.md).
- *     PR 7 va a renderizar una pantalla de teaser/roadmap.
+ *     el chain de PRs original (5, 6, 7 respectivamente).
+ *   - corpus: ahora también 'live' — el Demo 03 entró funcional vía el
+ *     sprint Demo 03 (PRs #42-#46). La versión con Python/FastAPI sigue
+ *     siendo el target final, pero la versión con LLM APIs + pgvector
+ *     que ya tenemos es suficiente para una demo seria.
  */
 export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
   {
@@ -58,7 +59,7 @@ export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
   {
     id: 'corpus',
     icon: 'library-big',
-    status: 'coming-soon',
+    status: 'live',
     route: '/demo/corpus',
   },
   { id: 'agent', icon: 'bot', status: 'live', route: '/demo/agent' },

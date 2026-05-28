@@ -110,29 +110,60 @@ const STRINGS_ES = {
   'cmp.step3.cita': 'cláusula',
 
   // --- Demo 03 (Corpus)
-  'corpus.eyebrow': 'Próximamente · Q3 2026',
-  'corpus.title':
-    'Detectá tendencias en cientos de tesis y publicaciones de tu universidad.',
-  'corpus.desc':
-    'Procesá colecciones grandes — 500+ documentos — para extraer patrones, agrupar temas y mostrar evolución en el tiempo. Construido sobre hardware NAI on-premise, sin que ningún dato salga de tu red.',
-  'corpus.notify': 'Recibir aviso cuando esté listo',
-  'corpus.roadmap': 'Ver hoja de ruta',
-  'corpus.cap1.title': 'Procesamiento masivo',
-  'corpus.cap1.body':
-    'Ingesta y embedding de cientos de PDFs en paralelo, sobre el cluster NAI.',
-  'corpus.cap2.title': 'Agrupación temática',
-  'corpus.cap2.body':
-    'Clustering semántico de tesis por temas emergentes, sin etiquetas predefinidas.',
-  'corpus.cap3.title': 'Evolución temporal',
-  'corpus.cap3.body':
-    'Cómo cambian los temas, autores y métodos a lo largo de los semestres.',
-  'corpus.status': 'Estado · Hoja de ruta interna',
-  'corpus.m1': 'Demo 01 — RAG en producción',
-  'corpus.m2': 'Demo 02 — Comparador en producción',
-  'corpus.m3': 'Demo 04 — Agente con SQL en pruebas',
-  'corpus.m4': 'Acceso a hardware NAI (cluster de pruebas)',
-  'corpus.m5': 'Servicio FastAPI / Python para corpus',
-  'corpus.m6': 'Demo 03 — Corpus académico (lanzamiento)',
+  'corpus.eyebrow': 'Demo 03 · Corpus',
+  'corpus.title': 'Analiza tendencias en tu corpus académico',
+  'corpus.subtitle':
+    'Cargá tesis o papers en PDF. El sistema extrae metadata (título, año, autores, tópicos), genera estadísticas agregadas, permite buscar por significado y redacta un resumen ejecutivo del estado del arte.',
+
+  'corpus.upload.button': 'Subir papers',
+  'corpus.upload.modalTitle': 'Cargar papers al corpus',
+  'corpus.upload.cta': 'Seleccionar PDFs',
+  'corpus.upload.hint': 'Hasta 20 archivos por lote · máx 10 MB cada uno',
+  'corpus.upload.selectMore': 'Seleccionar más archivos',
+  'corpus.upload.uploading': 'Procesando {n} archivo(s)…',
+  'corpus.upload.successCount': '{n} paper(s) indexados',
+  'corpus.upload.failureCount': '{n} archivo(s) no se pudieron procesar',
+
+  'corpus.stats.total': 'Papers en el corpus',
+  'corpus.stats.totalHelp':
+    'Cargá más PDFs para enriquecer las estadísticas y mejorar el resumen ejecutivo.',
+  'corpus.chart.papersByYear': 'Papers por año',
+  'corpus.chart.topTopics': 'Tópicos dominantes',
+  'corpus.chart.papers': 'papers',
+  'corpus.chart.empty': 'Sin datos todavía.',
+
+  'corpus.search.title': 'Búsqueda semántica',
+  'corpus.search.desc':
+    'Preguntá en lenguaje natural — el sistema busca por significado en todos los papers, no por palabras exactas.',
+  'corpus.search.placeholder': '¿Qué tendencias hay sobre…?',
+  'corpus.search.submit': 'Buscar',
+  'corpus.search.searching': 'Buscando…',
+  'corpus.search.thinking': 'Analizando los fragmentos relevantes…',
+  'corpus.search.s1': '¿Qué métodos de evaluación predominan?',
+  'corpus.search.s2': '¿Qué temas emergen en los últimos años?',
+  'corpus.search.s3': '¿Hay tesis sobre inteligencia artificial?',
+
+  'corpus.summary.title': 'Resumen ejecutivo del corpus',
+  'corpus.summary.desc':
+    'El sistema resume cada paper, agrega las estadísticas y redacta un panorama del estado del arte en 2-3 párrafos. Tarda ~30-60s la primera vez.',
+  'corpus.summary.generate': 'Generar resumen',
+  'corpus.summary.generating': 'Generando…',
+  'corpus.summary.reset': 'Limpiar',
+  'corpus.summary.thinking':
+    'Leyendo papers y redactando el panorama. Esto tarda un minuto…',
+  'corpus.summary.tooFew':
+    'Cargá al menos {min} papers para que el resumen ejecutivo sea significativo.',
+
+  'corpus.list.title': 'Papers cargados',
+  'corpus.list.loading': 'Cargando lista…',
+  'corpus.list.emptyTitle': 'Todavía no hay papers',
+  'corpus.list.emptyBody':
+    'Subí PDFs para empezar — el sistema extrae metadata automáticamente.',
+  'corpus.list.rangeLabel': '{from}-{to} de {total}',
+  'corpus.list.prev': 'Anterior',
+  'corpus.list.next': 'Siguiente',
+  'corpus.list.noAuthors': 'Sin autores extraídos',
+  'corpus.list.etAl': 'et al.',
 
   // --- Demo 04 (Agent)
   'agent.eyebrow': 'Demo 04 · Agente',
@@ -273,29 +304,60 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
     'When you click Generate comparison, the LLM will read each document, evaluate the dimensions you chose and build a side-by-side analysis with verbatim citations.',
   'cmp.step3.cita': 'clause',
 
-  'corpus.eyebrow': 'Coming soon · Q3 2026',
-  'corpus.title':
-    'Spot trends across hundreds of theses and publications from your university.',
-  'corpus.desc':
-    'Process large collections — 500+ documents — to extract patterns, cluster themes and surface evolution over time. Built on NAI on-premise hardware, with no data leaving your network.',
-  'corpus.notify': 'Notify me when it ships',
-  'corpus.roadmap': 'See roadmap',
-  'corpus.cap1.title': 'Massive processing',
-  'corpus.cap1.body':
-    'Parallel ingest and embedding of hundreds of PDFs on the NAI cluster.',
-  'corpus.cap2.title': 'Thematic clustering',
-  'corpus.cap2.body':
-    'Semantic clustering of theses by emerging topics, with no predefined labels.',
-  'corpus.cap3.title': 'Temporal evolution',
-  'corpus.cap3.body':
-    'How topics, authors and methods change across semesters.',
-  'corpus.status': 'Status · Internal roadmap',
-  'corpus.m1': 'Demo 01 — RAG in production',
-  'corpus.m2': 'Demo 02 — Comparator in production',
-  'corpus.m3': 'Demo 04 — SQL agent in testing',
-  'corpus.m4': 'Access to NAI hardware (test cluster)',
-  'corpus.m5': 'FastAPI / Python service for corpus',
-  'corpus.m6': 'Demo 03 — Academic corpus (launch)',
+  'corpus.eyebrow': 'Demo 03 · Corpus',
+  'corpus.title': 'Analyze trends in your academic corpus',
+  'corpus.subtitle':
+    'Upload theses or papers in PDF. The system extracts metadata (title, year, authors, topics), generates aggregated stats, lets you search by meaning and drafts an executive summary of the state of the art.',
+
+  'corpus.upload.button': 'Upload papers',
+  'corpus.upload.modalTitle': 'Add papers to the corpus',
+  'corpus.upload.cta': 'Select PDFs',
+  'corpus.upload.hint': 'Up to 20 files per batch · 10 MB max each',
+  'corpus.upload.selectMore': 'Select more files',
+  'corpus.upload.uploading': 'Processing {n} file(s)…',
+  'corpus.upload.successCount': '{n} paper(s) indexed',
+  'corpus.upload.failureCount': '{n} file(s) could not be processed',
+
+  'corpus.stats.total': 'Papers in the corpus',
+  'corpus.stats.totalHelp':
+    'Upload more PDFs to enrich the stats and improve the executive summary.',
+  'corpus.chart.papersByYear': 'Papers by year',
+  'corpus.chart.topTopics': 'Dominant topics',
+  'corpus.chart.papers': 'papers',
+  'corpus.chart.empty': 'No data yet.',
+
+  'corpus.search.title': 'Semantic search',
+  'corpus.search.desc':
+    'Ask in plain English — the system searches by meaning across every paper, not by exact words.',
+  'corpus.search.placeholder': 'What trends are there about…?',
+  'corpus.search.submit': 'Search',
+  'corpus.search.searching': 'Searching…',
+  'corpus.search.thinking': 'Analyzing the relevant fragments…',
+  'corpus.search.s1': 'What evaluation methods predominate?',
+  'corpus.search.s2': 'What topics emerge in recent years?',
+  'corpus.search.s3': 'Are there theses about artificial intelligence?',
+
+  'corpus.summary.title': 'Executive summary of the corpus',
+  'corpus.summary.desc':
+    'The system summarizes each paper, aggregates the stats and drafts a state-of-the-art panorama in 2-3 paragraphs. Takes ~30-60s the first time.',
+  'corpus.summary.generate': 'Generate summary',
+  'corpus.summary.generating': 'Generating…',
+  'corpus.summary.reset': 'Clear',
+  'corpus.summary.thinking':
+    'Reading papers and drafting the panorama. This takes about a minute…',
+  'corpus.summary.tooFew':
+    'Upload at least {min} papers so the executive summary is meaningful.',
+
+  'corpus.list.title': 'Uploaded papers',
+  'corpus.list.loading': 'Loading list…',
+  'corpus.list.emptyTitle': 'No papers yet',
+  'corpus.list.emptyBody':
+    'Upload PDFs to get started — the system extracts metadata automatically.',
+  'corpus.list.rangeLabel': '{from}-{to} of {total}',
+  'corpus.list.prev': 'Previous',
+  'corpus.list.next': 'Next',
+  'corpus.list.noAuthors': 'No authors extracted',
+  'corpus.list.etAl': 'et al.',
 
   'agent.eyebrow': 'Demo 04 · Agent',
   'agent.title': 'Ask in English, get the answer',
