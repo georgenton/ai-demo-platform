@@ -100,7 +100,19 @@ export class CorpusController {
     @UploadedFiles(
       new ParseFilePipeBuilder()
         .addMaxSizeValidator({ maxSize: MAX_PDF_BYTES })
-        .addFileTypeValidator({ fileType: 'application/pdf' })
+        // skipMagicNumbersValidation: true → solo chequeamos el MIME que
+        // declara el cliente, no los magic bytes del archivo. Sin esto,
+        // NestJS 11+ usa la librería `file-type` para inspeccionar los
+        // primeros bytes del PDF; algunos PDFs (bioRxiv/medRxiv y varios
+        // generadores no estándar) tienen headers que esa librería no
+        // reconoce y rechaza con un error confuso: "current file type is
+        // application/pdf, expected type is application/pdf". El MIME
+        // sigue enforced — un upload con Content-Type: text/plain se
+        // rechaza igual.
+        .addFileTypeValidator({
+          fileType: 'application/pdf',
+          skipMagicNumbersValidation: true,
+        })
         .build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY }),
     )
     files: Express.Multer.File[],
