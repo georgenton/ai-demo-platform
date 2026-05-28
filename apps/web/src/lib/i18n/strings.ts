@@ -205,6 +205,7 @@ const STRINGS_ES = {
   'common.streaming': 'streaming',
   'common.done': 'Listo',
   'common.send': 'Enviar',
+  'common.cancel': 'Cancelar',
   'common.close': 'Cerrar',
   'common.remove': 'Quitar',
 
@@ -222,6 +223,36 @@ const STRINGS_ES = {
   'sample.doc.contratoB': 'Contrato proveedor B — Edificio Aulario.pdf',
   'sample.doc.contratoC': 'Contrato proveedor C — Mantenimiento.pdf',
   'sample.doc.anexo': 'Anexo técnico — Pliegos 2025.pdf',
+
+  // --- Demo 05 (Tutor de inglés)
+  'tutor.eyebrow': 'Demo 05 · Tutor',
+  'tutor.title': 'Practica inglés y mira el costo a escala',
+  'tutor.subtitle':
+    'Chat conversacional con corrección de gramática + calculadora de costo on-prem vs cloud.',
+  'tutor.level.label': 'Nivel',
+  'tutor.scenario.label': 'Escenario',
+  'tutor.scenario.general': 'Conversación',
+  'tutor.scenario.cafe': 'Café',
+  'tutor.scenario.interview': 'Entrevista',
+  'tutor.reset': 'Reiniciar',
+  'tutor.chat.empty': 'Saluda en inglés o usa una de las pills para empezar.',
+  'tutor.composer.placeholder': 'Escribe en inglés…',
+  'tutor.feedback.lastTip': 'Último tip del tutor',
+  'tutor.feedback.empty.title': 'Sin correcciones todavía',
+  'tutor.feedback.empty.body':
+    'Cuando el tutor detecte un error en tu frase, la corrección aparece acá.',
+  'tutor.cost.title': 'Calculadora de costo',
+  'tutor.cost.session.eyebrow': 'Esta sesión',
+  'tutor.cost.tokensIn': 'Tokens entrada',
+  'tutor.cost.tokensOut': 'Tokens salida',
+  'tutor.cost.projection.eyebrow': 'Proyección semestre',
+  'tutor.cost.students': 'Alumnos',
+  'tutor.cost.sessionsPerWeek': 'Sesiones / sem',
+  'tutor.cost.weeks': 'Semanas',
+  'tutor.cost.tokens.caption': '{n} tokens proyectados',
+  'tutor.cost.onprem.caption': 'Costo variable: $0 por consulta',
+  'tutor.cost.source':
+    'Pricing: ${priceIn}/M input + ${priceOut}/M output · capturado {capturedAt}',
 } as const;
 
 const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
@@ -401,6 +432,7 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'common.streaming': 'streaming',
   'common.done': 'Done',
   'common.send': 'Send',
+  'common.cancel': 'Cancel',
   'common.close': 'Close',
   'common.remove': 'Remove',
 
@@ -416,6 +448,36 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'sample.doc.contratoB': 'Vendor contract B — Classroom Building.pdf',
   'sample.doc.contratoC': 'Vendor contract C — Maintenance.pdf',
   'sample.doc.anexo': 'Technical annex — Bids 2025.pdf',
+
+  // --- Demo 05 (English tutor)
+  'tutor.eyebrow': 'Demo 05 · Tutor',
+  'tutor.title': 'Practice English and see the cost at scale',
+  'tutor.subtitle':
+    'Conversational chat with grammar correction + on-prem vs cloud cost calculator.',
+  'tutor.level.label': 'Level',
+  'tutor.scenario.label': 'Scenario',
+  'tutor.scenario.general': 'Small talk',
+  'tutor.scenario.cafe': 'Café',
+  'tutor.scenario.interview': 'Interview',
+  'tutor.reset': 'Reset',
+  'tutor.chat.empty': 'Say hi in English or use one of the pills to start.',
+  'tutor.composer.placeholder': 'Type in English…',
+  'tutor.feedback.lastTip': "Tutor's last tip",
+  'tutor.feedback.empty.title': 'No corrections yet',
+  'tutor.feedback.empty.body':
+    'When the tutor spots a mistake, the correction shows up here.',
+  'tutor.cost.title': 'Cost calculator',
+  'tutor.cost.session.eyebrow': 'This session',
+  'tutor.cost.tokensIn': 'Input tokens',
+  'tutor.cost.tokensOut': 'Output tokens',
+  'tutor.cost.projection.eyebrow': 'Semester projection',
+  'tutor.cost.students': 'Students',
+  'tutor.cost.sessionsPerWeek': 'Sessions / wk',
+  'tutor.cost.weeks': 'Weeks',
+  'tutor.cost.tokens.caption': '{n} tokens projected',
+  'tutor.cost.onprem.caption': 'Variable cost: $0 per query',
+  'tutor.cost.source':
+    'Pricing: ${priceIn}/M input + ${priceOut}/M output · captured {capturedAt}',
 };
 
 // ---------------------------------------------------------------------------
