@@ -1,0 +1,51 @@
+# =============================================================================
+# .dockerignore — qué NO copiamos al builder.
+#
+# Mantener esto chico acelera builds (menos data al daemon) y evita filtrar
+# secretos (.env), archivos generados (dist, .next, .nx) o noise (logs).
+# =============================================================================
+
+# Dependencias y artefactos: se regeneran adentro del builder.
+node_modules
+**/node_modules
+dist
+**/dist
+.nx
+**/.nx
+.next
+**/.next
+
+# Tests y dev tooling — el runtime no los necesita.
+**/*.test.ts
+**/*.spec.ts
+**/*.integration.test.ts
+vitest.config.ts
+vitest.integration.config.ts
+
+# Configs locales / secretos.
+.env
+.env.local
+.env.*.local
+
+# IDE / OS / git.
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+*.swp
+
+# Docs y assets que no van al runtime del backend.
+docs
+README.md
+CONTRIBUTING.md
+LICENSE
+
+# Frontend completo — el contenedor del backend no lo necesita.
+apps/web
+
+# CI / scripts locales que no aplican al runtime.
+.github
+.husky
+.claude
+scripts

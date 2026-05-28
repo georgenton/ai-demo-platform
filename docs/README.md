@@ -6,13 +6,14 @@ lo que necesita y entienda **por qué** las cosas están como están.
 
 ## Contenido
 
-| Carpeta / archivo                        | De qué trata                                                                                                                    |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| [`architecture/`](./architecture/)       | Manual de arquitectura siguiendo el modelo **C4** (Context → Containers → Components → Runtime flows).                          |
-| [`adr/`](./adr/)                         | **Architecture Decision Records**: cada decisión técnica importante con su contexto, alternativas consideradas y consecuencias. |
-| [`runbook-local.md`](./runbook-local.md) | Paso a paso para levantar la stack en una máquina nueva y trabajar día a día (servicios, DB, tests, troubleshooting).           |
-| [`demo-script.md`](./demo-script.md)     | Guion de demo para presentaciones a clientes: checklist pre-reunión, flujo paso a paso por demo, preguntas duras con respuesta. |
-| [`glossary.md`](./glossary.md)           | Términos del dominio (RAG, embeddings, chunking, etc.) en lenguaje simple.                                                      |
+| Carpeta / archivo                          | De qué trata                                                                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| [`architecture/`](./architecture/)         | Manual de arquitectura siguiendo el modelo **C4** (Context → Containers → Components → Runtime flows).                          |
+| [`adr/`](./adr/)                           | **Architecture Decision Records**: cada decisión técnica importante con su contexto, alternativas consideradas y consecuencias. |
+| [`runbook-local.md`](./runbook-local.md)   | Paso a paso para levantar la stack en una máquina nueva y trabajar día a día (servicios, DB, tests, troubleshooting).           |
+| [`runbook-deploy.md`](./runbook-deploy.md) | Deploy a producción: Vercel (frontend) + Railway (backend + Postgres pgvector), basic auth y shared secret entre los dos.       |
+| [`demo-script.md`](./demo-script.md)       | Guion de demo para presentaciones a clientes: checklist pre-reunión, flujo paso a paso por demo, preguntas duras con respuesta. |
+| [`glossary.md`](./glossary.md)             | Términos del dominio (RAG, embeddings, chunking, etc.) en lenguaje simple.                                                      |
 
 ## Por dónde empezar
 
@@ -27,6 +28,9 @@ lo que necesita y entienda **por qué** las cosas están como están.
 - **Vas a presentar la demo a un cliente:**
   [`demo-script.md`](./demo-script.md) — checklist, guion paso a paso,
   preguntas duras.
+- **Vas a desplegar la app a producción:**
+  [`runbook-deploy.md`](./runbook-deploy.md) — Vercel + Railway con
+  basic auth y shared secret.
 - **Querés entender una decisión de diseño:**
   la bitácora en [`adr/`](./adr/).
 
