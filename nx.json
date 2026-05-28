@@ -54,6 +54,9 @@
     }
   ],
   "analytics": false,
+  "sync": {
+    "applyChanges": true
+  },
   "generators": {
     "@nx/next": {
       "application": {
