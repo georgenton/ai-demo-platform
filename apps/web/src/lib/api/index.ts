@@ -17,6 +17,7 @@ export {
   uploadCorpusBatch,
 } from './corpus';
 export { listDemos, getDemo } from './demos';
+export { subscribeToTutorChat, getTutorPricing } from './tutor';
 export {
   deleteDocument,
   getDocument,
@@ -101,6 +102,19 @@ export type {
   TopTopicItem,
 } from './types-corpus';
 export type { DemoMetadata, DemoStatus } from './types-demos';
+export type {
+  TutorChatRequest,
+  TutorHistoryTurn,
+  TutorLevel,
+  TutorNaiOnPrem,
+  TutorPricingResponse,
+  TutorProviderPricing,
+  TutorScenario,
+  TutorStreamEvent,
+  TutorStreamHandlers,
+  TutorSubscription,
+  TutorUsage,
+} from './types-tutor';
 export type {
   ChunkSummary,
   DocumentDetail,
