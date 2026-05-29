@@ -28,8 +28,15 @@ import { PapersByYearChart } from '@/components/demo/corpus/PapersByYearChart';
 import { PapersList } from '@/components/demo/corpus/PapersList';
 import { TopTopicsList } from '@/components/demo/corpus/TopTopicsList';
 import { TotalPapersCard } from '@/components/demo/corpus/TotalPapersCard';
+import { useTutorPricing } from '@/components/demo/tutor/use-tutor-pricing';
+import { AudienceLine } from '@/components/shared/AudienceLine';
+import { CostMiniWidget } from '@/components/shared/CostMiniWidget';
+import { useEstimatedCost } from '@/components/shared/use-estimated-cost';
 import { useCorpusStats } from '@/lib/api';
+import { getDemoAudience } from '@/lib/catalog/demos';
 import { useT } from '@/lib/i18n';
+
+const DEMO_ID = 'corpus' as const;
 
 export default function DemoCorpusPage() {
   const { t } = useT();
@@ -55,6 +62,15 @@ export default function DemoCorpusPage() {
     t('corpus.search.s2'),
     t('corpus.search.s3'),
   ];
+
+  // Cost mini widget. En corpus los streams del LLM viven en sub-components
+  // (CorpusSearchSection / CorpusSummarySection), así que el tracking de
+  // tokens output queda fuera del scope de esta página por ahora — el
+  // widget muestra "0 tokens" hasta que el usuario interactúa, pero ya
+  // comunica el contraste $0 NAI vs $X comercial visualmente.
+  const cost = useEstimatedCost();
+  const { pricing } = useTutorPricing();
+  const audience = getDemoAudience(DEMO_ID, t);
 
   function onUploadSuccess() {
     refetchStats();
@@ -99,14 +115,21 @@ export default function DemoCorpusPage() {
           >
             {t('corpus.subtitle')}
           </p>
+          <AudienceLine audience={audience} />
         </div>
-        <Button
-          variant="accent"
-          icon="upload-cloud"
-          onClick={() => setUploadOpen(true)}
+        <div
+          className="row"
+          style={{ gap: 12, alignItems: 'center', flexWrap: 'wrap' }}
         >
-          {t('corpus.upload.button')}
-        </Button>
+          <CostMiniWidget usage={cost} pricing={pricing} />
+          <Button
+            variant="accent"
+            icon="upload-cloud"
+            onClick={() => setUploadOpen(true)}
+          >
+            {t('corpus.upload.button')}
+          </Button>
+        </div>
       </div>
 
       {/* Stats row: total + year chart + top topics */}

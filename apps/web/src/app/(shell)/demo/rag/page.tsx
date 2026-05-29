@@ -32,7 +32,15 @@ import { DocCard } from '@/components/demo/rag/DocCard';
 import { ThinkingBubble } from '@/components/demo/rag/ThinkingBubble';
 import { UploadPanel } from '@/components/demo/rag/UploadPanel';
 import { useDocuments } from '@/components/demo/rag/use-documents';
+import { useTutorPricing } from '@/components/demo/tutor/use-tutor-pricing';
+import { AudienceLine } from '@/components/shared/AudienceLine';
+import { CostMiniWidget } from '@/components/shared/CostMiniWidget';
+import {
+  useEstimatedCost,
+  useTextDelta,
+} from '@/components/shared/use-estimated-cost';
 import { useChatStream } from '@/lib/api';
+import { getDemoAudience } from '@/lib/catalog/demos';
 import { useT } from '@/lib/i18n';
 
 interface ChatMessage {
@@ -116,9 +124,16 @@ export default function DemoRagPage() {
     return history;
   }, [history, chatStatus, streamText]);
 
+  // Cost mini widget — pricing del backend + acumulación estimada local.
+  const cost = useEstimatedCost();
+  const { pricing } = useTutorPricing();
+  useTextDelta(streamText, cost.addOutput);
+  const audience = getDemoAudience(DEMO_ID, t);
+
   function send() {
     const q = input.trim();
     if (!q || chatStatus === 'streaming') return;
+    cost.addInput(q);
     setInput('');
     setHistory((h) => [...h, { role: 'user', text: q }]);
     start({ q, demoId: DEMO_ID });
@@ -140,15 +155,22 @@ export default function DemoRagPage() {
           <div className="page-title-eyebrow">{t('rag.eyebrow')}</div>
           <h1 className="page-title">{t('rag.title')}</h1>
           <p className="page-subtitle">{t('rag.subtitle')}</p>
+          <AudienceLine audience={audience} />
         </div>
-        <Button
-          variant="primary"
-          icon="upload"
-          size="lg"
-          onClick={() => setUploadOpen(true)}
+        <div
+          className="row"
+          style={{ gap: 12, alignItems: 'center', flexWrap: 'wrap' }}
         >
-          {t('rag.upload')}
-        </Button>
+          <CostMiniWidget usage={cost} pricing={pricing} />
+          <Button
+            variant="primary"
+            icon="upload"
+            size="lg"
+            onClick={() => setUploadOpen(true)}
+          >
+            {t('rag.upload')}
+          </Button>
+        </div>
       </div>
 
       <div className="two-col">

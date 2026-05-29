@@ -15,7 +15,7 @@
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { EmptyState, Icon } from '@/components/ui';
 import { AgentEventCard } from '@/components/demo/agent/AgentEventCard';
@@ -23,6 +23,14 @@ import { HistoryTab } from '@/components/demo/agent/HistoryTab';
 import { SchemaPanel } from '@/components/demo/agent/SchemaPanel';
 import { SuggestedQuestions } from '@/components/demo/agent/SuggestedQuestions';
 import { useAgent } from '@/components/demo/agent/use-agent';
+import { useTutorPricing } from '@/components/demo/tutor/use-tutor-pricing';
+import { AudienceLine } from '@/components/shared/AudienceLine';
+import { CostMiniWidget } from '@/components/shared/CostMiniWidget';
+import {
+  useEstimatedCost,
+  useTextDelta,
+} from '@/components/shared/use-estimated-cost';
+import { getDemoAudience } from '@/lib/catalog/demos';
 import { useT } from '@/lib/i18n';
 
 type Tab = 'console' | 'history';
@@ -45,9 +53,27 @@ export default function DemoAgentPage() {
     }
   });
 
+  // Cost mini widget — pricing + acumulación estimada local.
+  // El "output" del agent es heterogéneo (tokens + SQL + resultados); para
+  // la estimación visual, sumamos solo los tokens del answer streameado.
+  const cost = useEstimatedCost();
+  const { pricing } = useTutorPricing();
+  const streamedAnswer = useMemo(() => {
+    return events
+      .filter(
+        (e): e is { kind: 'answer'; text: string; streaming: boolean } =>
+          e.kind === 'answer',
+      )
+      .map((e) => e.text)
+      .join('');
+  }, [events]);
+  useTextDelta(streamedAnswer, cost.addOutput);
+  const audience = getDemoAudience(DEMO_ID, t);
+
   function ask(q: string) {
     const trimmed = q.trim();
     if (!trimmed || running) return;
+    cost.addInput(trimmed);
     setInput('');
     start({ q: trimmed, demoId: DEMO_ID });
   }
@@ -59,7 +85,9 @@ export default function DemoAgentPage() {
           <div className="page-title-eyebrow">{t('agent.eyebrow')}</div>
           <h1 className="page-title">{t('agent.title')}</h1>
           <p className="page-subtitle">{t('agent.subtitle')}</p>
+          <AudienceLine audience={audience} />
         </div>
+        <CostMiniWidget usage={cost} pricing={pricing} />
       </div>
 
       <div className="tabs" role="tablist">

@@ -19,6 +19,8 @@ import { useSpeechRecognition } from '@/components/demo/tutor/use-speech-recogni
 import { useSpeechSynthesis } from '@/components/demo/tutor/use-speech-synthesis';
 import { useTutorChat } from '@/components/demo/tutor/use-tutor-chat';
 import { useTutorPricing } from '@/components/demo/tutor/use-tutor-pricing';
+import { AudienceLine } from '@/components/shared/AudienceLine';
+import { getDemoAudience } from '@/lib/catalog/demos';
 import { useT } from '@/lib/i18n';
 import type { TutorLevel, TutorScenario } from '@/lib/api';
 
@@ -122,6 +124,8 @@ export default function DemoTutorPage() {
     });
   }
 
+  const audience = getDemoAudience('tutor', t);
+
   return (
     <div className="page">
       <div className="page-header">
@@ -129,6 +133,7 @@ export default function DemoTutorPage() {
           <div className="page-title-eyebrow">{t('tutor.eyebrow')}</div>
           <h1 className="page-title">{t('tutor.title')}</h1>
           <p className="page-subtitle">{t('tutor.subtitle')}</p>
+          <AudienceLine audience={audience} />
         </div>
       </div>
 

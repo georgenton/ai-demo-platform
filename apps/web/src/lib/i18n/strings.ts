@@ -258,6 +258,28 @@ const STRINGS_ES = {
     'Cuando está activo, la app lee en voz alta cada respuesta del tutor (voz nativa del browser, sin API externa).',
   'tutor.voice.mic.start': 'Hablar (mic encendido)',
   'tutor.voice.mic.stop': 'Detener mic',
+
+  // --- Audiencias (espejo de DemoRegistryService.audience del backend)
+  'audience.label': 'Para quién:',
+  'audience.rag.universities': 'Universidades',
+  'audience.rag.hr': 'RRHH',
+  'audience.rag.legal': 'Áreas legales',
+  'audience.cmp.legal': 'Legal',
+  'audience.cmp.procurement': 'Compras',
+  'audience.cmp.audit': 'Auditoría',
+  'audience.corpus.research': 'Vicerrectorado de investigación',
+  'audience.corpus.gradschool': 'Posgrado',
+  'audience.agent.cio': 'CIO',
+  'audience.agent.rectorado': 'Rectorado',
+  'audience.agent.academic': 'Dirección académica',
+  'audience.tutor.langCenters': 'Centros de idiomas universitarios',
+  'audience.tutor.corporate': 'Capacitación corporativa',
+  'audience.tutor.cio': 'CIO evaluando build vs buy',
+
+  // --- CostMiniWidget (sidebar de cada demo)
+  'costMini.tokens': 'Tokens estimados',
+  'costMini.tooltip':
+    'Estimación visual (~4 caracteres por token, regla de la industria). Cobro real de {provider}: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 por consulta.',
 } as const;
 
 const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
@@ -488,6 +510,28 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
     "When on, the app reads each tutor reply aloud (browser's native voice, no external API).",
   'tutor.voice.mic.start': 'Speak (mic on)',
   'tutor.voice.mic.stop': 'Stop mic',
+
+  // --- Audiences (mirror of DemoRegistryService.audience on the backend)
+  'audience.label': 'For:',
+  'audience.rag.universities': 'Universities',
+  'audience.rag.hr': 'HR',
+  'audience.rag.legal': 'Legal departments',
+  'audience.cmp.legal': 'Legal',
+  'audience.cmp.procurement': 'Procurement',
+  'audience.cmp.audit': 'Audit',
+  'audience.corpus.research': 'Research office',
+  'audience.corpus.gradschool': 'Graduate school',
+  'audience.agent.cio': 'CIO',
+  'audience.agent.rectorado': 'Rector’s office',
+  'audience.agent.academic': 'Academic affairs',
+  'audience.tutor.langCenters': 'University language centers',
+  'audience.tutor.corporate': 'Corporate training',
+  'audience.tutor.cio': 'CIO evaluating build vs buy',
+
+  // --- CostMiniWidget (each demo header)
+  'costMini.tokens': 'Estimated tokens',
+  'costMini.tooltip':
+    'Visual estimate (~4 chars per token, industry rule of thumb). {provider} actual price: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 per query.',
 };
 
 // ---------------------------------------------------------------------------

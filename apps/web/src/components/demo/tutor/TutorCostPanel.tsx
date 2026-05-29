@@ -271,15 +271,24 @@ interface CostCellProps {
 }
 
 function CostCell({ label, value, caption, tone }: CostCellProps) {
+  // Usamos tokens que existen en AMBOS themes (light y dark) — los nombres
+  // con sufijo *-soft / *-subtle del Sprint Demo 05 inicial NO estaban
+  // definidos en tokens.css, caían al fallback hardcoded y rompían contraste
+  // en dark mode. Los tokens correctos:
+  //   --color-bg-sunken    — superficie hundida (light y dark).
+  //   --color-success-bg   — fondo tinte mint (light: mint-100, dark: rgba).
+  //   --color-success      — verde de texto/iconos.
+  //   --color-border       — borde sutil que mejora contraste en dark.
   return (
     <div
       style={{
         padding: 12,
         borderRadius: 8,
+        border: '1px solid var(--color-border-subtle)',
         background:
           tone === 'onprem'
-            ? 'var(--color-success-soft, #d7f5d7)'
-            : 'var(--color-bg-subtle, #f5f6f8)',
+            ? 'var(--color-success-bg)'
+            : 'var(--color-bg-sunken)',
       }}
     >
       <div
@@ -295,10 +304,7 @@ function CostCell({ label, value, caption, tone }: CostCellProps) {
         style={{
           fontSize: 22,
           fontWeight: 700,
-          color:
-            tone === 'onprem'
-              ? 'var(--color-success, #1d7a3a)'
-              : 'var(--color-fg)',
+          color: tone === 'onprem' ? 'var(--color-success)' : 'var(--color-fg)',
         }}
       >
         {value}

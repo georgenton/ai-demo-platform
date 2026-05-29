@@ -296,7 +296,7 @@ export function TutorChatPanel({
                     ? 'var(--color-danger)'
                     : undefined,
                   color: voice.isListening
-                    ? 'var(--color-on-danger, #fff)'
+                    ? 'var(--color-fg-inverse)'
                     : undefined,
                   marginRight: 6,
                 }}
@@ -343,8 +343,9 @@ export function TutorChatPanel({
         <div
           style={{
             padding: 12,
-            background: 'var(--color-danger-soft)',
+            background: 'var(--color-danger-bg)',
             color: 'var(--color-danger)',
+            border: '1px solid var(--color-border-subtle)',
             borderRadius: 8,
             fontSize: 13,
           }}
@@ -357,8 +358,9 @@ export function TutorChatPanel({
         <div
           style={{
             padding: 12,
-            background: 'var(--color-danger-soft)',
+            background: 'var(--color-danger-bg)',
             color: 'var(--color-danger)',
+            border: '1px solid var(--color-border-subtle)',
             borderRadius: 8,
             fontSize: 13,
           }}

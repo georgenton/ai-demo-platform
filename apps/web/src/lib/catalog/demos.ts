@@ -30,6 +30,13 @@ export interface DemoCatalogEntry {
   status: DemoStatus;
   /** Ruta Next.js. El sidebar la usa para navegar y matchear el activo. */
   route: string;
+  /**
+   * Keys i18n para el público objetivo del demo. Cada página las resuelve
+   * via `useT()` y las pinta en el AudienceLine del header. Mantener en
+   * sync con `DemoRegistryService.audience` del backend (mismo orden,
+   * mismas strings) — los dos lados se editan en el mismo PR.
+   */
+  audienceKeys: readonly StringKey[];
 }
 
 /**
@@ -51,27 +58,69 @@ export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
     icon: 'message-square-text',
     status: 'live',
     route: '/demo/rag',
+    audienceKeys: [
+      'audience.rag.universities',
+      'audience.rag.hr',
+      'audience.rag.legal',
+    ],
   },
   {
     id: 'comparator',
     icon: 'git-compare-arrows',
     status: 'live',
     route: '/demo/comparator',
+    audienceKeys: [
+      'audience.cmp.legal',
+      'audience.cmp.procurement',
+      'audience.cmp.audit',
+    ],
   },
   {
     id: 'corpus',
     icon: 'library-big',
     status: 'live',
     route: '/demo/corpus',
+    audienceKeys: ['audience.corpus.research', 'audience.corpus.gradschool'],
   },
-  { id: 'agent', icon: 'bot', status: 'live', route: '/demo/agent' },
+  {
+    id: 'agent',
+    icon: 'bot',
+    status: 'live',
+    route: '/demo/agent',
+    audienceKeys: [
+      'audience.agent.cio',
+      'audience.agent.rectorado',
+      'audience.agent.academic',
+    ],
+  },
   {
     id: 'tutor',
     icon: 'graduation-cap',
     status: 'live',
     route: '/demo/tutor',
+    audienceKeys: [
+      'audience.tutor.langCenters',
+      'audience.tutor.corporate',
+      'audience.tutor.cio',
+    ],
   },
 ] as const;
+
+/**
+ * Helper para obtener las audiencias traducidas de un demo. Las páginas
+ * suelen llamarlo así:
+ *
+ *   const { t } = useT();
+ *   const audience = useDemoAudience('rag', t);  // → ['Universidades', 'RRHH', …]
+ *
+ * Devuelve un array vacío si el demoId no existe (no debería pasar — el
+ * catálogo cubre todos los DemoId del union literal).
+ */
+export function getDemoAudience(demoId: DemoId, t: T): string[] {
+  const entry = DEMOS_CATALOG.find((e) => e.id === demoId);
+  if (!entry) return [];
+  return entry.audienceKeys.map((key) => t(key));
+}
 
 /**
  * Entrada con campos traducidos lista para pintar en el sidebar/header.
