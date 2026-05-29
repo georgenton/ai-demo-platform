@@ -4,7 +4,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { costOfSession, projectSemesterCost } from './cost-projection';
+import {
+  costOfSession,
+  projectMonthlyCost,
+  projectSemesterCost,
+} from './cost-projection';
 
 const CHEAP = { pricePerMillionInput: 1, pricePerMillionOutput: 10 };
 
@@ -40,5 +44,68 @@ describe('projectSemesterCost', () => {
     );
     expect(result.semesterTotalUsd).toBe(0);
     expect(result.semesterTotalTokens).toBe(0);
+  });
+});
+
+describe('projectMonthlyCost', () => {
+  // 1K input + 2K output con pricing CHEAP ($1/$10 por millón) → $0.021/uso.
+  const SAMPLE = { inputTokens: 1_000, outputTokens: 2_000 };
+
+  it('100 usuarios × 50 usos/mes → 5.000 usos, $105/mes', () => {
+    const result = projectMonthlyCost(
+      SAMPLE,
+      { users: 100, usesPerUserPerMonth: 50 },
+      CHEAP,
+    );
+    expect(result.monthlyUses).toBe(5_000);
+    // 0.021 × 5000 = 105
+    expect(result.monthlyCostUsd).toBeCloseTo(105, 6);
+    // (1K + 2K) × 5000 = 15M tokens
+    expect(result.monthlyTokens).toBe(15_000_000);
+  });
+
+  it('escala lineal con users (10× users → 10× costo)', () => {
+    const small = projectMonthlyCost(
+      SAMPLE,
+      { users: 10, usesPerUserPerMonth: 50 },
+      CHEAP,
+    );
+    const big = projectMonthlyCost(
+      SAMPLE,
+      { users: 100, usesPerUserPerMonth: 50 },
+      CHEAP,
+    );
+    expect(big.monthlyCostUsd).toBeCloseTo(small.monthlyCostUsd * 10, 6);
+  });
+
+  it('users=0 → todo en 0', () => {
+    const result = projectMonthlyCost(
+      SAMPLE,
+      { users: 0, usesPerUserPerMonth: 50 },
+      CHEAP,
+    );
+    expect(result.monthlyUses).toBe(0);
+    expect(result.monthlyCostUsd).toBe(0);
+    expect(result.monthlyTokens).toBe(0);
+  });
+
+  it('usesPerUserPerMonth=0 → todo en 0', () => {
+    const result = projectMonthlyCost(
+      SAMPLE,
+      { users: 100, usesPerUserPerMonth: 0 },
+      CHEAP,
+    );
+    expect(result.monthlyUses).toBe(0);
+    expect(result.monthlyCostUsd).toBe(0);
+  });
+
+  it('inputs negativos por bug → clamp a 0', () => {
+    const result = projectMonthlyCost(
+      SAMPLE,
+      { users: -5, usesPerUserPerMonth: 50 },
+      CHEAP,
+    );
+    expect(result.monthlyUses).toBe(0);
+    expect(result.monthlyCostUsd).toBe(0);
   });
 });

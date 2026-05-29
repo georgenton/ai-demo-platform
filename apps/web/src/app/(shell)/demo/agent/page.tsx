@@ -87,7 +87,7 @@ export default function DemoAgentPage() {
           <p className="page-subtitle">{t('agent.subtitle')}</p>
           <AudienceLine audience={audience} />
         </div>
-        <CostMiniWidget usage={cost} pricing={pricing} />
+        <CostMiniWidget usage={cost} pricing={pricing} demoId={DEMO_ID} />
       </div>
 
       <div className="tabs" role="tablist">
