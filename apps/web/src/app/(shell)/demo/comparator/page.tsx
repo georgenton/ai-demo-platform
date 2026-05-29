@@ -35,6 +35,14 @@ import { CompareDocRow } from '@/components/demo/comparator/CompareDocRow';
 import { MarkdownOutput } from '@/components/demo/comparator/MarkdownOutput';
 import { StepHeader } from '@/components/demo/comparator/StepHeader';
 import { useCompareStream } from '@/components/demo/comparator/use-compare-stream';
+import { useTutorPricing } from '@/components/demo/tutor/use-tutor-pricing';
+import { AudienceLine } from '@/components/shared/AudienceLine';
+import { CostMiniWidget } from '@/components/shared/CostMiniWidget';
+import {
+  useEstimatedCost,
+  useTextDelta,
+} from '@/components/shared/use-estimated-cost';
+import { getDemoAudience } from '@/lib/catalog/demos';
 import { SUGGESTED_DIMENSIONS_I18N, useT } from '@/lib/i18n';
 
 const DEMO_ID = 'comparator' as const;
@@ -88,8 +96,19 @@ export default function DemoComparatorPage() {
     setDimensions((arr) => arr.filter((x) => x !== d));
   }
 
+  // Cost mini widget — pricing + acumulación estimada local.
+  const cost = useEstimatedCost();
+  const { pricing } = useTutorPricing();
+  useTextDelta(text, cost.addOutput);
+  const audience = getDemoAudience(DEMO_ID, t);
+
   function startCompare() {
     if (!valid || running) return;
+    // El input "real" del compare es la concatenación de los IDs + las
+    // dimensiones — aproximación visual del tamaño del prompt.
+    cost.addInput(
+      `documentIds:${selectedIds.join(',')} dimensions:${dimensions.join(',')}`,
+    );
     start({ documentIds: selectedIds, dimensions, demoId: DEMO_ID });
   }
 
@@ -105,16 +124,23 @@ export default function DemoComparatorPage() {
           <div className="page-title-eyebrow">{t('cmp.eyebrow')}</div>
           <h1 className="page-title">{t('cmp.title')}</h1>
           <p className="page-subtitle">{t('cmp.subtitle')}</p>
+          <AudienceLine audience={audience} />
         </div>
-        <Button
-          variant="accent"
-          icon="sparkles"
-          size="lg"
-          disabled={!valid || running}
-          onClick={startCompare}
+        <div
+          className="row"
+          style={{ gap: 12, alignItems: 'center', flexWrap: 'wrap' }}
         >
-          {running ? t('cmp.generating') : t('cmp.generate')}
-        </Button>
+          <CostMiniWidget usage={cost} pricing={pricing} />
+          <Button
+            variant="accent"
+            icon="sparkles"
+            size="lg"
+            disabled={!valid || running}
+            onClick={startCompare}
+          >
+            {running ? t('cmp.generating') : t('cmp.generate')}
+          </Button>
+        </div>
       </div>
 
       <div
