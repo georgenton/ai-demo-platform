@@ -6,6 +6,52 @@
 
 ---
 
+## Idioma y registro — REGLA INVIOLABLE
+
+Jorge es ecuatoriano. Todo el contenido producido en este proyecto se
+escribe en **español neutro con _tú_**. Esta regla aplica a TODO sin
+excepción:
+
+- Respuestas del asistente en el chat con Jorge.
+- Comentarios en el código.
+- Mensajes de commits y descripciones de PR.
+- Documentación (ADRs, runbooks, guion de demo).
+- Strings de UI (i18n) en español.
+
+**Prohibido absoluto** — el voseo argentino y cualquier marcador
+rioplatense:
+
+- ❌ Verbos: querés, podés, decís, decidís, preguntás, sabés, tenés,
+  ves, mostrá, mirá, hacé, vení, andá, fijate, contás.
+- ❌ Imperativos en "-á / -é / -í": Mirá, Decí, Hacé, Vení, Pasá,
+  Cerrá, Abrí, Esperá, Clickeá, Scrolleá, Marcá, Bajá, Volvé,
+  Silenciá, Señalá, Mostrá, Notá, Refrescá, Mencioná, Anticipá,
+  Adaptá, Corré.
+- ❌ Pronombres y vocativos: vos, che.
+
+**Forma correcta — tuteo neutro**:
+
+| Voseo (prohibido) | Tuteo (correcto) |
+|---|---|
+| querés / podés / sabés | quieres / puedes / sabes |
+| decís / preguntás / decidís | dices / preguntas / decides |
+| tenés / ves | tienes / ves |
+| Mirá / Decí / Hacé / Vení | Mira / Di / Haz / Ven |
+| Pasá / Cerrá / Abrí / Esperá | Pasa / Cierra / Abre / Espera |
+| Clickeá / Scrolleá / Marcá | Clickea / Scrollea / Marca |
+| Mostrá / Notá / Silenciá | Muestra / Nota / Silencia |
+
+**Antes de enviar cualquier mensaje, revisa palabra por palabra que no
+se filtró ninguna forma de voseo**. Esta regla se reforzó múltiples
+veces en el historial del proyecto — si filtras voseo, rompes la
+experiencia del usuario.
+
+Cuando edites código o docs existentes, si encuentras voseo residual
+(strings, comentarios, etc.), corrígelo aunque no sea el objetivo
+principal de tu cambio. Es deuda lingüística que vale la pena saldar.
+
+---
+
 ## ¿Qué es este proyecto?
 
 Plataforma de demos incrementales que demuestra casos de uso de IA sobre infraestructura
@@ -292,6 +338,12 @@ cd apps/ai-service && pip install -r requirements.txt
 ### Estilo de comunicación — OBLIGATORIO en todo momento
 
 Claude Code debe seguir estas reglas durante **todo** el proceso de desarrollo:
+
+0. **Idioma — español neutro con _tú_, NUNCA voseo argentino.** Ver la
+   sección "Idioma y registro — REGLA INVIOLABLE" al principio de este
+   archivo. Antes de enviar cualquier mensaje, revisa palabra por
+   palabra que no se filtró ningún verbo en voseo (querés, podés,
+   decís, mirá, hacé, decidís, preguntás, etc.).
 
 1. **Analogías siempre** — antes de mostrar código de un concepto nuevo, explicarlo con una analogía del mundo real. Si se introduce un patrón (Repository, Adapter, Strategy), la analogía va primero.
 
