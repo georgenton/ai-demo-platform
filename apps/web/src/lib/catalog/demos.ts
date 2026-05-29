@@ -68,7 +68,7 @@ export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
   {
     id: 'tutor',
     icon: 'graduation-cap',
-    status: 'coming-soon',
+    status: 'live',
     route: '/demo/tutor',
   },
 ] as const;

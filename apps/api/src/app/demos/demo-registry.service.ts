@@ -70,8 +70,7 @@ export class DemoRegistryService {
       // del cliente sino el caso de negocio "build vs buy": chat tipo Loora
       // + panel de costo en vivo que extrapola tokens a {alumnos, sesiones,
       // semanas} y lo compara con NAI on-prem ($0 variable). Ver ADR-0012.
-      // Hoy 'coming-soon' — la UI lo muestra deshabilitado mientras se
-      // construye en los próximos PRs.
+      // Status: available desde el cierre del sprint Demo 05 (PR-E).
       id: 'tutor',
       title: 'Tutor de inglés con calculadora de costo',
       tagline: 'Conversa en inglés y mira en vivo cuánto cuesta a escala',
@@ -82,7 +81,7 @@ export class DemoRegistryService {
         'Capacitación corporativa',
         'CIO evaluando build vs buy',
       ],
-      status: 'coming-soon',
+      status: 'available',
       route: '/demo/tutor',
     },
   ];
