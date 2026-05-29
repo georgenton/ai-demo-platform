@@ -130,7 +130,7 @@ export default function DemoComparatorPage() {
           className="row"
           style={{ gap: 12, alignItems: 'center', flexWrap: 'wrap' }}
         >
-          <CostMiniWidget usage={cost} pricing={pricing} />
+          <CostMiniWidget usage={cost} pricing={pricing} demoId={DEMO_ID} />
           <Button
             variant="accent"
             icon="sparkles"

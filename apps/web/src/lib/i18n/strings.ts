@@ -278,6 +278,19 @@ const STRINGS_ES = {
 
   // --- CostMiniWidget (sidebar de cada demo)
   'costMini.tokens': 'Tokens estimados',
+  'costMini.session': 'Sesión:',
+  'costMini.tokensShort': 'tokens',
+  'costMini.scale.prefix': '{users} usuarios × {uses} {unit} →',
+  'costMini.scale.perMonth': '/mes',
+  'costMini.editor.title': 'Proyección a escala',
+  'costMini.editor.open': 'Editar parámetros',
+  'costMini.editor.users': 'Usuarios activos al mes',
+  'costMini.editor.hint':
+    'Los tokens/uso se toman de la sesión actual cuando hay datos; si está vacía, se usa un valor de referencia conservador del demo.',
+  'costMini.uses.rag': 'consultas/mes',
+  'costMini.uses.comparator': 'comparaciones/mes',
+  'costMini.uses.corpus': 'búsquedas/mes',
+  'costMini.uses.agent': 'queries/mes',
   'costMini.tooltip':
     'Estimación visual (~4 caracteres por token, regla de la industria). Cobro real de {provider}: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 por consulta.',
 } as const;
@@ -530,6 +543,19 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
 
   // --- CostMiniWidget (each demo header)
   'costMini.tokens': 'Estimated tokens',
+  'costMini.session': 'Session:',
+  'costMini.tokensShort': 'tokens',
+  'costMini.scale.prefix': '{users} users × {uses} {unit} →',
+  'costMini.scale.perMonth': '/month',
+  'costMini.editor.title': 'Scale projection',
+  'costMini.editor.open': 'Edit parameters',
+  'costMini.editor.users': 'Active users per month',
+  'costMini.editor.hint':
+    'Tokens/use come from the current session when there is data; if empty, a conservative reference value per demo is used.',
+  'costMini.uses.rag': 'queries/month',
+  'costMini.uses.comparator': 'comparisons/month',
+  'costMini.uses.corpus': 'searches/month',
+  'costMini.uses.agent': 'queries/month',
   'costMini.tooltip':
     'Visual estimate (~4 chars per token, industry rule of thumb). {provider} actual price: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 per query.',
 };
