@@ -46,6 +46,7 @@ inválidas en `.env` — el script lo dice claro cuando pasa.
    - `http://localhost:4200/demo/comparator` — Demo 02
    - `http://localhost:4200/demo/agent` — Demo 04
    - `http://localhost:4200/demo/corpus` — Demo 03
+   - `http://localhost:4200/demo/tutor` — Demo 05
 4. **Zoom del navegador al 110–125%.** En proyector el default es chico.
 5. **Silencia notificaciones** del sistema. Slack, mail, calendarios.
    Una notificación en el medio de un stream rompe el momento.
@@ -77,7 +78,7 @@ demostrar que la promesa es real.
 
 ---
 
-## 2) Estructura de los 30-35 minutos
+## 2) Estructura de los 30-40 minutos
 
 | #   | Bloque                                   | Tiempo  | Quién habla      |
 | --- | ---------------------------------------- | ------- | ---------------- |
@@ -86,17 +87,24 @@ demostrar que la promesa es real.
 | 3   | Demo 02 — Comparador de contratos        | 5 min   | Jorge            |
 | 4   | Demo 04 — Agente con datos académicos    | 6 min   | Jorge            |
 | 5   | Demo 03 — Analizador de corpus académico | 2-5 min | Jorge            |
-| 6   | Preguntas duras + Q&A                    | 5 min   | Edguitar + Jorge |
-| 7   | Cierre + próximos pasos                  | 2 min   | Edguitar         |
+| 6   | Demo 05 — Tutor de inglés + costo        | 3-5 min | Jorge            |
+| 7   | Preguntas duras + Q&A                    | 5 min   | Edguitar + Jorge |
+| 8   | Cierre + próximos pasos                  | 2 min   | Edguitar         |
 
 > **Sobre el Demo 03:** dura **2 min** si el cliente no es target
 > directo (le mostramos el panorama y avanzamos) o **5 min** completos
 > si es target (universidad con investigación, RRHH con corpus de CVs,
 > etc.). Detalle del flujo largo en §7.
 
+> **Sobre el Demo 05:** es el demo "build vs buy" — el único cuyo
+> mensaje principal es el **costo**, no la privacidad. Dura **3 min**
+> si el cliente ya cerró el caso comercial (no necesita más
+> argumentos) o **5 min** si está activamente comparando "pagar API
+> comercial vs comprar hardware". Detalle del flujo largo en §8.
+
 > Si el cliente engancha en una pregunta, **corta el demo que sigue**,
 > no atravieses las preguntas. Una conversación de 10 minutos sobre
-> seguridad de datos vale más que mostrar los 4 demos.
+> seguridad de datos vale más que mostrar los 5 demos.
 
 ---
 
@@ -326,7 +334,97 @@ sprint Demo 03.
 
 ---
 
-## 8) Bloque 6 — Preguntas duras y cómo responderlas
+## 8) Bloque 6 — Demo 05: Tutor de inglés + calculadora de costo (5 min)
+
+**URL:** `/demo/tutor`
+
+**Quién aplica:** universidades con centros de idiomas, áreas de
+capacitación corporativa, **CIO que está evaluando "compramos hardware
+o pagamos API mes a mes"**. Este demo es el único del catálogo que
+responde la pregunta "¿por qué no le pagamos a OpenAI directo?" con un
+**número en pantalla** en lugar de un argumento de privacidad.
+Ver [ADR-0012](./adr/0012-demo-05-english-tutor.md).
+
+**Setup que tiene que estar listo:** nada que cargar — el demo no usa
+documentos. Solo verifica que el browser sea Chrome o Safari en
+Mac (la voz nativa funciona mejor); zoom 110-125%; permiso de
+micrófono pre-otorgado (la primera vez Chrome pide confirmación —
+mejor hacerlo en el ensayo previo).
+
+### El concepto que hay que sembrar primero
+
+> "Vieron 4 demos sobre los datos del cliente — todos terminan en 'no
+> salen del campus'. Este demo tiene un mensaje distinto. Es el
+> tutor de inglés tipo Loora que cualquier centro de idiomas
+> universitario está evaluando comprar. Mientras hablan en inglés,
+> ven a la derecha el contador de tokens subiendo en vivo y el costo
+> proyectado para sus 5.000 alumnos. Es el caso de negocio "build vs
+> buy" hecho software."
+
+### Flujo paso a paso
+
+| #   | Acción                                                                       | Qué decir mientras pasa                                                                                                                                                                                            |
+| --- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Muestra los 3 paneles: chat, feedback, calculadora                           | "Tres piezas: chat con corrección, panel de feedback que aísla el tip del último turn, y la calculadora — la pieza distinta del demo."                                                                             |
+| 2   | Click en el botón 🎤 mic, di **"I go to mountain last weekend"**             | "Estoy hablando en inglés con mal gramática a propósito. El reconocedor de voz es el nativo de Chrome — cero servicios externos."                                                                                  |
+| 3   | Envía (Enter o tap)                                                          | "El backend manda el mensaje al LLM con el system prompt del tutor. Streaming en vivo igual que los otros demos."                                                                                                  |
+| 4   | El tutor responde por voz + texto                                            | "La respuesta del browser se lee en voz alta — voz nativa, también sin servicios externos. Refuerza el pitch on-prem."                                                                                             |
+| 5   | Apunta al panel 2 (feedback)                                                 | "Acá ven el tip aislado: el sistema separó la corrección del cuerpo del chat. El estudiante tiene la respuesta natural arriba y la explicación en español al costado."                                             |
+| 6   | Apunta al panel 3 (costo). Tokens deberían estar en ~3K-5K acumulados        | "Esta sesión consumió unos 5.000 tokens. Al pricing actual de Anthropic Sonnet — \$3 input + \$15 output por millón — costó **menos de un centavo**. Pero esto extrapolado a una universidad…"                     |
+| 7   | Cambia el slider de **Alumnos** de 500 a **5.000**, deja 3 sesiones/sem × 16 | "5.000 alumnos del centro de idiomas, 3 sesiones por semana, 16 semanas del semestre. Para Anthropic son **\$11.000 USD por semestre**. Para NAI on-prem es **cero variable** — solo el CapEx que ya conversamos." |
+| 8   | (Opcional) Click en el escenario **"Café"** y di "Hi, can I order a coffee?" | "El tutor también hace role-play. Para entrenamiento corporativo de servicio al cliente, recepción, ventas — el mismo motor con personas distintas."                                                               |
+
+### Preguntas pre-cargadas que funcionan bien
+
+| Pregunta                                  | Por qué destacar                                                                               |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| "I go to mountain last weekend"           | Error claro de pasado → tip predecible ("went en vez de go"). Útil para mostrar el flujo.      |
+| "Can you ask me about my work experience" | Sin error → muestra que el tutor NO inventa tips ("a veces no hay correcciones, eso es bueno") |
+| "Hi, can I order a small latte"           | Escenario café — role-play. El tutor responde como barista.                                    |
+
+### Cuidados al presentar
+
+- **Si el reconocedor de voz falla en vivo** (ej. mic no captura
+  bien, ruido ambiente), no entres en pánico — el chat acepta input
+  por teclado normal. Di: _"En este sala el micrófono no agarra
+  bien; tipeo y seguimos."_ La voz sigue saliendo cuando el tutor
+  responde.
+- **Si el cliente pregunta por la calidad de la voz**, la respuesta
+  honesta es: _"Es la voz nativa del browser — buena en Mac/Chrome,
+  variable en otros. Si se quiere voz pro tipo ElevenLabs o
+  Coqui, en NAI on-prem se puede correr Coqui local sin costo
+  variable. Para esta demo elegimos voz nativa para mantener
+  coherente el pitch de 'sin servicios externos'."_
+- **Si pregunta de dónde sale el pricing de Anthropic**, click en
+  el link "anthropic.com/pricing" abajo del panel 3 — está en el
+  código con fecha de captura. _"Lo actualizamos cada vez que
+  Anthropic cambia precios."_
+- **NO compares contra ChatGPT en este demo**. La conversación
+  comercial que abre Demo 05 es contra **APIs de modelos**
+  (Anthropic, OpenAI), no contra producto end-user. Si el cliente
+  pregunta por ChatGPT directamente, redirígelo: _"ChatGPT es el
+  producto; lo que comparamos acá es la **infraestructura LLM** que
+  usa cualquier producto. Para construir su propio chat de inglés
+  necesitan eso, no ChatGPT."_
+
+### Cómo cerrar este bloque
+
+> "Los 4 demos anteriores cierran con 'sus datos no salen del
+> campus'. Este cierra con un número. **Para este caso concreto —
+> 5.000 alumnos, 16 semanas — Anthropic les sale \$11.000 USD por
+> semestre. NAI on-prem es cero variable.** Cuando el costo se mete
+> en el balance, la conversación con el CFO ya no es '¿es seguro?'
+> sino 'cuándo amortizamos'."
+
+> **Por qué este demo no es Loora:** Loora es un producto end-user
+> con detector fonético dedicado. Esto es la infraestructura LLM
+> con la que se construye un Loora — el cliente decide si la usa
+> para inglés, para servicio al cliente, o para cualquier otro caso
+> conversacional vertical.
+
+---
+
+## 9) Bloque 7 — Preguntas duras y cómo responderlas
 
 Estas son las preguntas que **siempre** aparecen. Respuestas honestas,
 sin inventar capacidades que no tenemos.
@@ -374,7 +472,17 @@ sin inventar capacidades que no tenemos.
 > aplicación. **No hay costo por consulta** —a diferencia de ChatGPT
 > Enterprise o Copilot, que cobran por usuario o por token. Una
 > universidad con 5.000 alumnos usando esto todo el día cuesta lo
-> mismo que con 50 alumnos.
+> mismo que con 50 alumnos. El Demo 05 (tutor de inglés) muestra ese
+> cálculo en pantalla con números editables.
+
+### "¿De dónde sale el pricing de Anthropic / OpenAI que muestran en el Demo 05?"
+
+> De la página oficial de pricing del proveedor — está en el código
+> con `capturedAt` (fecha de captura) y `sourceUrl` (link directo).
+> El panel 3 del demo muestra el link al final; cualquiera puede
+> verificar. Lo actualizamos cada vez que cambian precios. **No
+> inventamos números** — eso es exactamente lo que un CIO afilado
+> pregunta primero, y la respuesta tiene que ser auditable.
 
 ### "¿En cuánto tiempo se implementa para nosotros?"
 
@@ -418,7 +526,7 @@ sin inventar capacidades que no tenemos.
 
 ---
 
-## 9) Bloque 7 — Cierre y próximos pasos (2 min)
+## 10) Bloque 8 — Cierre y próximos pasos (2 min)
 
 Edguitar retoma. Tres cosas:
 
@@ -440,7 +548,7 @@ Edguitar retoma. Tres cosas:
 
 ---
 
-## 10) Apéndices
+## 11) Apéndices
 
 ### A) Si algo se rompe en vivo
 
@@ -495,4 +603,5 @@ corresponda.
 - Por qué NestJS y no Express: [`adr/0002-nestjs-for-the-backend.md`](./adr/0002-nestjs-for-the-backend.md)
 - Por qué hoy es TypeScript y mañana Python: [`adr/0003-typescript-first-python-later.md`](./adr/0003-typescript-first-python-later.md)
 - Por qué Demo 03 está en TS antes que Python: [`adr/0011-demo-03-waits-for-python.md`](./adr/0011-demo-03-waits-for-python.md)
+- Por qué existe Demo 05 (build vs buy): [`adr/0012-demo-05-english-tutor.md`](./adr/0012-demo-05-english-tutor.md)
 - Glosario (RAG, embeddings, chunking): [`glossary.md`](./glossary.md)

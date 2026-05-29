@@ -5,8 +5,9 @@
 // Los tests verifican:
 //   - El catálogo trae los IDs del roadmap: los 4 del CLAUDE.md original
 //     (rag, comparator, corpus, agent) + tutor (Demo 05, ADR-0012).
-//   - Los 4 demos cerrados quedan en `available`; tutor en `coming-soon`
-//     mientras dura el sprint Demo 05.
+//   - Los 5 demos quedan en `available` después del cierre del sprint
+//     Demo 05 (PR-E). Si en algún momento se suma un demo nuevo
+//     'coming-soon', este test cambia con él.
 //   - findOne() devuelve el demo si existe y null si no.
 // -----------------------------------------------------------------------------
 
@@ -24,19 +25,18 @@ describe('DemoRegistryService', () => {
       expect(ids).toEqual(['rag', 'comparator', 'corpus', 'agent', 'tutor']);
     });
 
-    it('marca los 4 demos cerrados como available y tutor como coming-soon', () => {
-      // Sprint Demo 03 (2026-05-28): rag/comparator/corpus/agent quedaron
-      // 'available'. Sprint Demo 05 (en curso): tutor entró al catálogo
-      // como 'coming-soon' para que la UI lo muestre deshabilitado
-      // mientras se construye. Cuando termine el sprint Demo 05, tutor
-      // pasa a 'available' y este test cambia con él.
+    it('marca los 5 demos del roadmap como available', () => {
+      // Cierre del sprint Demo 05 (PR-E): tutor pasó a 'available'. Todos los
+      // demos del roadmap están funcionales. Si en algún momento se suma un
+      // demo nuevo 'coming-soon', conviene volver al patrón "key por key" de
+      // antes en lugar de iterar.
       const demos = service.findAll();
       const byId = Object.fromEntries(demos.map((d) => [d.id, d.status]));
       expect(byId.rag).toBe('available');
       expect(byId.comparator).toBe('available');
       expect(byId.corpus).toBe('available');
       expect(byId.agent).toBe('available');
-      expect(byId.tutor).toBe('coming-soon');
+      expect(byId.tutor).toBe('available');
     });
 
     it('todos los demos traen los campos requeridos por la UI', () => {
