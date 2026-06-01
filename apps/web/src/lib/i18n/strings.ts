@@ -310,6 +310,38 @@ const STRINGS_ES = {
   'auth.session.error':
     'Hubo un problema cargando tu sesión. Vuelve a iniciar sesión.',
 
+  // --- Dashboard / home (PR-MT5)
+  'dashboard.welcome': 'Hola, {name}',
+  'dashboard.subtitle':
+    '{tenantName} · {industryName}. Estas son las demos habilitadas para tu organización.',
+  'dashboard.empty.title': 'No hay demos habilitados',
+  'dashboard.empty.body':
+    'Tu organización aún no tiene demos asignados. Contacta al administrador para activar al menos uno.',
+  'dashboard.openDemo': 'Abrir',
+  'dashboard.loading': 'Cargando tu cartelera…',
+  'dashboard.error':
+    'Hubo un problema cargando tus demos. Intenta refrescar la página.',
+
+  // --- Admin panel (PR-MT5)
+  'admin.title': 'Administración del tenant',
+  'admin.subtitle':
+    'Edita el nombre visible, los demos habilitados y el branding del tenant.',
+  'admin.displayName.label': 'Nombre del tenant',
+  'admin.enabledDemos.label': 'Demos habilitados',
+  'admin.enabledDemos.hint':
+    'Si dejas todo desmarcado, se heredan los demos por default de tu industria ({industry}).',
+  'admin.branding.title': 'Branding',
+  'admin.branding.accentColor': 'Color de acento (hex)',
+  'admin.branding.logoUrl': 'URL del logo',
+  'admin.branding.displayName': 'Nombre mostrado en el header',
+  'admin.save': 'Guardar cambios',
+  'admin.saving': 'Guardando…',
+  'admin.saved': 'Cambios guardados.',
+  'admin.error.forbidden':
+    'No tienes permisos para editar este tenant. Solo los administradores pueden hacerlo.',
+  'admin.error.generic':
+    'No se pudieron guardar los cambios. Revisa los datos e intenta de nuevo.',
+
   'costMini.tooltip':
     'Estimación visual (~4 caracteres por token, regla de la industria). Cobro real de {provider}: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 por consulta.',
 } as const;
@@ -593,6 +625,38 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'auth.session.loading': 'Loading session…',
   'auth.session.error':
     'There was a problem loading your session. Please sign in again.',
+
+  // --- Dashboard / home (PR-MT5)
+  'dashboard.welcome': 'Hello, {name}',
+  'dashboard.subtitle':
+    '{tenantName} · {industryName}. These are the demos enabled for your organization.',
+  'dashboard.empty.title': 'No demos enabled',
+  'dashboard.empty.body':
+    'Your organization has no demos assigned yet. Contact your administrator to enable at least one.',
+  'dashboard.openDemo': 'Open',
+  'dashboard.loading': 'Loading your demos…',
+  'dashboard.error':
+    'There was a problem loading your demos. Please refresh the page.',
+
+  // --- Admin panel (PR-MT5)
+  'admin.title': 'Tenant administration',
+  'admin.subtitle':
+    'Edit display name, enabled demos and branding of your tenant.',
+  'admin.displayName.label': 'Tenant name',
+  'admin.enabledDemos.label': 'Enabled demos',
+  'admin.enabledDemos.hint':
+    'If you leave everything unchecked, defaults from your industry ({industry}) are inherited.',
+  'admin.branding.title': 'Branding',
+  'admin.branding.accentColor': 'Accent color (hex)',
+  'admin.branding.logoUrl': 'Logo URL',
+  'admin.branding.displayName': 'Display name in header',
+  'admin.save': 'Save changes',
+  'admin.saving': 'Saving…',
+  'admin.saved': 'Changes saved.',
+  'admin.error.forbidden':
+    "You don't have permission to edit this tenant. Only administrators can.",
+  'admin.error.generic':
+    'Could not save changes. Check your inputs and try again.',
 
   'costMini.tooltip':
     'Visual estimate (~4 chars per token, industry rule of thumb). {provider} actual price: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 per query.',

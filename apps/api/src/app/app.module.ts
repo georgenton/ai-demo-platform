@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdminModule } from './admin/admin.module.js';
 import { AgentModule } from './agent/agent.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ChatModule } from './chat/chat.module.js';
@@ -31,6 +32,7 @@ import { TutorModule } from './tutor/tutor.module.js';
       // `.env` lo carga por defecto si existe; en CI/prod las vars vienen
       // del entorno directamente y eso también funciona.
     }),
+    AdminModule,
     AgentModule,
     AuthModule,
     ChatModule,

@@ -15,6 +15,7 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app/app.module';
 import { AuthGuard } from './app/auth/auth.guard.js';
 import { DemoAccessGuard } from './app/auth/demo-access.guard.js';
+import { RolesGuard } from './app/auth/roles.guard.js';
 import { TenantGuard } from './app/auth/tenant.guard.js';
 import { AllExceptionsFilter } from './app/common/all-exceptions.filter.js';
 import { InternalKeyGuard } from './app/common/internal-key.guard.js';
@@ -61,11 +62,14 @@ async function bootstrap() {
   // queda inactivo; en prod (Railway) exige el header X-Internal-Key que
   // inyecta el proxy de Next.js — ver apps/web/src/app/api/[...path]/route.ts.
   //
-  // AuthGuard + TenantGuard + DemoAccessGuard (ADR-0013, ADR-0014, PR-MT3):
-  //   1) AuthGuard       — JWT en cookie obligatorio (excepto @Public()).
-  //   2) TenantGuard     — pone request.tenantId desde el JWT.
-  //   3) DemoAccessGuard — si el handler declara @RequireDemo(), valida
-  //                        que el tenant tenga ese demo habilitado.
+  // Cadena de guards globales (ADR-0013, ADR-0014, PR-MT3/MT5):
+  //   1) InternalKeyGuard — X-Internal-Key (solo activo en prod).
+  //   2) AuthGuard        — JWT en cookie obligatorio (excepto @Public()).
+  //   3) TenantGuard      — pone request.tenantId desde el JWT.
+  //   4) DemoAccessGuard  — si el handler declara @RequireDemo(), valida
+  //                         que el tenant tenga ese demo habilitado.
+  //   5) RolesGuard       — si el handler declara @RequireRole(), valida
+  //                         que el rol del usuario sea >= al requerido.
   //
   // El orden importa: cada guard depende de que el anterior haya corrido.
   //
@@ -75,11 +79,13 @@ async function bootstrap() {
   const authGuard = app.get(AuthGuard);
   const tenantGuard = app.get(TenantGuard);
   const demoAccessGuard = app.get(DemoAccessGuard);
+  const rolesGuard = app.get(RolesGuard);
   app.useGlobalGuards(
     new InternalKeyGuard(),
     authGuard,
     tenantGuard,
     demoAccessGuard,
+    rolesGuard,
   );
 
   // CORS: en prod el frontend NO llama al backend desde el browser — todo va

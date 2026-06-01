@@ -19,6 +19,7 @@ import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { DemoAccessGuard } from './demo-access.guard.js';
+import { RolesGuard } from './roles.guard.js';
 import { TenantGuard } from './tenant.guard.js';
 
 @Module({
@@ -50,7 +51,14 @@ import { TenantGuard } from './tenant.guard.js';
     IndustryModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard, TenantGuard, DemoAccessGuard],
-  exports: [AuthService, AuthGuard, TenantGuard, DemoAccessGuard, JwtModule],
+  providers: [AuthService, AuthGuard, TenantGuard, DemoAccessGuard, RolesGuard],
+  exports: [
+    AuthService,
+    AuthGuard,
+    TenantGuard,
+    DemoAccessGuard,
+    RolesGuard,
+    JwtModule,
+  ],
 })
 export class AuthModule {}
