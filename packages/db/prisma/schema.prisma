@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Esquema de Prisma — la "fuente de verdad" de la base de datos.
-// Cada vez que cambies este archivo, corré `npm run db:migrate` y Prisma:
+// Cada vez que cambies este archivo, corre `npm run db:migrate` y Prisma:
 //   1) genera la migración SQL (la guarda en prisma/migrations/),
 //   2) la aplica a Postgres,
 //   3) regenera el cliente TypeScript con tipos actualizados.
@@ -25,6 +25,100 @@ datasource db {
   // Declaramos pgvector como extensión del schema. En la primera migración,
   // Prisma emitirá `CREATE EXTENSION IF NOT EXISTS vector` automáticamente.
   extensions = [vector]
+}
+
+// -----------------------------------------------------------------------------
+// Multi-tenancy (ADR-0013) + Auth (ADR-0014)
+//
+// El producto evolucionó a SaaS multi-tenant. Cada cliente (Tenant) pertenece
+// a una Industry y tiene Users con roles. Document/Chunk/AgentQuery suman
+// tenantId en PR-MT2 — acá solo definimos las tres tablas nuevas.
+//
+// Las relaciones inversas (Tenant.documents, Tenant.agentQueries) NO se
+// declaran todavía porque el campo `tenantId` no existe del otro lado en
+// PR-MT1. Se sumarán cuando se agregue en PR-MT2.
+// -----------------------------------------------------------------------------
+
+/// Vertical de mercado. Datos relativamente estáticos: ~6 filas (universidad,
+/// banca, legal, salud, gobierno, retail). Define defaults de demos
+/// habilitados y configuración por industria. Los Tenant los heredan y
+/// pueden sobreescribir.
+model Industry {
+  id            String   @id @default(cuid())
+  /// Identificador legible usado en URLs y comandos CLI.
+  slug          String   @unique
+  displayName   String
+  /// Demos habilitados por default para tenants de esta industria.
+  /// Strings espejo del DemoId union del frontend (rag, comparator, corpus,
+  /// agent, tutor).
+  enabledDemos  String[]
+  /// JSON con prompts especializados, copy del dashboard, defaults custom.
+  /// Vacío `{}` por default.
+  defaultConfig Json     @default("{}")
+  createdAt     DateTime @default(now())
+  tenants       Tenant[]
+}
+
+/// Cliente concreto. La unidad de aislamiento de datos. Cada Tenant pertenece
+/// a una Industry y tiene su propio set de Users + (en PR-MT2) Documents,
+/// Chunks, AgentQueries.
+model Tenant {
+  id           String       @id @default(cuid())
+  /// Identificador legible (ej. 'utpl', 'banco-pichincha'). Usado en URLs y
+  /// logs. Sin espacios, minúsculas, sin acentos.
+  slug         String       @unique
+  displayName  String
+  industryId   String
+  industry     Industry     @relation(fields: [industryId], references: [id])
+  /// Sobreescribe enabledDemos de la industry si no está vacío. Si está
+  /// vacío `[]`, hereda los de la industry.
+  enabledDemos String[]     @default([])
+  /// Branding: `{ logoUrl, accentColor, ... }`. Vacío por default; la UI
+  /// usa fallbacks del proyecto.
+  branding     Json         @default("{}")
+  status       TenantStatus @default(trial)
+  createdAt    DateTime     @default(now())
+  users        User[]
+
+  @@index([industryId])
+}
+
+enum TenantStatus {
+  /// Operativo. El cliente firmó contrato y paga.
+  active
+  /// PoC en evaluación. Por default 60 días.
+  trial
+  /// Pago vencido o cliente que abandona. Datos preservados; users
+  /// bloqueados.
+  suspended
+}
+
+/// Usuario humano que se loguea con email + contraseña (ADR-0014). Pertenece
+/// a UN tenant con un rol. El `superadmin` ve todos los tenants y NO tiene
+/// `tenantId` vinculante en el filtrado (es Jorge + Edguitar).
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  /// bcrypt hash (cost 12). NUNCA se expone al frontend.
+  passwordHash String
+  displayName  String
+  role         UserRole  @default(member)
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([tenantId])
+}
+
+enum UserRole {
+  /// Jorge + Edguitar. Ve todos los tenants. Crea tenants nuevos. Su
+  /// tenantId apunta a un "tenant administrativo" interno (no es cliente).
+  superadmin
+  /// Gerente del cliente. Invita y desactiva users de SU tenant.
+  admin
+  /// Usuario regular del cliente. Solo consume demos del tenant.
+  member
 }
 
 // -----------------------------------------------------------------------------
