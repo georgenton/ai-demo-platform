@@ -215,3 +215,85 @@ CHANGELOG automáticamente.
 Un archivo corto que captura **una** decisión técnica: el contexto, lo que se
 decidió, las alternativas consideradas y las consecuencias. Vive en
 [`docs/adr/`](./adr/). Es la "memoria histórica" del proyecto.
+
+---
+
+## Multi-tenant SaaS
+
+### Tenant
+
+Una **organización cliente** dentro de la plataforma SaaS. Cada
+universidad, banco o estudio jurídico que usa el producto es un tenant
+con sus propios usuarios, documentos y configuración. La unidad
+mínima de aislamiento de datos — todas las queries del backend filtran
+por `tenantId`. Definido en [ADR-0013](./adr/0013-multi-tenant-saas-architecture.md).
+
+### Industry
+
+Una **vertical de mercado**: `universidad`, `banca`, `legal`, `salud`,
+`gobierno`, `retail`. Es una tabla pequeña (~6 filas) que define
+**defaults** para los tenants de esa industria: qué demos están
+habilitados por default, qué copy va en el welcome, etc. Cada tenant
+pertenece a UNA industry y hereda sus defaults salvo que los
+overridee.
+
+### `enabledDemos`
+
+Lista de **IDs de demos habilitados** para un tenant. La regla de
+herencia es simple: si `Tenant.enabledDemos = []`, hereda de
+`Industry.enabledDemos`; si tiene valores, **pisa** la default (no es
+merge). Implementado en `IndustryService.resolveEnabledDemos()`.
+
+### `branding`
+
+Objeto JSON en `Tenant.branding` con campos opcionales `logoUrl`,
+`accentColor`, `displayName`. El frontend lee defensive (cualquier
+campo corrupto se ignora con fallback al ui-kit). El accent color se
+inyecta como CSS var solo en el sidebar — no contamina el resto de la
+app.
+
+### Soft tenancy
+
+Modelo de multi-tenancy donde **una sola DB** sirve a todos los
+tenants, con una columna `tenantId` en cada tabla que escribe datos
+del cliente. Opuesto a "hard tenancy" (DB por cliente). Más simple
+operacionalmente, requiere disciplina de filtrar `tenantId` en toda
+query — patrón que enforce-amos con el `TenantGuard` global.
+
+### `TenantGuard`
+
+Guard de NestJS que corre después del `AuthGuard` y pone
+`request.tenantId` desde el JWT (campo `tid`). Garantiza que el
+backend nunca acepta un `tenantId` del query string o body — solo del
+token firmado. Superadmin puede sobreescribirlo con `?tenantId=` con
+logging.
+
+### `DemoAccessGuard` + `@RequireDemo()`
+
+Guard global (opt-in) que rechaza con 403 si el tenant del usuario no
+tiene el demo habilitado. Los controllers anotan
+`@RequireDemo('comparator')` (estático) o
+`@RequireDemo({ from: 'query', key: 'demoId' })` (dinámico). El guard
+solo consulta la DB cuando el handler marcó el decorator.
+
+### `RolesGuard` + `@RequireRole()`
+
+Guard global (opt-in) con jerarquía `superadmin > admin > member`.
+`@RequireRole('admin')` deja pasar admin Y superadmin. Defensa en
+profundidad para endpoints administrativos como `/api/v1/admin/tenant`.
+
+### JWT en cookie httpOnly
+
+Estrategia de auth elegida en
+[ADR-0014](./adr/0014-auth-email-password-jwt.md). El token JWT vive
+en una cookie httpOnly + SameSite=Strict — el browser la envía
+automáticamente en todas las requests al mismo origen, pero JavaScript
+no la puede leer (mitigación de XSS).
+
+### Migración en 3 pasos (NOT NULL backfill)
+
+Patrón para agregar una columna NOT NULL a una tabla con datos
+existentes sin downtime: (1) `ADD COLUMN nullable`, (2) backfillear
+con `DO $$ ... $$` que crea defaults si hace falta, (3) `SET NOT
+NULL` + FK + índices. Se usa en
+`20260601181401_add_tenant_id_to_existing_tables`.
