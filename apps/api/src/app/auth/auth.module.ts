@@ -10,7 +10,7 @@
 
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
 
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
@@ -20,8 +20,11 @@ import { AuthService } from './auth.service.js';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
+      // `getOrThrow` para JWT_SECRET — el env.schema ya valida que exista
+      // y tenga ≥ 32 chars, pero TypeScript no lo deduce. Esta llamada hace
+      // explícito que la falta del secret es un fatal en tiempo de boot.
+      useFactory: (config: ConfigService): JwtModuleOptions => ({
+        secret: config.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: config.get<string>('JWT_EXPIRES_IN') ?? '7d',
           algorithm: 'HS256',
