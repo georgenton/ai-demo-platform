@@ -17,6 +17,7 @@
 
 import './global.css';
 
+import { AuthProvider } from '@/lib/auth';
 import { LangProvider } from '@/lib/i18n';
 import { ThemeInlineScript, ThemeProvider } from '@/lib/theme';
 
@@ -38,7 +39,13 @@ export default function RootLayout({
       </head>
       <body>
         <ThemeProvider>
-          <LangProvider>{children}</LangProvider>
+          <LangProvider>
+            {/* AuthProvider envuelve toda la app — el portero que sabe quién
+                está logueado. Las páginas públicas (/login) también lo tienen
+                arriba; ahí useAuth() devuelve status="unauthenticated" tras el
+                getMe() inicial y no rompe nada. */}
+            <AuthProvider>{children}</AuthProvider>
+          </LangProvider>
         </ThemeProvider>
       </body>
     </html>
