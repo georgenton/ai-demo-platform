@@ -11,6 +11,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
+import type { SignOptions } from 'jsonwebtoken';
 
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
@@ -23,13 +24,21 @@ import { AuthService } from './auth.service.js';
       // `getOrThrow` para JWT_SECRET — el env.schema ya valida que exista
       // y tenga ≥ 32 chars, pero TypeScript no lo deduce. Esta llamada hace
       // explícito que la falta del secret es un fatal en tiempo de boot.
-      useFactory: (config: ConfigService): JwtModuleOptions => ({
-        secret: config.getOrThrow<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: config.get<string>('JWT_EXPIRES_IN') ?? '7d',
-          algorithm: 'HS256',
-        },
-      }),
+      useFactory: (config: ConfigService): JwtModuleOptions => {
+        // `expiresIn` espera el tipo StringValue de `ms` (literal '7d',
+        // '12h', etc.). El env-schema valida que sea string, pero TS no
+        // puede inferir los template literal types de `ms` desde un string
+        // dinámico — castamos explícito al tipo aceptado por SignOptions.
+        const expiresIn = (config.get<string>('JWT_EXPIRES_IN') ??
+          '7d') as SignOptions['expiresIn'];
+        return {
+          secret: config.getOrThrow<string>('JWT_SECRET'),
+          signOptions: {
+            expiresIn,
+            algorithm: 'HS256',
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],
