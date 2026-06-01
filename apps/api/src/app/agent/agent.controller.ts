@@ -22,6 +22,7 @@ import { map } from 'rxjs/operators';
 import type { AgentEvent } from './agent-events.js';
 import { AgentService } from './agent.service.js';
 import { CurrentTenant } from '../auth/current-user.decorator.js';
+import { RequireDemo } from '../auth/require-demo.decorator.js';
 import {
   AgentHistoryQueryDto,
   type AgentHistoryResponse,
@@ -30,6 +31,7 @@ import { AgentQueryDto } from './dto/agent-query.dto.js';
 
 @ApiTags('Agent (Demo 04)')
 @Controller({ path: 'agent' })
+@RequireDemo('agent')
 export class AgentController {
   constructor(private readonly agentService: AgentService) {}
 

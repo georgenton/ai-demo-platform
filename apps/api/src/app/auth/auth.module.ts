@@ -13,9 +13,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
 import type { SignOptions } from 'jsonwebtoken';
 
+import { IndustryModule } from '../industries/industry.module.js';
+
 import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
+import { DemoAccessGuard } from './demo-access.guard.js';
 import { TenantGuard } from './tenant.guard.js';
 
 @Module({
@@ -42,9 +45,12 @@ import { TenantGuard } from './tenant.guard.js';
         };
       },
     }),
+    // IndustryModule: el DemoAccessGuard consume IndustryService para
+    // resolver enabledDemos del tenant.
+    IndustryModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard, TenantGuard],
-  exports: [AuthService, AuthGuard, TenantGuard, JwtModule],
+  providers: [AuthService, AuthGuard, TenantGuard, DemoAccessGuard],
+  exports: [AuthService, AuthGuard, TenantGuard, DemoAccessGuard, JwtModule],
 })
 export class AuthModule {}

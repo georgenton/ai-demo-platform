@@ -42,6 +42,7 @@ import { CorpusSearchQueryDto } from './dto/corpus-search.dto.js';
 import { CorpusStatsResponseDto } from './dto/corpus-stats.dto.js';
 import { CorpusUploadResponseDto } from './dto/corpus-upload.dto.js';
 import { CurrentTenant } from '../auth/current-user.decorator.js';
+import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 /** 10 MB por archivo — mismo límite que ingest base. */
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
@@ -52,6 +53,7 @@ const MAX_FILES_PER_REQUEST = 20;
 
 @ApiTags('Corpus (Demo 03)')
 @Controller({ path: 'corpus' })
+@RequireDemo('corpus')
 export class CorpusController {
   constructor(
     private readonly corpusIngest: CorpusIngestService,

@@ -14,6 +14,7 @@ import { map } from 'rxjs/operators';
 import { ChatQueryDto } from './dto/chat.dto.js';
 import { ChatService } from './chat.service.js';
 import { CurrentTenant } from '../auth/current-user.decorator.js';
+import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 @ApiTags('Chat (Demo 01)')
 @Controller({ path: 'chat' })
@@ -36,11 +37,12 @@ export class ChatController {
    *   es.onerror = () => es.close();
    */
   @Sse()
+  @RequireDemo({ from: 'query', key: 'demoId' })
   @ApiOperation({
     summary:
       'Chat con streaming SSE (token por token) sobre los documentos indexados',
     description:
-      'Embebe la pregunta, recupera los topK chunks más cercanos por similitud coseno (pgvector) y stremea la respuesta del LLM. La respuesta es text/event-stream — usar EventSource desde el browser.',
+      'Embebe la pregunta, recupera los topK chunks más cercanos por similitud coseno (pgvector) y stremea la respuesta del LLM. La respuesta es text/event-stream — usar EventSource desde el browser. El demoId del query string debe estar habilitado para el tenant del usuario.',
   })
   chat(
     @Query() query: ChatQueryDto,

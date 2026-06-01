@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 
 import { CurrentTenant } from '../auth/current-user.decorator.js';
+import { RequireDemo } from '../auth/require-demo.decorator.js';
 import { IngestFileBodyDto } from './dto/ingest-file.dto.js';
 import { IngestRequestDto, IngestResponseDto } from './dto/ingest.dto.js';
 import { IngestService } from './ingest.service.js';
@@ -49,6 +50,7 @@ export class IngestController {
    * produjo chunks. Para subir un PDF, ver POST /api/v1/ingest/file.
    */
   @Post()
+  @RequireDemo({ from: 'body', key: 'demoId' })
   @ApiOperation({
     summary: 'Ingestar un documento (texto plano)',
     description:
@@ -78,6 +80,7 @@ export class IngestController {
    * extraíble (típico de escaneos sin OCR), responde 400.
    */
   @Post('file')
+  @RequireDemo({ from: 'body', key: 'demoId' })
   @ApiOperation({
     summary: 'Ingestar un PDF (multipart)',
     description:
