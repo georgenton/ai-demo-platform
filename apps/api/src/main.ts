@@ -10,6 +10,7 @@
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './app/common/all-exceptions.filter.js';
@@ -19,6 +20,11 @@ async function bootstrap() {
   // Si las env vars son inválidas, ConfigModule (registrado en AppModule)
   // hace que esto lance acá con la lista de campos faltantes. Falla rápida.
   const app = await NestFactory.create(AppModule);
+
+  // cookie-parser: necesario para que el AuthController lea req.cookies. Tiene
+  // que registrarse antes que los routers para que las cookies estén
+  // disponibles en todos los handlers (ADR-0014).
+  app.use(cookieParser());
 
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);

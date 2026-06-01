@@ -18,6 +18,8 @@ export {
   EnrollmentStatus,
   ExamType,
   Prisma,
+  TenantStatus,
+  UserRole,
 } from '../../generated/client/client.js';
 export type {
   AgentQuery,
@@ -26,7 +28,10 @@ export type {
   Document,
   Enrollment,
   Grade,
+  Industry,
   Student,
+  Tenant,
+  User,
 } from '../../generated/client/client.js';
 
 // Tipado mínimo para colgar el singleton de `globalThis` sin pelearse con TS.

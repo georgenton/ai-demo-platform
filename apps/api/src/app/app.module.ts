@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AgentModule } from './agent/agent.module.js';
+import { AuthModule } from './auth/auth.module.js';
 import { ChatModule } from './chat/chat.module.js';
 import { CompareModule } from './compare/compare.module.js';
 import { validateEnv } from './config/env.schema.js';
@@ -29,6 +30,7 @@ import { TutorModule } from './tutor/tutor.module.js';
       // del entorno directamente y eso también funciona.
     }),
     AgentModule,
+    AuthModule,
     ChatModule,
     CompareModule,
     CorpusModule,

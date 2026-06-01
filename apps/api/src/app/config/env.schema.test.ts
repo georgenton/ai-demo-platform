@@ -19,6 +19,8 @@ const VALID = {
   EMBEDDINGS_PROVIDER: 'openai',
   EMBEDDINGS_API_KEY: 'sk-openai-xxx',
   EMBEDDINGS_MODEL: 'text-embedding-3-small',
+  // Auth (ADR-0014): 32+ chars obligatorios.
+  JWT_SECRET: 'test-secret-just-for-validators-32-chars-min',
 };
 
 describe('validateEnv', () => {

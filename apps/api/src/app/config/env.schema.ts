@@ -33,6 +33,7 @@ import {
   IsUrl,
   Max,
   Min,
+  MinLength,
   validateSync,
   ValidateIf,
 } from 'class-validator';
@@ -127,6 +128,47 @@ export class EnvSchema {
   @Min(1)
   @Max(65535)
   PORT?: number;
+
+  // ---------------------------------------------------------------------------
+  // Auth (ADR-0014)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Secreto para firmar los JWT. Mínimo 32 caracteres. Generar con
+   * `openssl rand -base64 48`. Si se filtra, rotar inmediatamente
+   * (invalida todos los tokens emitidos).
+   */
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(32, {
+    message: 'JWT_SECRET debe tener al menos 32 caracteres por seguridad.',
+  })
+  JWT_SECRET!: string;
+
+  /**
+   * Duración del token expresada como string compatible con `ms`
+   * (ej. '7d', '12h', '30m'). Default 7d.
+   */
+  @IsOptional()
+  @IsString()
+  JWT_EXPIRES_IN?: string;
+
+  /**
+   * Dominio para la cookie en producción. En local se ignora — la cookie
+   * se setea sin domain explícito. Ejemplo prod: '.nai-platform.com'.
+   */
+  @IsOptional()
+  @IsString()
+  COOKIE_DOMAIN?: string;
+
+  /**
+   * Emails separados por coma cuyos users reciben role `superadmin` al
+   * registrarse. Útil para bootstrappear el sistema. Ejemplo:
+   * 'jorge@nai.local,edguitar@nai.local'.
+   */
+  @IsOptional()
+  @IsString()
+  SUPERADMIN_EMAILS?: string;
 }
 
 /**
@@ -148,7 +190,7 @@ export function validateEnv(raw: Record<string, unknown>): EnvSchema {
       Object.values(e.constraints ?? {}).map((c) => `  - ${e.property}: ${c}`),
     );
     throw new Error(
-      `Configuración inválida (revisá tu .env):\n${lines.join('\n')}`,
+      `Configuración inválida (revisa tu .env):\n${lines.join('\n')}`,
     );
   }
   return transformed;
