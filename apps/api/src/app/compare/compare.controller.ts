@@ -12,6 +12,7 @@ import { map } from 'rxjs/operators';
 
 import { CompareService } from './compare.service.js';
 import { CompareRequestDto } from './dto/compare.dto.js';
+import { CurrentTenant } from '../auth/current-user.decorator.js';
 
 @ApiTags('Compare (Demo 02)')
 @Controller({ path: 'compare' })
@@ -39,8 +40,11 @@ export class CompareController {
     description:
       'Recibe 2–5 documentIds + 1–10 dimensiones; recupera el contenido, arma prompt comparativo y stremea el análisis. Response es text/event-stream.',
   })
-  compare(@Body() dto: CompareRequestDto): Observable<MessageEvent> {
-    return from(this.compareService.streamCompare(dto)).pipe(
+  compare(
+    @Body() dto: CompareRequestDto,
+    @CurrentTenant() tenantId: string,
+  ): Observable<MessageEvent> {
+    return from(this.compareService.streamCompare(dto, tenantId)).pipe(
       map((token) => ({ data: token })),
     );
   }

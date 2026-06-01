@@ -37,10 +37,17 @@ export class DocumentsService {
    * con limit/offset + el count del total filtrado), envueltas en un
    * Promise.all para reducir round-trips a la DB.
    */
-  async findAll(query: ListDocumentsQueryDto): Promise<ListDocumentsResponse> {
+  async findAll(
+    query: ListDocumentsQueryDto,
+    tenantId: string,
+  ): Promise<ListDocumentsResponse> {
     const limit = query.limit ?? DEFAULT_LIMIT;
     const offset = query.offset ?? DEFAULT_OFFSET;
-    const where = query.demoId ? { demoId: query.demoId } : {};
+    // Filtro siempre por tenantId. demoId es opcional y se acumula.
+    const where = {
+      tenantId,
+      ...(query.demoId ? { demoId: query.demoId } : {}),
+    };
 
     const [rows, total] = await Promise.all([
       prisma.document.findMany({
@@ -69,10 +76,14 @@ export class DocumentsService {
     return { items, total, limit, offset };
   }
 
-  /** Detalle de un documento con su content completo. 404 si no existe. */
-  async findOne(id: string): Promise<DocumentDetail> {
-    const doc = await prisma.document.findUnique({
-      where: { id },
+  /**
+   * Detalle de un documento con su content completo. 404 si no existe O si
+   * existe pero pertenece a otro tenant. Mismo mensaje para no filtrar
+   * existencia entre tenants.
+   */
+  async findOne(id: string, tenantId: string): Promise<DocumentDetail> {
+    const doc = await prisma.document.findFirst({
+      where: { id, tenantId },
       include: { _count: { select: { chunks: true } } },
     });
     if (!doc) {
@@ -94,9 +105,12 @@ export class DocumentsService {
    * Unsupported en Prisma + ruido para la UI). Si el documento no existe,
    * 404 — para que el cliente distinga "doc inexistente" de "doc sin chunks".
    */
-  async findChunks(documentId: string): Promise<ChunkSummary[]> {
-    const docExists = await prisma.document.findUnique({
-      where: { id: documentId },
+  async findChunks(
+    documentId: string,
+    tenantId: string,
+  ): Promise<ChunkSummary[]> {
+    const docExists = await prisma.document.findFirst({
+      where: { id: documentId, tenantId },
       select: { id: true },
     });
     if (!docExists) {
@@ -116,9 +130,9 @@ export class DocumentsService {
    * schema ya lo declara con `onDelete: Cascade`. 404 si el ID no existe
    * (en vez de éxito silencioso, que ocultaría typos del cliente).
    */
-  async remove(id: string): Promise<void> {
-    const exists = await prisma.document.findUnique({
-      where: { id },
+  async remove(id: string, tenantId: string): Promise<void> {
+    const exists = await prisma.document.findFirst({
+      where: { id, tenantId },
       select: { id: true },
     });
     if (!exists) {
@@ -126,6 +140,6 @@ export class DocumentsService {
     }
 
     await prisma.document.delete({ where: { id } });
-    this.logger.log(`Deleted document ${id}`);
+    this.logger.log(`Deleted document ${id} (tenant=${tenantId})`);
   }
 }

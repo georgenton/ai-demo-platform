@@ -41,15 +41,20 @@ export class CompareService {
 
   constructor(private readonly promptBuilder: ComparePromptBuilder) {}
 
-  async *streamCompare(request: CompareRequestDto): AsyncIterable<string> {
+  async *streamCompare(
+    request: CompareRequestDto,
+    tenantId: string,
+  ): AsyncIterable<string> {
     this.logger.log(
-      `Compare ${request.documentIds.length} documents across ${request.dimensions.length} dimensions`,
+      `Compare ${request.documentIds.length} documents across ${request.dimensions.length} dimensions (tenant=${tenantId})`,
     );
 
-    // 1) Fetch. orderBy createdAt asc para que dos llamadas con los mismos
-    //    IDs den el mismo orden de columnas en la respuesta (determinismo).
+    // 1) Fetch. Filtramos por tenantId — si un user pide IDs de otro tenant,
+    //    no aparecen y caemos en el 404 del paso 2 (sin filtrar existencia).
+    // orderBy createdAt asc para que dos llamadas con los mismos IDs den
+    // el mismo orden de columnas en la respuesta (determinismo).
     const docs = await prisma.document.findMany({
-      where: { id: { in: request.documentIds } },
+      where: { id: { in: request.documentIds }, tenantId },
       orderBy: { createdAt: 'asc' },
     });
 

@@ -24,6 +24,7 @@ import {
   ListDocumentsResponse,
 } from './dto/document.dto.js';
 import { ListDocumentsQueryDto } from './dto/list-documents-query.dto.js';
+import { CurrentTenant } from '../auth/current-user.decorator.js';
 
 @ApiTags('Documents')
 @Controller({ path: 'documents' })
@@ -33,8 +34,11 @@ export class DocumentsController {
   @Get()
   @ApiOperation({ summary: 'Listar documentos (paginado, filtro por demoId)' })
   @ApiResponse({ status: 200, type: ListDocumentsResponse })
-  list(@Query() query: ListDocumentsQueryDto): Promise<ListDocumentsResponse> {
-    return this.documents.findAll(query);
+  list(
+    @Query() query: ListDocumentsQueryDto,
+    @CurrentTenant() tenantId: string,
+  ): Promise<ListDocumentsResponse> {
+    return this.documents.findAll(query, tenantId);
   }
 
   @Get(':id')
@@ -43,8 +47,11 @@ export class DocumentsController {
   })
   @ApiResponse({ status: 200, type: DocumentDetail })
   @ApiResponse({ status: 404, description: 'Documento no existe' })
-  detail(@Param('id') id: string): Promise<DocumentDetail> {
-    return this.documents.findOne(id);
+  detail(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ): Promise<DocumentDetail> {
+    return this.documents.findOne(id, tenantId);
   }
 
   @Get(':id/chunks')
@@ -53,8 +60,11 @@ export class DocumentsController {
   })
   @ApiResponse({ status: 200, type: [ChunkSummary] })
   @ApiResponse({ status: 404, description: 'Documento no existe' })
-  chunks(@Param('id') id: string): Promise<ChunkSummary[]> {
-    return this.documents.findChunks(id);
+  chunks(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ): Promise<ChunkSummary[]> {
+    return this.documents.findChunks(id, tenantId);
   }
 
   @Delete(':id')
@@ -62,7 +72,10 @@ export class DocumentsController {
   @ApiResponse({ status: 204, description: 'Borrado exitoso, sin body.' })
   @ApiResponse({ status: 404, description: 'Documento no existe' })
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): Promise<void> {
-    return this.documents.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+  ): Promise<void> {
+    return this.documents.remove(id, tenantId);
   }
 }

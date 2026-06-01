@@ -21,6 +21,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { CurrentTenant } from '../auth/current-user.decorator.js';
 import { IngestFileBodyDto } from './dto/ingest-file.dto.js';
 import { IngestRequestDto, IngestResponseDto } from './dto/ingest.dto.js';
 import { IngestService } from './ingest.service.js';
@@ -58,8 +59,11 @@ export class IngestController {
     status: 400,
     description: 'Body inválido o sin chunks producidos.',
   })
-  async ingest(@Body() dto: IngestRequestDto): Promise<IngestResponseDto> {
-    return this.ingestService.ingest(dto);
+  async ingest(
+    @Body() dto: IngestRequestDto,
+    @CurrentTenant() tenantId: string,
+  ): Promise<IngestResponseDto> {
+    return this.ingestService.ingest(dto, tenantId);
   }
 
   /**
@@ -116,6 +120,7 @@ export class IngestController {
     )
     file: Express.Multer.File,
     @Body() body: IngestFileBodyDto,
+    @CurrentTenant() tenantId: string,
   ): Promise<IngestResponseDto> {
     const text = await this.pdfExtractor.extractText(file.buffer);
     if (!text) {
@@ -124,10 +129,13 @@ export class IngestController {
       );
     }
 
-    return this.ingestService.ingest({
-      name: file.originalname,
-      content: text,
-      demoId: body.demoId,
-    });
+    return this.ingestService.ingest(
+      {
+        name: file.originalname,
+        content: text,
+        demoId: body.demoId,
+      },
+      tenantId,
+    );
   }
 }

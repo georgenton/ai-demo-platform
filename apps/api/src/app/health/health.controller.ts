@@ -23,6 +23,8 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { prisma } from '@org/db';
 
+import { Public } from '../auth/public.decorator.js';
+
 export interface HealthCheck {
   ok: boolean;
   error?: string;
@@ -41,6 +43,7 @@ export interface HealthResponse {
 
 @ApiTags('Health')
 @Controller({ path: 'health', version: '1' })
+@Public()
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);
 

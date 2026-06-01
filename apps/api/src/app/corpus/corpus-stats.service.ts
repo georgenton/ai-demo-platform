@@ -40,23 +40,25 @@ export class CorpusStatsService {
    *   - GROUP BY year (excluyendo nulls — papers sin año no entran al bar chart)
    *   - GROUP BY topic, ORDER BY count DESC LIMIT 10
    */
-  async stats(): Promise<CorpusStatsResponseDto> {
+  async stats(tenantId: string): Promise<CorpusStatsResponseDto> {
     const [totalPapers, papersByYear, topTopics] = await Promise.all([
-      this.totalPapers(),
-      this.papersByYear(),
-      this.topTopics(),
+      this.totalPapers(tenantId),
+      this.papersByYear(tenantId),
+      this.topTopics(tenantId),
     ]);
 
     this.logger.log(
-      `Corpus stats: ${totalPapers} papers, ${papersByYear.length} years, ${topTopics.length} top topics`,
+      `Corpus stats (tenant=${tenantId}): ${totalPapers} papers, ${papersByYear.length} years, ${topTopics.length} top topics`,
     );
 
     return { totalPapers, papersByYear, topTopics };
   }
 
-  /** COUNT(*) WHERE demoId='corpus'. */
-  private async totalPapers(): Promise<number> {
-    return prisma.document.count({ where: { demoId: DEMO_ID } });
+  /** COUNT(*) WHERE tenantId=$1 AND demoId='corpus'. */
+  private async totalPapers(tenantId: string): Promise<number> {
+    return prisma.document.count({
+      where: { tenantId, demoId: DEMO_ID },
+    });
   }
 
   /**
@@ -66,10 +68,11 @@ export class CorpusStatsService {
    * Usamos `groupBy` de Prisma (no $queryRaw) — más simple y type-safe.
    * El index (demoId, year) cubre el WHERE+GROUP exactamente.
    */
-  private async papersByYear(): Promise<PapersByYearItemDto[]> {
+  private async papersByYear(tenantId: string): Promise<PapersByYearItemDto[]> {
     const rows = await prisma.document.groupBy({
       by: ['year'],
       where: {
+        tenantId,
         demoId: DEMO_ID,
         year: { not: null },
       },
@@ -96,12 +99,13 @@ export class CorpusStatsService {
    * raw query para evitar workaround feo. Index en `topic` hace el GROUP
    * BY eficiente; el JOIN usa el FK con cascade.
    */
-  private async topTopics(): Promise<TopTopicItemDto[]> {
+  private async topTopics(tenantId: string): Promise<TopTopicItemDto[]> {
     const rows = await prisma.$queryRaw<{ topic: string; count: bigint }[]>`
       SELECT dt."topic", COUNT(*) AS count
       FROM "DocumentTopic" dt
       JOIN "Document" d ON d."id" = dt."documentId"
-      WHERE d."demoId" = ${DEMO_ID}
+      WHERE d."tenantId" = ${tenantId}
+        AND d."demoId" = ${DEMO_ID}
       GROUP BY dt."topic"
       ORDER BY count DESC
       LIMIT ${TOP_TOPICS_LIMIT}
@@ -120,17 +124,20 @@ export class CorpusStatsService {
    * Las dos en paralelo. Limit/offset son del caller (controller valida
    * rangos con class-validator).
    */
-  async papers(opts: {
-    limit?: number;
-    offset?: number;
-  }): Promise<CorpusPapersResponseDto> {
+  async papers(
+    opts: {
+      limit?: number;
+      offset?: number;
+    },
+    tenantId: string,
+  ): Promise<CorpusPapersResponseDto> {
     const limit = opts.limit ?? 20;
     const offset = opts.offset ?? 0;
 
     const [total, docs] = await Promise.all([
-      this.totalPapers(),
+      this.totalPapers(tenantId),
       prisma.document.findMany({
-        where: { demoId: DEMO_ID },
+        where: { tenantId, demoId: DEMO_ID },
         orderBy: { createdAt: 'desc' },
         skip: offset,
         take: limit,

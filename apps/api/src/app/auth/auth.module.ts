@@ -14,7 +14,9 @@ import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
 import type { SignOptions } from 'jsonwebtoken';
 
 import { AuthController } from './auth.controller.js';
+import { AuthGuard } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
+import { TenantGuard } from './tenant.guard.js';
 
 @Module({
   imports: [
@@ -42,7 +44,7 @@ import { AuthService } from './auth.service.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, AuthGuard, TenantGuard],
+  exports: [AuthService, AuthGuard, TenantGuard, JwtModule],
 })
 export class AuthModule {}

@@ -13,6 +13,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app/app.module';
+import { AuthGuard } from './app/auth/auth.guard.js';
+import { TenantGuard } from './app/auth/tenant.guard.js';
 import { AllExceptionsFilter } from './app/common/all-exceptions.filter.js';
 import { InternalKeyGuard } from './app/common/internal-key.guard.js';
 
@@ -57,7 +59,17 @@ async function bootstrap() {
   // Auth simple por shared secret. En dev (sin INTERNAL_API_KEY) el guard
   // queda inactivo; en prod (Railway) exige el header X-Internal-Key que
   // inyecta el proxy de Next.js — ver apps/web/src/app/api/[...path]/route.ts.
-  app.useGlobalGuards(new InternalKeyGuard());
+  //
+  // AuthGuard + TenantGuard (ADR-0014, ADR-0013): JWT en cookie obligatorio
+  // para todo endpoint que NO esté marcado con @Public(). El TenantGuard
+  // corre después y pone `request.tenantId` desde el JWT.
+  //
+  // Los obtenemos del container para que NestJS resuelva sus dependencias
+  // (Reflector, AuthService). `new InternalKeyGuard()` se queda construido
+  // a mano porque no necesita DI.
+  const authGuard = app.get(AuthGuard);
+  const tenantGuard = app.get(TenantGuard);
+  app.useGlobalGuards(new InternalKeyGuard(), authGuard, tenantGuard);
 
   // CORS: en prod el frontend NO llama al backend desde el browser — todo va
   // server-side por el proxy de Next. CORS no es la línea de defensa (lo es

@@ -105,15 +105,16 @@ export class CorpusIngestService {
    */
   async ingestBatch(
     files: Express.Multer.File[],
+    tenantId: string,
   ): Promise<CorpusUploadResponseDto> {
-    this.logger.log(`Batch ingest: ${files.length} files`);
+    this.logger.log(`Batch ingest: ${files.length} files (tenant=${tenantId})`);
 
     const items: CorpusUploadItemDto[] = [];
     let failureCount = 0;
 
     for (const file of files) {
       try {
-        const item = await this.ingestOne(file);
+        const item = await this.ingestOne(file, tenantId);
         items.push(item);
       } catch (err) {
         failureCount++;
@@ -141,6 +142,7 @@ export class CorpusIngestService {
    */
   private async ingestOne(
     file: Express.Multer.File,
+    tenantId: string,
   ): Promise<CorpusUploadItemDto> {
     // 1) Extract text del PDF.
     const text = await this.pdfExtractor.extractText(file.buffer);
@@ -151,11 +153,14 @@ export class CorpusIngestService {
     // 2) Ingest base — esto crea Document + chunks + embeddings y devuelve
     //    el documentId. demoId='corpus' marca al Document como parte del
     //    Demo 03 para que las queries de stats lo encuentren.
-    const ingestResult = await this.ingestService.ingest({
-      name: file.originalname,
-      content: text,
-      demoId: 'corpus',
-    });
+    const ingestResult = await this.ingestService.ingest(
+      {
+        name: file.originalname,
+        content: text,
+        demoId: 'corpus',
+      },
+      tenantId,
+    );
 
     // 3) Extract metadata con LLM. Usamos solo los primeros chars del paper
     //    porque toda la metadata útil (título, autores, abstract) está al

@@ -79,25 +79,25 @@ export class CorpusSummaryService {
    *   3) MAP: resumen por paper en paralelo (cap MAP_CONCURRENCY)
    *   4) REDUCE: prompt con stats + resúmenes, streamea al cliente
    */
-  async *streamSummary(): AsyncIterable<string> {
-    const stats = await this.statsService.stats();
+  async *streamSummary(tenantId: string): AsyncIterable<string> {
+    const stats = await this.statsService.stats(tenantId);
 
     if (stats.totalPapers < MIN_PAPERS_FOR_SUMMARY) {
       yield `El corpus tiene solo ${stats.totalPapers} paper(s). ` +
-        `Cargá al menos ${MIN_PAPERS_FOR_SUMMARY} para que el resumen ` +
+        `Carga al menos ${MIN_PAPERS_FOR_SUMMARY} para que el resumen ` +
         `ejecutivo sea significativo.`;
       return;
     }
 
     this.logger.log(
-      `Summary map-reduce: total=${stats.totalPapers}, will process up to ${MAX_PAPERS_FOR_SUMMARY}`,
+      `Summary map-reduce: tenant=${tenantId} total=${stats.totalPapers}, will process up to ${MAX_PAPERS_FOR_SUMMARY}`,
     );
 
     // Traemos los papers más recientes con abstract no-null (los que no
     // tienen abstract no pueden aportar al map). Si no hay ningún abstract,
     // emitimos disclaimer y usamos solo metadata.
     const papers = await prisma.document.findMany({
-      where: { demoId: DEMO_ID },
+      where: { tenantId, demoId: DEMO_ID },
       orderBy: { createdAt: 'desc' },
       take: MAX_PAPERS_FOR_SUMMARY,
       select: {

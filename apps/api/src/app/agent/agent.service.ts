@@ -98,8 +98,11 @@ export class AgentService {
 
   constructor(private readonly executor: SafeSqlExecutor) {}
 
-  async *streamAgent(query: AgentQueryDto): AsyncIterable<AgentEvent> {
-    this.logger.log(`Agent query: "${query.q}"`);
+  async *streamAgent(
+    query: AgentQueryDto,
+    tenantId: string,
+  ): AsyncIterable<AgentEvent> {
+    this.logger.log(`Agent query: "${query.q}" (tenant=${tenantId})`);
 
     const messages: ChatRichMessage[] = [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -264,6 +267,7 @@ export class AgentService {
         success,
         errorMessage,
         turns,
+        tenantId,
       });
     }
   }
@@ -275,17 +279,19 @@ export class AgentService {
    */
   async findHistory(
     query: AgentHistoryQueryDto,
+    tenantId: string,
   ): Promise<AgentHistoryResponse> {
     const limit = query.limit ?? 20;
     const offset = query.offset ?? 0;
 
     const [rows, total] = await Promise.all([
       prisma.agentQuery.findMany({
+        where: { tenantId },
         orderBy: { createdAt: 'desc' },
         skip: offset,
         take: limit,
       }),
-      prisma.agentQuery.count(),
+      prisma.agentQuery.count({ where: { tenantId } }),
     ]);
 
     return {
@@ -314,6 +320,7 @@ export class AgentService {
     success: boolean;
     errorMessage: string | null;
     turns: number;
+    tenantId: string;
   }): Promise<void> {
     try {
       await prisma.agentQuery.create({ data: entry });
