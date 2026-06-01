@@ -26,19 +26,22 @@ Usamos **MADR** (Markdown ADR), uno de los formatos estándar:
 
 ## Índice
 
-| #    | Título                                                                                                            | Estado   |
-| ---- | ----------------------------------------------------------------------------------------------------------------- | -------- |
-| 0001 | [Nx monorepo over multiple repos](./0001-nx-monorepo.md)                                                          | Aceptado |
-| 0002 | [NestJS for the backend](./0002-nestjs-for-the-backend.md)                                                        | Aceptado |
-| 0003 | [TypeScript first, Python later](./0003-typescript-first-python-later.md)                                         | Aceptado |
-| 0004 | [LLM Adapter pattern](./0004-llm-adapter-pattern.md)                                                              | Aceptado |
-| 0005 | [pgvector over a dedicated vector DB](./0005-pgvector-over-dedicated-vector-db.md)                                | Aceptado |
-| 0006 | [Prisma 6 over Prisma 7](./0006-prisma-6-over-7.md)                                                               | Aceptado |
-| 0007 | [Conventional Commits and branch-based PR flow](./0007-conventional-commits-and-pr-flow.md)                       | Aceptado |
-| 0008 | [OpenAI text-embedding-3-small for dev embeddings](./0008-openai-embeddings-for-dev.md)                           | Aceptado |
-| 0009 | [Split LLMAdapter into ChatAdapter + EmbeddingsAdapter](./0009-split-llm-adapter.md)                              | Aceptado |
-| 0010 | [Web/API coupling: Next.js rewrites + duplicated types](./0010-web-api-coupling-rewrites-and-no-contracts-pkg.md) | Aceptado |
-| 0011 | [Demo 03 (corpus académico) espera a la entrada de Python](./0011-demo-03-waits-for-python.md)                    | Aceptado |
+| #    | Título                                                                                                            | Estado                      |
+| ---- | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| 0001 | [Nx monorepo over multiple repos](./0001-nx-monorepo.md)                                                          | Aceptado                    |
+| 0002 | [NestJS for the backend](./0002-nestjs-for-the-backend.md)                                                        | Aceptado                    |
+| 0003 | [TypeScript first, Python later](./0003-typescript-first-python-later.md)                                         | Aceptado                    |
+| 0004 | [LLM Adapter pattern](./0004-llm-adapter-pattern.md)                                                              | Aceptado                    |
+| 0005 | [pgvector over a dedicated vector DB](./0005-pgvector-over-dedicated-vector-db.md)                                | Aceptado                    |
+| 0006 | [Prisma 6 over Prisma 7](./0006-prisma-6-over-7.md)                                                               | Aceptado                    |
+| 0007 | [Conventional Commits and branch-based PR flow](./0007-conventional-commits-and-pr-flow.md)                       | Aceptado                    |
+| 0008 | [OpenAI text-embedding-3-small for dev embeddings](./0008-openai-embeddings-for-dev.md)                           | Aceptado                    |
+| 0009 | [Split LLMAdapter into ChatAdapter + EmbeddingsAdapter](./0009-split-llm-adapter.md)                              | Aceptado                    |
+| 0010 | [Web/API coupling: Next.js rewrites + duplicated types](./0010-web-api-coupling-rewrites-and-no-contracts-pkg.md) | Aceptado                    |
+| 0011 | [Demo 03 (corpus académico) espera a la entrada de Python](./0011-demo-03-waits-for-python.md)                    | Superado por sprint Demo 03 |
+| 0012 | [Demo 05 — Tutor de inglés con cost calculator](./0012-demo-05-english-tutor.md)                                  | Aceptado                    |
+| 0013 | [Multi-tenant SaaS architecture (soft tenancy con tenantId)](./0013-multi-tenant-saas-architecture.md)            | Propuesto                   |
+| 0014 | [Auth: email + contraseña con JWT en cookie httpOnly](./0014-auth-email-password-jwt.md)                          | Propuesto                   |
 
 ## Cuándo agregar un nuevo ADR
 
@@ -52,11 +55,11 @@ Cuando alguno de estos pasa:
 
 ## Cómo agregar un ADR
 
-1. Copiá [`0000-template.md`](./0000-template.md) a
+1. Copia [`0000-template.md`](./0000-template.md) a
    `XXXX-tu-decision.md` (número correlativo, kebab-case).
-2. Completá las secciones.
-3. Agregá la fila al índice de arriba.
-4. Commiteá con `docs(adr): add ADR-XXXX <titulo>`.
+2. Completa las secciones.
+3. Agrega la fila al índice de arriba.
+4. Commitea con `docs(adr): add ADR-XXXX <titulo>`.
 
 ## Estados posibles
 
