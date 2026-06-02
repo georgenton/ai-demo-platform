@@ -25,6 +25,7 @@ import { useT } from '@/lib/i18n';
 import { LangSwitch } from './LangSwitch';
 import { PresentationToggle } from './PresentationToggle';
 import { ThemeToggle } from './ThemeToggle';
+import { UserMenu } from './UserMenu';
 
 export function Header() {
   const { t, lang } = useT();
@@ -73,6 +74,7 @@ export function Header() {
       <LangSwitch />
       <ThemeToggle />
       <PresentationToggle />
+      <UserMenu />
     </header>
   );
 }
