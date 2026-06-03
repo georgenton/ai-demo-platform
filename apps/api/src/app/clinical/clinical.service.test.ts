@@ -55,7 +55,7 @@ describe('ClinicalService', () => {
   describe('resolveDataTenantId', () => {
     it('para industria salud devuelve el tenant compartido', async () => {
       (prisma.tenant.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
-        industrySlug: 'salud',
+        industry: { slug: 'salud' },
       });
       (prisma.patient.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(
         [],
@@ -72,7 +72,7 @@ describe('ClinicalService', () => {
 
     it('lanza ForbiddenException para industria != salud', async () => {
       (prisma.tenant.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
-        industrySlug: 'banca',
+        industry: { slug: 'banca' },
       });
 
       await expect(
@@ -98,7 +98,7 @@ describe('ClinicalService', () => {
   describe('listPatients', () => {
     beforeEach(() => {
       (prisma.tenant.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
-        industrySlug: 'salud',
+        industry: { slug: 'salud' },
       });
     });
 
@@ -154,7 +154,7 @@ describe('ClinicalService', () => {
   describe('getPatient', () => {
     beforeEach(() => {
       (prisma.tenant.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
-        industrySlug: 'salud',
+        industry: { slug: 'salud' },
       });
     });
 
@@ -202,7 +202,7 @@ describe('ClinicalService', () => {
   describe('listProtocols', () => {
     beforeEach(() => {
       (prisma.tenant.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
-        industrySlug: 'salud',
+        industry: { slug: 'salud' },
       });
     });
 

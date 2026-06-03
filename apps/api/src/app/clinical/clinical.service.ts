@@ -118,14 +118,17 @@ export class ClinicalService {
    * primer cliente real.
    */
   private async resolveDataTenantId(userTenantId: string): Promise<string> {
+    // El Tenant referencia a Industry por industryId. Para conocer el slug de
+    // la industria, hacemos un select con include de la relación. Más limpio
+    // que dos queries.
     const tenant = await prisma.tenant.findUnique({
       where: { id: userTenantId },
-      select: { industrySlug: true },
+      select: { industry: { select: { slug: true } } },
     });
     if (!tenant) {
       throw new NotFoundException(`Tenant ${userTenantId} no existe.`);
     }
-    if (tenant.industrySlug !== CLINICAL_INDUSTRY_SLUG) {
+    if (tenant.industry.slug !== CLINICAL_INDUSTRY_SLUG) {
       throw new ForbiddenException(
         'El demo clínico solo está disponible para tenants de industria salud.',
       );
