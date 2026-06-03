@@ -34,7 +34,10 @@ export default function ShellLayout({
             display: 'flex',
             flexDirection: 'column',
             minHeight: 0,
-            overflow: 'hidden',
+            // overflow:visible para que el dropdown del UserMenu pueda
+            // desbordar el header sin recortarse. El scroll del contenido
+            // lo maneja el div interno (overflowY:auto), no este wrapper.
+            overflow: 'visible',
           }}
         >
           <Header />
