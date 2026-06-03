@@ -1,13 +1,9 @@
 // -----------------------------------------------------------------------------
-// Middleware de Next.js — dos responsabilidades en orden:
+// Middleware de Next.js — gating de rutas según presencia de cookie auth.
 //
-//   1) Basic auth opcional (HTTP Basic). Protege el deploy público antes que
-//      cualquier otra lógica. Si BASIC_AUTH_USER/PASSWORD no están seteadas,
-//      este paso queda inactivo y se pasa al siguiente.
-//
-//   2) Auth de aplicación (cookie `auth` con JWT). Si la ruta no es pública
-//      y la cookie no está presente, redirige a /login con ?from=<ruta>
-//      para que tras loguearse el usuario vuelva a donde quería ir.
+// Si la ruta no es pública y la cookie `auth` no está presente, redirige a
+// /login con ?from=<ruta> para que tras loguearse el usuario vuelva a donde
+// quería ir.
 //
 // Por qué el middleware solo chequea PRESENCIA de la cookie, no validez:
 //   El JWT se firma con HS256 y el secreto vive en el backend. El middleware
@@ -22,51 +18,15 @@
 //   AuthProvider redirige. Es un flash de medio segundo. Aceptable para una
 //   plataforma demo; si en producción hace falta UX más fina, se evalúa
 //   verificar con jose en el middleware.
+//
+// Histórico: antes de tener auth de aplicación (pre sprint MT), el middleware
+// también hacía HTTP Basic Auth a nivel deploy con BASIC_AUTH_USER y
+// BASIC_AUTH_PASSWORD. Esa capa se retiró cuando llegó el login con JWT —
+// duplicaba la fricción para el usuario sin agregar protección real. Las
+// env vars BASIC_AUTH_USER/PASSWORD en Vercel/Railway pueden borrarse.
 // -----------------------------------------------------------------------------
 
 import { NextResponse, type NextRequest } from 'next/server';
-
-// ---------------------------------------------------------------------------
-// 1) Basic auth — protección del deploy
-// ---------------------------------------------------------------------------
-
-const USER = process.env.BASIC_AUTH_USER ?? '';
-const PASS = process.env.BASIC_AUTH_PASSWORD ?? '';
-const BASIC_AUTH_ACTIVE = USER.length > 0 && PASS.length > 0;
-
-function checkBasicAuth(req: NextRequest): NextResponse | null {
-  if (!BASIC_AUTH_ACTIVE) return null;
-
-  const auth = req.headers.get('authorization');
-  if (auth && auth.startsWith('Basic ')) {
-    const encoded = auth.slice('Basic '.length).trim();
-    let decoded = '';
-    try {
-      decoded = atob(encoded);
-    } catch {
-      // base64 malformado → tratamos como auth fallida.
-    }
-    const colonIdx = decoded.indexOf(':');
-    if (colonIdx >= 0) {
-      const user = decoded.slice(0, colonIdx);
-      const pass = decoded.slice(colonIdx + 1);
-      if (user === USER && pass === PASS) {
-        return null; // pasa al siguiente paso
-      }
-    }
-  }
-
-  return new NextResponse('Authentication required', {
-    status: 401,
-    headers: {
-      'WWW-Authenticate': 'Basic realm="ai-demo-platform", charset="UTF-8"',
-    },
-  });
-}
-
-// ---------------------------------------------------------------------------
-// 2) Auth de aplicación — cookie auth + redirect a /login
-// ---------------------------------------------------------------------------
 
 /**
  * Rutas que NO requieren login. /login es obvio; /api/v1/auth/* es necesario
@@ -84,13 +44,13 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
-function checkAppAuth(req: NextRequest): NextResponse | null {
+export function middleware(req: NextRequest): NextResponse {
   const pathname = req.nextUrl.pathname;
-  if (isPublicPath(pathname)) return null;
+  if (isPublicPath(pathname)) return NextResponse.next();
 
   // Solo presencia. La validación es trabajo del backend.
   const hasAuthCookie = req.cookies.has('auth');
-  if (hasAuthCookie) return null;
+  if (hasAuthCookie) return NextResponse.next();
 
   // Redirect a /login. ?from preserva la ruta original para que el login
   // pueda redirigir de vuelta tras autenticarse.
@@ -106,20 +66,6 @@ function checkAppAuth(req: NextRequest): NextResponse | null {
   return NextResponse.redirect(loginUrl);
 }
 
-// ---------------------------------------------------------------------------
-// Entry point — corre los dos checks en orden
-// ---------------------------------------------------------------------------
-
-export function middleware(req: NextRequest): NextResponse {
-  const basicAuthReject = checkBasicAuth(req);
-  if (basicAuthReject) return basicAuthReject;
-
-  const appAuthRedirect = checkAppAuth(req);
-  if (appAuthRedirect) return appAuthRedirect;
-
-  return NextResponse.next();
-}
-
 /**
  * Aplica el middleware a TODAS las rutas excepto:
  *   - _next/static / _next/image (assets internos de Next)
@@ -128,7 +74,7 @@ export function middleware(req: NextRequest): NextResponse {
  *
  * Importante: incluimos `/api/...` adentro de la protección. Sin auth, el
  * proxy del Route Handler quedaría accesible y derrotaría el propósito.
- * Los paths PUBLIC_PATH_PREFIXES se exceptúan dentro del checkAppAuth().
+ * Los paths PUBLIC_PATH_PREFIXES se exceptúan dentro del propio middleware.
  */
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|brand/|fonts/).*)'],
