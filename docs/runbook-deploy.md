@@ -100,8 +100,14 @@ SUPERADMIN_EMAILS=                                   # ej: jorge@nai.local,edgui
 >
 > ```bash
 > railway link  # solo la primera vez
-> railway run npm run db:seed:tenants
+> npm run db:seed:tenants:railway
 > ```
+>
+> El script `db:seed:tenants:railway` usa `DATABASE_PUBLIC_URL` (la URL
+> externa que expone Railway) para que el seed corra desde tu máquina
+> local. Si usaras `db:seed:tenants` plano, intentaría conectarse a
+> `postgres.railway.internal` — la URL interna sólo accesible desde dentro
+> del runtime de Railway.
 >
 > Esto crea `admin@nai.local` con contraseña `demo-platform-2026` —
 > **cámbiala en el primer login**. El tenant `demo` y la industry

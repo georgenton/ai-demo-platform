@@ -19,6 +19,7 @@
     "db:seed:railway": "railway run sh -c 'DATABASE_URL=\"${DATABASE_PUBLIC_URL:-$DATABASE_URL}\" tsx packages/db/prisma/seed.ts'",
     "db:seed:demos": "tsx packages/db/prisma/seed-demos.ts",
     "db:seed:tenants": "dotenv -e .env -- tsx packages/db/prisma/seed-tenants.ts",
+    "db:seed:tenants:railway": "railway run sh -c 'DATABASE_URL=\"${DATABASE_PUBLIC_URL:-$DATABASE_URL}\" tsx packages/db/prisma/seed-tenants.ts'",
     "demo:start": "bash scripts/demo-start.sh",
     "postinstall": "npx prisma generate --schema packages/db/prisma/schema.prisma",
     "prepare": "husky"
