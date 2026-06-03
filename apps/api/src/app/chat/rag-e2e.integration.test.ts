@@ -39,6 +39,14 @@ let prisma: PrismaClient;
 let ingest: InstanceType<IngestServiceClass>;
 let chatSvc: InstanceType<ChatServiceClass>;
 
+// Multi-tenant (post sprint MT2): Document.tenantId es NOT NULL con FK a
+// Tenant. El test crea un industry + tenant de prueba en beforeAll y los
+// reusa en todos los `ingest.ingest()` y `chatSvc.streamChat()` para
+// satisfacer la constraint sin pretender ejercitar aislamiento entre
+// tenants (eso lo cubren tenant-isolation.test.ts y los unitarios).
+const TEST_TENANT_ID = 'tenant_rag_e2e_test';
+const TEST_INDUSTRY_ID = 'industry_rag_e2e_test';
+
 /** Helper: consume el async iterable y devuelve el texto concatenado. */
 async function collectText(stream: AsyncIterable<string>): Promise<string> {
   let out = '';
@@ -93,6 +101,25 @@ describe('RAG end-to-end (integration, fake LLM)', () => {
       vectorStore,
       promptBuilder,
     );
+
+    // Crea industry + tenant de prueba (FK del Document.tenantId).
+    await prisma.industry.create({
+      data: {
+        id: TEST_INDUSTRY_ID,
+        slug: 'rag-e2e-test',
+        displayName: 'RAG E2E Test Industry',
+        enabledDemos: ['rag', 'comparator'],
+      },
+    });
+    await prisma.tenant.create({
+      data: {
+        id: TEST_TENANT_ID,
+        slug: 'rag-e2e-tenant',
+        displayName: 'RAG E2E Test Tenant',
+        industryId: TEST_INDUSTRY_ID,
+        status: 'active',
+      },
+    });
   }, 120_000);
 
   afterAll(async () => {
@@ -115,19 +142,25 @@ describe('RAG end-to-end (integration, fake LLM)', () => {
       'La matrícula extraordinaria tiene un recargo del 25% sobre la tasa base.',
     ].join('\n');
 
-    const result = await ingest.ingest({
-      name: 'Manual de matrículas.pdf',
-      content: manualMatriculas,
-      demoId: 'rag',
-    });
+    const result = await ingest.ingest(
+      {
+        name: 'Manual de matrículas.pdf',
+        content: manualMatriculas,
+        demoId: 'rag',
+      },
+      TEST_TENANT_ID,
+    );
     expect(result.chunkCount).toBeGreaterThan(0);
 
     // Pregunta sugerida número 1 de la UI ("rag.suggested.1").
     const response = await collectText(
-      chatSvc.streamChat({
-        demoId: 'rag',
-        q: '¿Cuál es el horario de matrícula?',
-      }),
+      chatSvc.streamChat(
+        {
+          demoId: 'rag',
+          q: '¿Cuál es el horario de matrícula?',
+        },
+        TEST_TENANT_ID,
+      ),
     );
 
     // El fake responde con la frase canónica del manual de matrículas.
@@ -139,17 +172,24 @@ describe('RAG end-to-end (integration, fake LLM)', () => {
   });
 
   it('streamea token por token (más de un yield)', async () => {
-    await ingest.ingest({
-      name: 'doc.txt',
-      content: 'Texto base para que haya algo indexado y la búsqueda no falle.',
-      demoId: 'rag',
-    });
+    await ingest.ingest(
+      {
+        name: 'doc.txt',
+        content:
+          'Texto base para que haya algo indexado y la búsqueda no falle.',
+        demoId: 'rag',
+      },
+      TEST_TENANT_ID,
+    );
 
     const tokens: string[] = [];
-    for await (const t of chatSvc.streamChat({
-      demoId: 'rag',
-      q: '¿Cuál es el horario de matrícula?',
-    })) {
+    for await (const t of chatSvc.streamChat(
+      {
+        demoId: 'rag',
+        q: '¿Cuál es el horario de matrícula?',
+      },
+      TEST_TENANT_ID,
+    )) {
       tokens.push(t);
     }
     // No exigimos un número exacto; lo importante es que SEA streaming.
@@ -160,21 +200,27 @@ describe('RAG end-to-end (integration, fake LLM)', () => {
     // Ingestamos un doc largo en el demo de comparator que casualmente
     // tiene la palabra "matrícula" (no es plausible, pero protege contra
     // un bug donde el filtro por demoId se pierde en algún refactor).
-    await ingest.ingest({
-      name: 'contrato.pdf',
-      content:
-        'Contrato de servicios. La matrícula vehicular del proveedor debe estar al día. Plazo de entrega 90 días.',
-      demoId: 'comparator',
-    });
+    await ingest.ingest(
+      {
+        name: 'contrato.pdf',
+        content:
+          'Contrato de servicios. La matrícula vehicular del proveedor debe estar al día. Plazo de entrega 90 días.',
+        demoId: 'comparator',
+      },
+      TEST_TENANT_ID,
+    );
 
     // En el demo rag NO ingestamos nada. El chat debería devolver una
     // respuesta del fake (genérica si no encuentra contexto), pero NO
     // basada en el doc del comparator.
     const response = await collectText(
-      chatSvc.streamChat({
-        demoId: 'rag',
-        q: '¿Cuál es el horario de matrícula?',
-      }),
+      chatSvc.streamChat(
+        {
+          demoId: 'rag',
+          q: '¿Cuál es el horario de matrícula?',
+        },
+        TEST_TENANT_ID,
+      ),
     );
 
     // El fake responde con su template de matrículas (no depende del

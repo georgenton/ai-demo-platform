@@ -38,6 +38,13 @@ let container: StartedPostgreSqlContainer;
 let prisma: PrismaClient;
 let vectorStore: InstanceType<VectorStoreClass>;
 
+// Multi-tenant (post sprint MT2): Document.tenantId es NOT NULL con FK a
+// Tenant. Los tests crean un industry + tenant de prueba en beforeAll y
+// los reusan en cada document.create() para satisfacer la constraint sin
+// pretender ejercitar aislamiento entre tenants.
+const TEST_TENANT_ID = 'tenant_vector_store_test';
+const TEST_INDUSTRY_ID = 'industry_vector_store_test';
+
 /** Dimensión del vector que define el schema (text-embedding-3-small). */
 const DIM = 1536;
 
@@ -69,6 +76,25 @@ describe('VectorStore (integration)', () => {
     const vectorStoreModule = await import('./vector-store.js');
     prisma = dbModule.prisma;
     vectorStore = new vectorStoreModule.VectorStore();
+
+    // Crea industry + tenant de prueba (FK del Document.tenantId).
+    await prisma.industry.create({
+      data: {
+        id: TEST_INDUSTRY_ID,
+        slug: 'vs-test',
+        displayName: 'VectorStore Test Industry',
+        enabledDemos: ['rag', 'comparator'],
+      },
+    });
+    await prisma.tenant.create({
+      data: {
+        id: TEST_TENANT_ID,
+        slug: 'vs-test-tenant',
+        displayName: 'VectorStore Test Tenant',
+        industryId: TEST_INDUSTRY_ID,
+        status: 'active',
+      },
+    });
   }, 120_000); // testcontainers + image pull + migrations: ~30–90s la primera vez
 
   afterAll(async () => {
@@ -88,7 +114,12 @@ describe('VectorStore (integration)', () => {
   describe('saveChunks (sin tx)', () => {
     it('inserta los chunks y persiste sus embeddings', async () => {
       const doc = await prisma.document.create({
-        data: { name: 'doc.txt', content: 'x', demoId: 'rag' },
+        data: {
+          name: 'doc.txt',
+          content: 'x',
+          demoId: 'rag',
+          tenantId: TEST_TENANT_ID,
+        },
       });
 
       await vectorStore.saveChunks(doc.id, [
@@ -108,7 +139,12 @@ describe('VectorStore (integration)', () => {
 
     it('es no-op para un array vacío de chunks', async () => {
       const doc = await prisma.document.create({
-        data: { name: 'doc.txt', content: 'x', demoId: 'rag' },
+        data: {
+          name: 'doc.txt',
+          content: 'x',
+          demoId: 'rag',
+          tenantId: TEST_TENANT_ID,
+        },
       });
       await vectorStore.saveChunks(doc.id, []);
       expect(await prisma.chunk.count()).toBe(0);
@@ -125,7 +161,12 @@ describe('VectorStore (integration)', () => {
       // IngestService en producción.
       const result = await prisma.$transaction(async (tx) => {
         const doc = await tx.document.create({
-          data: { name: 'doc.txt', content: 'x', demoId: 'rag' },
+          data: {
+            name: 'doc.txt',
+            content: 'x',
+            demoId: 'rag',
+            tenantId: TEST_TENANT_ID,
+          },
         });
         await vectorStore.saveChunks(
           doc.id,
@@ -148,7 +189,12 @@ describe('VectorStore (integration)', () => {
       await expect(
         prisma.$transaction(async (tx) => {
           const doc = await tx.document.create({
-            data: { name: 'doc.txt', content: 'x', demoId: 'rag' },
+            data: {
+              name: 'doc.txt',
+              content: 'x',
+              demoId: 'rag',
+              tenantId: TEST_TENANT_ID,
+            },
           });
           await vectorStore.saveChunks(
             doc.id,
@@ -181,7 +227,12 @@ describe('VectorStore (integration)', () => {
     beforeEach(async () => {
       // Cada test de búsqueda arranca con 3 chunks de vectores conocidos.
       const doc = await prisma.document.create({
-        data: { name: 'doc.txt', content: 'x', demoId: 'rag' },
+        data: {
+          name: 'doc.txt',
+          content: 'x',
+          demoId: 'rag',
+          tenantId: TEST_TENANT_ID,
+        },
       });
       docId = doc.id;
 
@@ -226,7 +277,12 @@ describe('VectorStore (integration)', () => {
       // Sumamos un Document de OTRO demo con un chunk también idéntico al
       // query — debería aparecer solo cuando filtramos por su demo.
       const otherDoc = await prisma.document.create({
-        data: { name: 'other.txt', content: 'x', demoId: 'comparator' },
+        data: {
+          name: 'other.txt',
+          content: 'x',
+          demoId: 'comparator',
+          tenantId: TEST_TENANT_ID,
+        },
       });
       await vectorStore.saveChunks(otherDoc.id, [
         { content: 'del otro demo', index: 0, embedding: unitVector(0) },
