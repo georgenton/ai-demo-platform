@@ -43,6 +43,7 @@ Usamos **MADR** (Markdown ADR), uno de los formatos estándar:
 | 0013 | [Multi-tenant SaaS architecture (soft tenancy con tenantId)](./0013-multi-tenant-saas-architecture.md)            | Aceptado                    |
 | 0014 | [Auth: email + contraseña con JWT en cookie httpOnly](./0014-auth-email-password-jwt.md)                          | Aceptado                    |
 | 0015 | [Multi-tenant: notas de implementación del sprint MT1..MT5](./0015-multi-tenant-implementation-notes.md)          | Aceptado                    |
+| 0016 | [Demo 06 — Asistente clínico para historia clínica + protocolos](./0016-demo-06-clinical-assistant.md)            | Propuesto                   |
 
 ## Cuándo agregar un nuevo ADR
 
