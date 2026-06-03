@@ -81,6 +81,15 @@ model Tenant {
   users        User[]
   documents    Document[]
   agentQueries AgentQuery[]
+  // Demo 06 — Asistente clínico (ADR-0016). En el MVP los pacientes y
+  // consultas viven en un tenant especial 'clinical-shared' compartido por
+  // todas las clínicas que prueban el demo (decisión 1B del ADR). Los
+  // protocolos clínicos sí pueden ser per-tenant si el cliente sube los
+  // suyos. Las relaciones inversas viven igual en el modelo Tenant para
+  // que Prisma pueda hacer joins desde Tenant.
+  patients          Patient[]
+  consultations     Consultation[]
+  clinicalProtocols ClinicalProtocol[]
 
   @@index([industryId])
 }
@@ -349,4 +358,115 @@ model AgentQuery {
 
   // History es siempre "del tenant actual, más recientes primero".
   @@index([tenantId, createdAt(sort: Desc)])
+}
+
+// =============================================================================
+// Demo 06 — Asistente clínico (ADR-0016)
+// =============================================================================
+//
+// El asistente clínico ayuda al médico durante la consulta resumiendo
+// historia clínica, sugiriendo diagnósticos diferenciales y alertando sobre
+// interacciones medicamentosas. RAG sobre consultas previas + protocolos.
+//
+// Por qué un tenant compartido (decisión 1B del ADR-0016):
+//   En el MVP no queremos un seed por cliente que pruebe el demo. Hay un
+//   tenant especial 'clinical-shared' (slug constante) que contiene 30-50
+//   pacientes ficticios + sus consultas + protocolos clínicos genéricos.
+//   Cualquier user de un tenant de industria 'salud' ve esos datos.
+//
+//   Cuando una clínica firme y quiera sus pacientes reales, el modelo está
+//   listo (multi-tenant) — solo cambia el tenantId al del cliente y el
+//   filtro respeta el aislamiento.
+//
+// Por qué Patient/Consultation NO usan pgvector (a diferencia del Demo 01):
+//   El MVP arma el contexto del LLM con consultas filtradas por patientId
+//   directamente (no por similitud semántica). Para v2 con miles de
+//   consultas por paciente, agregamos embeddings de las notas — el patrón
+//   está documentado en Demo 01.
+
+/// Paciente ficticio. PII pseudonimizada — solo datos sintéticos para demos.
+/// El demo NUNCA guarda pacientes reales sin pasar por un trámite de
+/// certificación HIPAA/Ley Salud (Ecuador) que está fuera del scope MVP.
+model Patient {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// ID externo en el HIS (Hospital Information System) del cliente. Solo
+  /// se usa si el cliente conecta su HIS real; en el MVP es null.
+  externalId         String?
+  /// Nombre visible. Datos sintéticos del seed.
+  displayName        String
+  age                Int
+  /// 'M' | 'F' | 'O'. Texto libre para no atarnos a un enum que cambia.
+  gender             String
+  /// Lista de alergias declaradas. Texto plano normalizado (ej. ['penicilina', 'mariscos']).
+  allergies          String[] @default([])
+  /// Condiciones crónicas activas (ej. ['HTA', 'DM2', 'EPOC']).
+  chronicConditions  String[] @default([])
+  /// Medicación actual con dosis. Texto libre por simplicidad
+  /// (ej. ['metformina 850mg BID', 'enalapril 10mg QD']).
+  currentMedications String[] @default([])
+  consultations      Consultation[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  /// (tenantId, externalId) único cuando externalId está. NULL no rompe el
+  /// índice — Postgres permite múltiples NULLs en un UNIQUE.
+  @@unique([tenantId, externalId])
+  @@index([tenantId])
+  @@index([tenantId, displayName])
+}
+
+/// Consulta médica previa de un paciente. Construye la "historia clínica".
+/// En el MVP no hay versionado ni auditoría — un PR futuro puede agregarlos
+/// si el demo va a producción real.
+model Consultation {
+  id                String   @id @default(cuid())
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  date              DateTime
+  /// Nombre del médico tratante (texto libre en el MVP).
+  treatingPhysician String
+  reasonForVisit    String
+  /// Hallazgos del examen físico. Opcional — algunas consultas son solo
+  /// follow-up sin examen nuevo.
+  examFindings      String?
+  diagnosis         String
+  treatment         String
+  /// Notas adicionales libres del médico (síntomas atípicos, dudas, planes
+  /// de seguimiento).
+  notes             String?
+  createdAt         DateTime @default(now())
+
+  /// Filtramos por (tenantId, patientId) para traer la historia de UN
+  /// paciente; el primer index lo cubre. El segundo ordena por fecha desc
+  /// para la timeline de la UI.
+  @@index([tenantId, patientId])
+  @@index([tenantId, date(sort: Desc)])
+}
+
+/// Protocolo clínico del hospital (procedimientos estándar, guías de
+/// práctica clínica, criterios de admisión). RAG sobre estos da las citas
+/// que el asistente muestra en su panel de "alertas y protocolos".
+/// Reusa el patrón Document/Chunk del Demo 01 — los chunks van a la tabla
+/// Chunk genérica con demoId='clinical' para que pgvector haga el join.
+model ClinicalProtocol {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title     String
+  /// Categoría libre — el seed crea protocolos en 'cardiología', 'urgencias',
+  /// 'medicina interna', 'pediatría' para que el demo tenga variedad.
+  category  String
+  /// Contenido en markdown. El backend hace chunking + embeddings con la
+  /// maquinaria del rag-core. Los chunks van a Document/Chunk con
+  /// demoId='clinical' — separado de los chunks de RAG (demoId='rag') por
+  /// el filtro habitual del VectorStore.
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, category])
 }
