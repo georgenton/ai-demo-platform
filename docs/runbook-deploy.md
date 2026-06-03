@@ -79,10 +79,34 @@ EMBEDDINGS_PROVIDER=openai
 EMBEDDINGS_API_KEY=sk-proj-<la-tuya>
 EMBEDDINGS_MODEL=text-embedding-3-small
 
-# Generá un secreto random largo (32+ chars). Ejemplo en local:
+# Genera un secreto random largo (32+ chars). Ejemplo en local:
 #   openssl rand -hex 32
-INTERNAL_API_KEY=<generá-uno-y-guardalo>
+INTERNAL_API_KEY=<genera-uno-y-guardalo>
+
+# --- Auth multi-tenant (obligatorio post sprint MT1, PR #71). Sin esto el
+# server crashea al boot con: "JWT_SECRET debe tener al menos 32 caracteres".
+# Genera con `openssl rand -base64 48`.
+JWT_SECRET=<genera-uno-y-guardalo>
+
+# --- Opcionales del sprint multi-tenant (default seguros si los omites)
+JWT_EXPIRES_IN=7d                                    # default 7d
+COOKIE_DOMAIN=                                       # solo si frontend+backend comparten dominio
+SUPERADMIN_EMAILS=                                   # ej: jorge@nai.local,edguitar@nai.local
 ```
+
+> **Post sprint multi-tenant — paso obligatorio extra:** una vez que el
+> backend arranque (Deployment live), corre el seed que crea el
+> superadmin inicial:
+>
+> ```bash
+> railway link  # solo la primera vez
+> railway run npm run db:seed:tenants
+> ```
+>
+> Esto crea `admin@nai.local` con contraseña `demo-platform-2026` —
+> **cámbiala en el primer login**. El tenant `demo` y la industry
+> `universidad` ya los crea automáticamente la migración
+> `add_tenant_id_to_existing_tables` (idempotente).
 
 > **Guardá ese `INTERNAL_API_KEY`** — el mismo valor exacto lo vas a poner
 > en Vercel en el paso 2.5.
