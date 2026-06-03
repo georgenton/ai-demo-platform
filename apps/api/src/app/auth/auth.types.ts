@@ -39,6 +39,17 @@ export interface AuthResponse {
     id: string;
     slug: string;
     displayName: string;
+    /**
+     * Industry nested — el frontend la usa para mostrar el displayName en
+     * el menú de usuario, sidebar, etc. Antes solo devolvíamos
+     * industrySlug (string), y el frontend que esperaba `industry.displayName`
+     * crasheaba con TypeError. Mantenemos industrySlug también por compat.
+     */
+    industry: {
+      slug: string;
+      displayName: string;
+    };
+    /** @deprecated — usar industry.slug. */
     industrySlug: string;
     enabledDemos: string[];
     branding: Record<string, unknown>;

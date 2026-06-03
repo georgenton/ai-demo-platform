@@ -180,7 +180,14 @@ export function UserMenu() {
             </div>
             <div className="user-menu-tenant">
               <Icon name="building-2" className="ic" />
-              {tenant.displayName} · {tenant.industry.displayName}
+              {tenant.displayName}
+              {/* Defensive: tenant.industry puede venir undefined si el
+                  backend está en una versión vieja (pre-MT3) o si el
+                  shape del AuthResponse cambia. Sin esta guarda, el menú
+                  entero crashea con TypeError al expandir. */}
+              {tenant.industry?.displayName && (
+                <> · {tenant.industry.displayName}</>
+              )}
             </div>
           </div>
 

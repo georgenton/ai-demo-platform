@@ -125,6 +125,17 @@ export class AuthService {
         id: user.tenant.id,
         slug: user.tenant.slug,
         displayName: user.tenant.displayName,
+        // industry nested — el frontend (UserMenu, Header) lee
+        // tenant.industry.displayName. Si solo devolvemos industrySlug
+        // (string plano), el frontend hace .industry.displayName sobre
+        // undefined y crashea. Ver bug del UserMenu reportado por Jorge
+        // en producción tras el deploy del sprint MT.
+        industry: {
+          slug: user.tenant.industry.slug,
+          displayName: user.tenant.industry.displayName,
+        },
+        // industrySlug se mantiene por compat con consumers viejos que
+        // pudieran existir (deprecado — preferir industry.slug).
         industrySlug: user.tenant.industry.slug,
         // enabledDemos del tenant sobreescribe el de la industry si no está
         // vacío; si está vacío, hereda.
