@@ -1,0 +1,479 @@
+// -----------------------------------------------------------------------------
+// ClinicalService — orquestador del Demo 06.
+//
+// Cuatro responsabilidades:
+//   1) Listar pacientes (con búsqueda) del tenant clínico aplicable.
+//   2) Obtener un paciente + sus últimas consultas (para el panel central).
+//   3) Listar protocolos clínicos (filtrables por categoría).
+//   4) Stream del análisis del LLM con tool calling para interacciones.
+//
+// Resolver de "tenant de datos clínicos":
+//   El demo se habilita para tenants de industria `salud`. Hoy TODOS usan el
+//   mismo dataset sintético (`ctnt_clinical_shared`) — decisión 1B del ADR.
+//   El resolver `resolveDataTenantId(userTenantId)` está aislado en un método
+//   para que el día que una clínica firme contrato y quiera SUS pacientes
+//   reales, solo se toque ese método (regla extendida del Repository pattern).
+//
+// Tool calling:
+//   Igual que en Demo 04, el LLM puede invocar `check_drug_interactions` con
+//   una lista de medicaciones. El service ejecuta el lookup contra el mock
+//   farmacológico (`drug-interactions.ts`) y devuelve los matches. Loop con
+//   tope MAX_TURNS para que un LLM que se obsesione no consuma cuota.
+//
+// Cierre del loop:
+//   El LLM cierra con `stopReason: 'end_turn'` cuando dio su respuesta al
+//   médico. Si pide más tools, hacemos otra vuelta. Si llegamos a MAX_TURNS,
+//   emitimos `done` con `truncated` y avisamos.
+// -----------------------------------------------------------------------------
+
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { prisma } from '@org/db';
+import { chat } from '@org/llm-adapter';
+import type {
+  ChatRichMessage,
+  ChatTool,
+  TextBlock,
+  ToolUseBlock,
+} from '@org/llm-adapter';
+
+import type { ClinicalEvent } from './clinical-events.js';
+import type { AnalyzeRequestDto } from './dto/analyze.request.dto.js';
+import type { ListPatientsQueryDto } from './dto/list-patients.query.dto.js';
+import type { ListProtocolsQueryDto } from './dto/list-protocols.query.dto.js';
+import {
+  checkDrugInteractions,
+  type DrugInteraction,
+} from './drug-interactions.js';
+
+/**
+ * Tenant compartido del seed clínico. Cualquier usuario de industria `salud`
+ * resuelve a este tenant para sus consultas (decisión 1B del ADR-0016).
+ *
+ * Cuando entre una clínica con sus pacientes propios, este constante deja
+ * de ser la única opción — el resolver elegirá entre este o el tenantId
+ * propio según si la clínica trajo dataset.
+ */
+const SHARED_CLINICAL_TENANT_ID = 'ctnt_clinical_shared';
+
+/** Industria que tiene acceso al demo clínico hoy. */
+const CLINICAL_INDUSTRY_SLUG = 'salud';
+
+/** Tope del loop de tool calling. Más que esto = LLM confundido. */
+const MAX_TURNS = 4;
+
+/** Últimas N consultas que se cargan como contexto del paciente. */
+const CONSULTATIONS_AS_CONTEXT = 5;
+
+/** Tope de pacientes por request de lista (defensa contra requests sin limit). */
+const DEFAULT_LIST_LIMIT = 50;
+
+/** Definición del tool del LLM. */
+const CHECK_INTERACTIONS_TOOL: ChatTool = {
+  name: 'check_drug_interactions',
+  description:
+    'Consulta la base farmacológica para encontrar interacciones medicamentosas ' +
+    'entre las drogas indicadas. Úsala cuando vayas a sugerir un nuevo medicamento ' +
+    'al paciente, o cuando el médico pregunte si dos drogas se pueden combinar. ' +
+    'Recibe una lista de medicaciones (principios activos o nombres comerciales) ' +
+    'y devuelve las interacciones encontradas con su severidad.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      medications: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'Lista de medicaciones a chequear. Mínimo 2 elementos para que ' +
+          'haya interacción posible. Puede incluir las que el paciente ' +
+          'ya toma más la que se quiere agregar.',
+      },
+    },
+    required: ['medications'],
+  },
+};
+
+@Injectable()
+export class ClinicalService {
+  private readonly logger = new Logger(ClinicalService.name);
+
+  // ---------------------------------------------------------------------------
+  // Resolver de tenant de datos
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Devuelve el tenantId contra el cual consultar pacientes/consultas/protocolos.
+   *
+   * Hoy: si la industria del usuario es `salud`, todos los caminos llevan al
+   * tenant compartido. Si no, 403 (no debería pasar — el guard `@RequireDemo`
+   * ya filtra antes de llegar acá, pero defensa en profundidad).
+   *
+   * Mañana: si el tenant del usuario tiene patients propios (= un cliente
+   * firmado), devolvemos su propio id. Eso se implementa cuando llegue el
+   * primer cliente real.
+   */
+  private async resolveDataTenantId(userTenantId: string): Promise<string> {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: userTenantId },
+      select: { industrySlug: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${userTenantId} no existe.`);
+    }
+    if (tenant.industrySlug !== CLINICAL_INDUSTRY_SLUG) {
+      throw new ForbiddenException(
+        'El demo clínico solo está disponible para tenants de industria salud.',
+      );
+    }
+    return SHARED_CLINICAL_TENANT_ID;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Lectura de datos
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Lista pacientes ordenados por displayName ascendente. Search es
+   * case-insensitive y matchea substring.
+   */
+  async listPatients(userTenantId: string, dto: ListPatientsQueryDto) {
+    const dataTenantId = await this.resolveDataTenantId(userTenantId);
+    const limit = dto.limit ?? DEFAULT_LIST_LIMIT;
+
+    const where = {
+      tenantId: dataTenantId,
+      ...(dto.search
+        ? {
+            displayName: {
+              contains: dto.search,
+              mode: 'insensitive' as const,
+            },
+          }
+        : {}),
+    };
+
+    const patients = await prisma.patient.findMany({
+      where,
+      orderBy: { displayName: 'asc' },
+      take: limit,
+      select: {
+        id: true,
+        displayName: true,
+        age: true,
+        gender: true,
+        chronicConditions: true,
+      },
+    });
+
+    return { items: patients, total: patients.length };
+  }
+
+  /**
+   * Detalle del paciente + últimas N consultas (DESC por fecha). Si no existe
+   * en el tenant resuelto, 404.
+   */
+  async getPatient(userTenantId: string, patientId: string) {
+    const dataTenantId = await this.resolveDataTenantId(userTenantId);
+
+    const patient = await prisma.patient.findFirst({
+      where: { id: patientId, tenantId: dataTenantId },
+      include: {
+        consultations: {
+          orderBy: { date: 'desc' },
+          take: 10, // mostramos hasta 10 al UI; el LLM usa solo 5 (constante arriba).
+        },
+      },
+    });
+
+    if (!patient) {
+      throw new NotFoundException(
+        `Paciente ${patientId} no existe en el dataset clínico.`,
+      );
+    }
+
+    return patient;
+  }
+
+  /**
+   * Lista protocolos clínicos. Si `category` viene, filtra; si no, devuelve
+   * todos agrupables por categoría en el frontend.
+   */
+  async listProtocols(userTenantId: string, dto: ListProtocolsQueryDto) {
+    const dataTenantId = await this.resolveDataTenantId(userTenantId);
+
+    const protocols = await prisma.clinicalProtocol.findMany({
+      where: {
+        tenantId: dataTenantId,
+        ...(dto.category ? { category: dto.category } : {}),
+      },
+      orderBy: [{ category: 'asc' }, { title: 'asc' }],
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        content: true,
+      },
+    });
+
+    return { items: protocols, total: protocols.length };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Análisis con LLM + tool calling
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Stream del análisis. Patrón idéntico al AgentService (Demo 04):
+   *   - Cargamos paciente + sus últimas N consultas como contexto.
+   *   - Armamos system prompt con todo eso + reglas de comportamiento.
+   *   - Loop: stream tokens, capturar tool_use, ejecutar tool, re-iterar.
+   *   - Cerrar con `done`.
+   *
+   * El frontend recibe los eventos SSE y los pinta como burbuja del LLM +
+   * cards de "consultando interacciones" / "encontré 2 interacciones graves".
+   */
+  async *streamAnalyze(
+    dto: AnalyzeRequestDto,
+    userTenantId: string,
+  ): AsyncIterable<ClinicalEvent> {
+    const dataTenantId = await this.resolveDataTenantId(userTenantId);
+
+    // Cargamos paciente + contexto. Si no existe, lanzamos antes de empezar
+    // el stream (el controller lo convierte en HTTP 404 normal, no SSE error).
+    const patient = await prisma.patient.findFirst({
+      where: { id: dto.patientId, tenantId: dataTenantId },
+      include: {
+        consultations: {
+          orderBy: { date: 'desc' },
+          take: CONSULTATIONS_AS_CONTEXT,
+        },
+      },
+    });
+    if (!patient) {
+      throw new NotFoundException(
+        `Paciente ${dto.patientId} no existe en el dataset clínico.`,
+      );
+    }
+
+    this.logger.log(
+      `clinical analyze → patient="${patient.displayName}" question="${dto.question.slice(0, 120)}"`,
+    );
+
+    const messages: ChatRichMessage[] = [
+      { role: 'system', content: buildSystemPrompt(patient) },
+      { role: 'user', content: dto.question },
+    ];
+
+    let turns = 0;
+    try {
+      while (turns < MAX_TURNS) {
+        turns++;
+        const assistantBlocks: (TextBlock | ToolUseBlock)[] = [];
+        const toolResults: {
+          toolUseId: string;
+          content: string;
+          isError: boolean;
+        }[] = [];
+        let stopReason: string = 'other';
+
+        for await (const event of chat.streamWithTools(messages, [
+          CHECK_INTERACTIONS_TOOL,
+        ])) {
+          if (event.type === 'text_delta') {
+            const last = assistantBlocks[assistantBlocks.length - 1];
+            if (last && last.type === 'text') {
+              last.text += event.text;
+            } else {
+              assistantBlocks.push({ type: 'text', text: event.text });
+            }
+            yield { type: 'token', text: event.text };
+          } else if (event.type === 'tool_use_complete') {
+            assistantBlocks.push({
+              type: 'tool_use',
+              id: event.id,
+              name: event.name,
+              input: event.input,
+            });
+
+            if (event.name !== 'check_drug_interactions') {
+              const errMsg = `Tool desconocido: "${event.name}".`;
+              toolResults.push({
+                toolUseId: event.id,
+                content: errMsg,
+                isError: true,
+              });
+              continue;
+            }
+
+            const input = event.input as { medications?: unknown };
+            const meds = Array.isArray(input.medications)
+              ? input.medications.filter(
+                  (m): m is string => typeof m === 'string',
+                )
+              : [];
+
+            yield {
+              type: 'tool_call',
+              toolName: 'check_drug_interactions',
+              medications: meds,
+            };
+
+            const interactions: DrugInteraction[] = checkDrugInteractions(meds);
+
+            yield {
+              type: 'tool_result',
+              interactions: interactions.map((i) => ({
+                drugA: i.drugA,
+                drugB: i.drugB,
+                severity: i.severity,
+                description: i.description,
+              })),
+            };
+
+            // Lo que mandamos AL LLM en el tool_result puede ser distinto de
+            // lo que mandamos al frontend. Acá mandamos JSON estructurado;
+            // el LLM lo parafrasea en su respuesta humana.
+            toolResults.push({
+              toolUseId: event.id,
+              content: JSON.stringify({ interactions }),
+              isError: false,
+            });
+          } else if (event.type === 'turn_end') {
+            stopReason = event.stopReason;
+          }
+        }
+
+        // Si el LLM no emitió bloques (raro), agregamos uno vacío para no
+        // romper la alternancia que Anthropic exige en messages[].
+        if (assistantBlocks.length === 0) {
+          assistantBlocks.push({ type: 'text', text: '' });
+        }
+        messages.push({ role: 'assistant', content: assistantBlocks });
+
+        if (stopReason === 'tool_use' && toolResults.length > 0) {
+          messages.push({
+            role: 'user',
+            content: toolResults.map((tr) => ({
+              type: 'tool_result' as const,
+              toolUseId: tr.toolUseId,
+              content: tr.content,
+              isError: tr.isError,
+            })),
+          });
+          continue;
+        }
+
+        // end_turn / max_tokens / other → cerramos.
+        yield { type: 'done', turns };
+        return;
+      }
+
+      // Salida por MAX_TURNS.
+      this.logger.warn(`clinical analyze hit MAX_TURNS=${MAX_TURNS}`);
+      yield { type: 'done', turns };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`clinical analyze failed: ${message}`);
+      yield { type: 'error_event', message };
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers de prompt
+// ---------------------------------------------------------------------------
+
+/**
+ * Tipo "shape" del paciente con sus últimas consultas, para evitar tirar
+ * tipos largos en la firma del helper.
+ */
+interface PatientWithContext {
+  displayName: string;
+  age: number;
+  gender: string;
+  allergies: string[];
+  chronicConditions: string[];
+  currentMedications: string[];
+  consultations: Array<{
+    date: Date;
+    treatingPhysician: string;
+    reasonForVisit: string;
+    examFindings: string | null;
+    diagnosis: string;
+    treatment: string;
+    notes: string | null;
+  }>;
+}
+
+/**
+ * Arma el system prompt con la historia clínica del paciente.
+ *
+ * Decisiones del prompt:
+ *   - El asistente es de apoyo al médico, NO sustituye el juicio clínico
+ *     (línea defensiva obligatoria del demo).
+ *   - El LLM debe citar fuentes de la historia clínica cuando aplique.
+ *   - El LLM tiene la tool `check_drug_interactions` y se le dice
+ *     explícitamente cuándo conviene usarla.
+ *   - Responde en español, técnico pero claro.
+ */
+export function buildSystemPrompt(patient: PatientWithContext): string {
+  const consultationsBlock =
+    patient.consultations.length === 0
+      ? '  (Sin consultas previas registradas.)'
+      : patient.consultations
+          .map((c, i) => {
+            const dateStr = c.date.toISOString().slice(0, 10);
+            return [
+              `  [Consulta ${i + 1}] ${dateStr} — atendido por ${c.treatingPhysician}`,
+              `  - Motivo: ${c.reasonForVisit}`,
+              c.examFindings ? `  - Examen: ${c.examFindings}` : null,
+              `  - Diagnóstico: ${c.diagnosis}`,
+              `  - Tratamiento: ${c.treatment}`,
+              c.notes ? `  - Notas: ${c.notes}` : null,
+            ]
+              .filter(Boolean)
+              .join('\n');
+          })
+          .join('\n\n');
+
+  const allergies =
+    patient.allergies.length > 0
+      ? patient.allergies.join(', ')
+      : 'Ninguna conocida';
+  const conditions =
+    patient.chronicConditions.length > 0
+      ? patient.chronicConditions.join(', ')
+      : 'Ninguna registrada';
+  const meds =
+    patient.currentMedications.length > 0
+      ? patient.currentMedications.map((m) => `  - ${m}`).join('\n')
+      : '  (Ninguna registrada)';
+
+  return `Eres un asistente clínico de apoyo al médico tratante. NO sustituyes el juicio clínico del profesional — tu rol es organizar información de la historia y advertir sobre riesgos conocidos.
+
+CONTEXTO DEL PACIENTE (datos sintéticos del sistema):
+
+- Nombre: ${patient.displayName}
+- Edad: ${patient.age} años
+- Sexo: ${patient.gender}
+- Alergias: ${allergies}
+- Condiciones crónicas: ${conditions}
+- Medicación actual:
+${meds}
+
+ÚLTIMAS ${patient.consultations.length} CONSULTAS:
+
+${consultationsBlock}
+
+REGLAS DE COMPORTAMIENTO:
+1. Responde en español, en tono técnico pero claro. Sin emojis.
+2. Cita fragmentos de la historia clínica cuando los uses ("según consulta del 2025-04-12...").
+3. Si el médico va a recetar un medicamento o pregunta por interacciones, USA la herramienta \`check_drug_interactions\` con la lista de medicaciones actuales + la nueva. Espera el resultado antes de responder.
+4. Si no encuentras información suficiente en la historia para responder con seguridad, dilo explícitamente. NO inventes datos.
+5. Termina siempre con un breve recordatorio: "La decisión clínica final corresponde al médico tratante."`;
+}

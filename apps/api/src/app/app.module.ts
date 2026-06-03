@@ -7,6 +7,7 @@ import { AdminModule } from './admin/admin.module.js';
 import { AgentModule } from './agent/agent.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ChatModule } from './chat/chat.module.js';
+import { ClinicalModule } from './clinical/clinical.module.js';
 import { CompareModule } from './compare/compare.module.js';
 import { validateEnv } from './config/env.schema.js';
 import { CorpusModule } from './corpus/corpus.module.js';
@@ -36,6 +37,7 @@ import { TutorModule } from './tutor/tutor.module.js';
     AgentModule,
     AuthModule,
     ChatModule,
+    ClinicalModule,
     CompareModule,
     CorpusModule,
     DemosModule,
