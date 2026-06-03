@@ -342,6 +342,57 @@ const STRINGS_ES = {
   'admin.error.generic':
     'No se pudieron guardar los cambios. Revisa los datos e intenta de nuevo.',
 
+  // --- Refinamiento UI multi-tenant (post sprint MT7)
+  // Login — panel de marca + extras
+  'auth.login.forgot': '¿Olvidaste tu contraseña?',
+  'auth.login.secured':
+    'Conexión cifrada · acceso exclusivo para organizaciones con NAI on-prem',
+  'auth.brand.eyebrow': 'Acceso seguro',
+  'auth.brand.headline': 'Tus demos de IA, sobre tu propia infraestructura.',
+  'auth.brand.sub':
+    'Inicia sesión para entrar a la cartelera de demos habilitada para tu organización.',
+  'auth.brand.point.privacy': 'Los documentos nunca salen de tu nube privada',
+  'auth.brand.point.tenant': 'Aislamiento por organización (multi-tenant)',
+  'auth.brand.point.onprem': 'Anthropic API → NAI on-prem',
+
+  // Header — menú de usuario
+  'header.user.menu': 'Menú de cuenta',
+  'header.user.admin': 'Administración',
+  'header.user.adminHint': 'Editar demos habilitados y branding',
+  'header.user.role.member': 'Miembro',
+  'header.user.role.admin': 'Administrador',
+  'header.user.role.superadmin': 'Superadmin',
+
+  // Dashboard — extras
+  'dashboard.section.demos': 'Tus demos',
+  'dashboard.card.audience': 'Audiencia',
+  'dashboard.card.comingSoon': 'Próximamente',
+  'dashboard.overridden.badge': 'Cartelera personalizada',
+  'dashboard.error.title': 'No se pudieron cargar tus demos',
+  'dashboard.error.retry': 'Reintentar',
+
+  // Admin — secciones + branding refinado
+  'admin.section.general': 'General',
+  'admin.section.general.hint': 'Identidad del tenant',
+  'admin.section.demos': 'Demos',
+  'admin.section.branding': 'Branding',
+  'admin.industry.label': 'Industria',
+  'admin.industry.readonly': 'solo lectura',
+  'admin.enabledDemos.inherited': 'Heredado de tu industria ({industry})',
+  'admin.branding.preview': 'Vista previa · sidebar',
+  'admin.branding.logoUrl.hint':
+    'Los logos vienen de dominios arbitrarios — se renderizan sin optimizar.',
+  'admin.branding.contrast.warning':
+    'Este color tiene poco contraste en tema {theme} y no se aplicará. Elige uno más oscuro o más claro para que funcione en ambos temas.',
+  'admin.branding.contrast.theme.light': 'claro',
+  'admin.branding.contrast.theme.dark': 'oscuro',
+  'admin.preview.refreshNote':
+    'El sidebar se refresca sin recargar al guardar.',
+
+  // Sidebar — powered-by + tooltip de industria
+  'shell.brand.poweredBy': 'Powered by',
+  'shell.tenant.industry': 'Industria',
+
   'costMini.tooltip':
     'Estimación visual (~4 caracteres por token, regla de la industria). Cobro real de {provider}: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 por consulta.',
 } as const;
@@ -657,6 +708,52 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
     "You don't have permission to edit this tenant. Only administrators can.",
   'admin.error.generic':
     'Could not save changes. Check your inputs and try again.',
+
+  // --- Multi-tenant UI refinement (post sprint MT7)
+  'auth.login.forgot': 'Forgot your password?',
+  'auth.login.secured':
+    'Encrypted connection · access restricted to organizations with NAI on-prem',
+  'auth.brand.eyebrow': 'Secure access',
+  'auth.brand.headline': 'Your AI demos, on your own infrastructure.',
+  'auth.brand.sub':
+    'Sign in to access the demos enabled for your organization.',
+  'auth.brand.point.privacy': 'Your documents never leave your private cloud',
+  'auth.brand.point.tenant': 'Per-organization isolation (multi-tenant)',
+  'auth.brand.point.onprem': 'Anthropic API → NAI on-prem',
+
+  'header.user.menu': 'Account menu',
+  'header.user.admin': 'Administration',
+  'header.user.adminHint': 'Edit enabled demos and branding',
+  'header.user.role.member': 'Member',
+  'header.user.role.admin': 'Administrator',
+  'header.user.role.superadmin': 'Superadmin',
+
+  'dashboard.section.demos': 'Your demos',
+  'dashboard.card.audience': 'Audience',
+  'dashboard.card.comingSoon': 'Coming soon',
+  'dashboard.overridden.badge': 'Custom lineup',
+  'dashboard.error.title': 'Could not load your demos',
+  'dashboard.error.retry': 'Retry',
+
+  'admin.section.general': 'General',
+  'admin.section.general.hint': 'Tenant identity',
+  'admin.section.demos': 'Demos',
+  'admin.section.branding': 'Branding',
+  'admin.industry.label': 'Industry',
+  'admin.industry.readonly': 'read only',
+  'admin.enabledDemos.inherited': 'Inherited from your industry ({industry})',
+  'admin.branding.preview': 'Preview · sidebar',
+  'admin.branding.logoUrl.hint':
+    'Logos come from arbitrary domains — rendered unoptimized.',
+  'admin.branding.contrast.warning':
+    'This color has low contrast in {theme} mode and will not be applied. Pick a darker or lighter one so it works in both themes.',
+  'admin.branding.contrast.theme.light': 'light',
+  'admin.branding.contrast.theme.dark': 'dark',
+  'admin.preview.refreshNote':
+    'The sidebar refreshes without reloading on save.',
+
+  'shell.brand.poweredBy': 'Powered by',
+  'shell.tenant.industry': 'Industry',
 
   'costMini.tooltip':
     'Visual estimate (~4 chars per token, industry rule of thumb). {provider} actual price: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 per query.',

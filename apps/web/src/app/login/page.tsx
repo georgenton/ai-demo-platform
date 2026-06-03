@@ -1,37 +1,41 @@
 // -----------------------------------------------------------------------------
 // /login — página de inicio de sesión.
 //
-// STUB FUNCIONAL (PR-MT4):
-//   Esta UI es deliberadamente minimal y usa solo tokens del ui-kit.css y los
-//   strings i18n. Es 100% funcional end-to-end (login real contra el backend,
-//   redirect a la ruta original via ?from=...), pero el polishing visual
-//   (background art, branding, animaciones) lo hacés vos en Claude Design en
-//   un PR siguiente — el contrato (form, useAuth, redirect) ya está fijo.
+// Implementación final basada en el mockup 01-login.html del paquete
+// multitenant_refinement de Claude Design. Estructura split-screen:
 //
-// Flujo:
-//   1) El middleware (apps/web/src/middleware.ts) redirige a /login con
-//      ?from=<ruta original> cuando la cookie auth no está presente.
-//   2) El usuario completa email + password y submitea.
-//   3) Llamamos useAuth().login() → backend setea la cookie httpOnly.
-//   4) En éxito, navegamos al ?from o a / por default.
-//   5) En error, mostramos el mensaje según el tipo:
-//        - 401 → "Credenciales inválidas"
-//        - red/5xx → "No se pudo contactar al servidor"
+//   ┌──────────────────┬───────────────────┐
+//   │  Panel de marca  │  Formulario       │
+//   │  (navy + glow)   │  (form + footer)  │
+//   └──────────────────┴───────────────────┘
+//
+// El panel de marca colapsa a mobile (< 880px) y solo queda el form.
+//
+// Contratos (NO romper):
+//   1. <Suspense> wrapper porque usamos useSearchParams (Next 16).
+//   2. await auth.login({ email, password }).
+//   3. En éxito, router.replace(searchParams.get('from') || '/').
+//   4. Validación del 'from': debe empezar con '/' y NO con '//' (anti
+//      open-redirect).
+//   5. ApiError 401 → t('auth.login.error.invalid').
+//      Cualquier otro error → t('auth.login.error.network').
 // -----------------------------------------------------------------------------
 
 'use client';
 
-import { Suspense, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 
+import { Icon } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth';
 import { useT } from '@/lib/i18n';
 import type { StringKey } from '@/lib/i18n/strings';
 
 /**
- * `useSearchParams` requiere Suspense boundary cuando se usa en una página
- * pre-renderizada. Wrappeamos el form con uno mínimo para satisfacer el req.
+ * `useSearchParams` requiere Suspense boundary cuando la página es
+ * pre-renderizada estática (Next 16). Wrapper mínimo que delega al form.
  */
 export default function LoginPage() {
   return (
@@ -60,15 +64,16 @@ function LoginForm() {
     try {
       await auth.login({ email, password });
 
-      // Redirect al destino original o a /. El middleware vuelve a evaluar
-      // sobre la nueva URL y deja pasar porque la cookie ya está seteada.
+      // Anti open-redirect: el 'from' tiene que ser un path relativo seguro.
+      // Cualquier otra cosa (URLs absolutas, protocolos exóticos, // → host
+      // relativo) cae al fallback '/'.
       const from = searchParams.get('from');
       const safeFrom =
         from && from.startsWith('/') && !from.startsWith('//') ? from : '/';
       router.replace(safeFrom);
     } catch (err) {
-      // Diferenciamos 401 (credenciales) de network/5xx (servidor caído)
-      // porque el copy le dice al usuario qué hacer distinto en cada caso.
+      // Distinguimos 401 (credenciales) de network/5xx (servidor caído)
+      // porque el copy le dice al usuario qué hacer en cada caso.
       if (err instanceof ApiError && err.status === 401) {
         setErrorKey('auth.login.error.invalid');
       } else {
@@ -79,146 +84,129 @@ function LoginForm() {
   };
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        background: 'var(--surface-bg, #0c1418)',
-        padding: 'var(--spacing-4, 16px)',
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        // Stub minimal: card centrada, tokens del ui-kit. El polishing va a Claude Design.
-        style={{
-          width: '100%',
-          maxWidth: 380,
-          background: 'var(--surface-card, #131e23)',
-          border: '1px solid var(--border-default, #1f2c33)',
-          borderRadius: 'var(--radius-lg, 12px)',
-          padding: 'var(--spacing-6, 24px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--spacing-4, 16px)',
-        }}
-      >
-        <header style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <h1
-            style={{
-              fontSize: 'var(--font-size-xl, 20px)',
-              fontWeight: 600,
-              color: 'var(--text-strong, #f0f5f8)',
-              margin: 0,
-            }}
-          >
-            {t('auth.login.title')}
-          </h1>
-          <p
-            style={{
-              fontSize: 'var(--font-size-sm, 13px)',
-              color: 'var(--text-muted, #87969f)',
-              margin: 0,
-            }}
-          >
-            {t('auth.login.subtitle')}
-          </p>
-        </header>
-
-        <label
-          style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
-          htmlFor="login-email"
-        >
-          <span
-            style={{
-              fontSize: 'var(--font-size-sm, 13px)',
-              color: 'var(--text-default, #c5d1d8)',
-            }}
-          >
-            {t('auth.login.email')}
-          </span>
-          <input
-            id="login-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t('auth.login.emailPlaceholder')}
-            required
-            autoComplete="email"
-            autoFocus
-            disabled={submitting}
-            style={inputStyle}
+    <main className="auth-split">
+      {/* Panel de marca — primera impresión del cliente. Colapsa en mobile. */}
+      <aside className="auth-brand">
+        <div className="auth-brand-lockup">
+          <Image
+            src="/brand/logo-mark-on-dark.svg"
+            width={34}
+            height={34}
+            alt=""
+            aria-hidden
+            priority
           />
-        </label>
-
-        <label
-          style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
-          htmlFor="login-password"
-        >
-          <span
-            style={{
-              fontSize: 'var(--font-size-sm, 13px)',
-              color: 'var(--text-default, #c5d1d8)',
-            }}
-          >
-            {t('auth.login.password')}
-          </span>
-          <input
-            id="login-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={t('auth.login.passwordPlaceholder')}
-            required
-            autoComplete="current-password"
-            disabled={submitting}
-            style={inputStyle}
-          />
-        </label>
-
-        {errorKey && (
-          <div
-            role="alert"
-            style={{
-              fontSize: 'var(--font-size-sm, 13px)',
-              color: 'var(--text-danger, #ff6b7a)',
-            }}
-          >
-            {t(errorKey)}
+          <div>
+            <div className="name">AI Demo Platform</div>
+            <div className="tag">Nutanix Enterprise AI</div>
           </div>
-        )}
+        </div>
 
-        <button
-          type="submit"
-          disabled={submitting || !email || !password}
-          style={{
-            marginTop: 'var(--spacing-2, 8px)',
-            padding: '10px 16px',
-            borderRadius: 'var(--radius-md, 8px)',
-            border: 'none',
-            background: 'var(--accent-default, #43c194)',
-            color: '#0c1418',
-            fontWeight: 600,
-            fontSize: 'var(--font-size-sm, 13px)',
-            cursor: submitting ? 'not-allowed' : 'pointer',
-            opacity: submitting || !email || !password ? 0.6 : 1,
-          }}
-        >
-          {submitting ? t('auth.login.submitting') : t('auth.login.submit')}
-        </button>
-      </form>
+        <div className="auth-brand-body">
+          <div className="auth-brand-eyebrow">{t('auth.brand.eyebrow')}</div>
+          <h2 className="auth-brand-headline">{t('auth.brand.headline')}</h2>
+          <p className="auth-brand-sub">{t('auth.brand.sub')}</p>
+          <ul className="auth-brand-points">
+            <li>
+              <Icon name="shield-check" className="ic" />
+              {t('auth.brand.point.privacy')}
+            </li>
+            <li>
+              <Icon name="building-2" className="ic" />
+              {t('auth.brand.point.tenant')}
+            </li>
+            <li>
+              <Icon name="server" className="ic" />
+              {t('auth.brand.point.onprem')}
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      {/* Lado del formulario */}
+      <section className="auth-panel">
+        <form className="login-form" onSubmit={handleSubmit} autoComplete="on">
+          <div className="login-form-head">
+            <h1>{t('auth.login.title')}</h1>
+            <p>{t('auth.login.subtitle')}</p>
+          </div>
+
+          <div className="field">
+            <label className="field-label" htmlFor="login-email">
+              {t('auth.login.email')}
+            </label>
+            <input
+              id="login-email"
+              className="input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('auth.login.emailPlaceholder')}
+              autoComplete="email"
+              autoFocus
+              required
+              disabled={submitting}
+            />
+          </div>
+
+          <div className="field">
+            <div className="auth-meta">
+              <label className="field-label" htmlFor="login-password">
+                {t('auth.login.password')}
+              </label>
+              {/* "Olvidé contraseña" deshabilitado intencionalmente — el flujo
+                  no está implementado todavía. Mantengo la affordance visual
+                  para que el cliente la note cuando se sume. */}
+              <a
+                className="link-muted"
+                href="#"
+                aria-disabled
+                tabIndex={-1}
+                onClick={(e) => e.preventDefault()}
+              >
+                {t('auth.login.forgot')}
+              </a>
+            </div>
+            <input
+              id="login-password"
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('auth.login.passwordPlaceholder')}
+              autoComplete="current-password"
+              required
+              disabled={submitting}
+            />
+          </div>
+
+          {errorKey && (
+            <div className="field-error" role="alert">
+              <Icon name="alert-circle" className="ic" />
+              <span>{t(errorKey)}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="btn btn-accent btn-lg"
+            style={{ width: '100%' }}
+            disabled={submitting || !email || !password}
+          >
+            {submitting ? t('auth.login.submitting') : t('auth.login.submit')}
+          </button>
+
+          <p className="auth-foot">
+            <Icon
+              name="lock"
+              size={12}
+              className="ic"
+              style={{ verticalAlign: '-1px', marginRight: 4 }}
+            />
+            {t('auth.login.secured')}
+          </p>
+        </form>
+      </section>
     </main>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 12px',
-  borderRadius: 'var(--radius-md, 8px)',
-  border: '1px solid var(--border-default, #1f2c33)',
-  background: 'var(--surface-input, #0c1418)',
-  color: 'var(--text-strong, #f0f5f8)',
-  fontSize: 'var(--font-size-sm, 13px)',
-  fontFamily: 'inherit',
-  outline: 'none',
-};
