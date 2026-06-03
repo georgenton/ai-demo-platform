@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdminModule } from './admin/admin.module.js';
 import { AgentModule } from './agent/agent.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ChatModule } from './chat/chat.module.js';
@@ -12,7 +13,9 @@ import { CorpusModule } from './corpus/corpus.module.js';
 import { DemosModule } from './demos/demos.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { HealthModule } from './health/health.module.js';
+import { IndustryModule } from './industries/industry.module.js';
 import { IngestModule } from './ingest/ingest.module.js';
+import { MeModule } from './me/me.module.js';
 import { TutorModule } from './tutor/tutor.module.js';
 
 @Module({
@@ -29,6 +32,7 @@ import { TutorModule } from './tutor/tutor.module.js';
       // `.env` lo carga por defecto si existe; en CI/prod las vars vienen
       // del entorno directamente y eso también funciona.
     }),
+    AdminModule,
     AgentModule,
     AuthModule,
     ChatModule,
@@ -37,7 +41,9 @@ import { TutorModule } from './tutor/tutor.module.js';
     DemosModule,
     DocumentsModule,
     HealthModule,
+    IndustryModule,
     IngestModule,
+    MeModule,
     TutorModule,
   ],
   controllers: [AppController],

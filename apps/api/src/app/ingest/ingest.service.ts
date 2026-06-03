@@ -34,9 +34,12 @@ export class IngestService {
     private readonly vectorStore: VectorStore,
   ) {}
 
-  async ingest(input: IngestRequestDto): Promise<IngestResponseDto> {
+  async ingest(
+    input: IngestRequestDto,
+    tenantId: string,
+  ): Promise<IngestResponseDto> {
     this.logger.log(
-      `Ingesting "${input.name}" for demo "${input.demoId}" (${input.content.length} chars)`,
+      `Ingesting "${input.name}" for tenant=${tenantId} demo=${input.demoId} (${input.content.length} chars)`,
     );
 
     // 1) Chunkear. Si el chunker devuelve 0, el contenido no tenía nada útil
@@ -66,6 +69,7 @@ export class IngestService {
           name: input.name,
           content: input.content,
           demoId: input.demoId,
+          tenantId,
         },
       });
 

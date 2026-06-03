@@ -79,6 +79,8 @@ model Tenant {
   status       TenantStatus @default(trial)
   createdAt    DateTime     @default(now())
   users        User[]
+  documents    Document[]
+  agentQueries AgentQuery[]
 
   @@index([industryId])
 }
@@ -138,6 +140,10 @@ model Document {
   name      String // nombre original del archivo subido
   content   String // texto completo extraído (sin chunking)
   demoId    String // a qué demo pertenece: 'rag', 'comparator', 'corpus', ...
+  /// Tenant al que pertenece este documento (ADR-0013 multi-tenant).
+  /// Cada query del backend filtra por este campo a través del TenantGuard.
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt // se actualiza solo en cada UPDATE
   chunks    Chunk[] // relación 1→N con sus fragmentos
@@ -154,11 +160,11 @@ model Document {
 
   topics DocumentTopic[]
 
-  // Filtrar documentos por demo será una consulta frecuente: índice explícito.
-  @@index([demoId])
-  // Filtrar/agrupar por año para el gráfico de papers-by-year del Demo 03.
-  // Parcial implícito: docs sin year (otros demos) no inflan el índice.
-  @@index([demoId, year])
+  // Cada query del backend filtra por (tenantId, demoId) — índice compuesto
+  // para evitar full scans. El tenantId primero porque tiene más selectividad.
+  @@index([tenantId, demoId])
+  // Para el gráfico papers-by-year del Demo 03, filtrado por tenant.
+  @@index([tenantId, demoId, year])
 }
 
 /// Tópico extraído por LLM de un Document del corpus. Cada paper tiene
@@ -335,8 +341,12 @@ model AgentQuery {
   errorMessage  String?
   /// Cantidad de turns que ejecutó el loop (1 = el LLM respondió sin tools).
   turns         Int
+  /// Tenant que generó esta query (ADR-0013). El AgentController inyecta el
+  /// tenantId desde el JWT; la consulta de history filtra por este campo.
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
 
-  // Consultar el historial es típicamente "los más recientes primero".
-  @@index([createdAt(sort: Desc)])
+  // History es siempre "del tenant actual, más recientes primero".
+  @@index([tenantId, createdAt(sort: Desc)])
 }

@@ -41,6 +41,8 @@ import {
 import { CorpusSearchQueryDto } from './dto/corpus-search.dto.js';
 import { CorpusStatsResponseDto } from './dto/corpus-stats.dto.js';
 import { CorpusUploadResponseDto } from './dto/corpus-upload.dto.js';
+import { CurrentTenant } from '../auth/current-user.decorator.js';
+import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 /** 10 MB por archivo — mismo límite que ingest base. */
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
@@ -51,6 +53,7 @@ const MAX_FILES_PER_REQUEST = 20;
 
 @ApiTags('Corpus (Demo 03)')
 @Controller({ path: 'corpus' })
+@RequireDemo('corpus')
 export class CorpusController {
   constructor(
     private readonly corpusIngest: CorpusIngestService,
@@ -116,8 +119,9 @@ export class CorpusController {
         .build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY }),
     )
     files: Express.Multer.File[],
+    @CurrentTenant() tenantId: string,
   ): Promise<CorpusUploadResponseDto> {
-    return this.corpusIngest.ingestBatch(files);
+    return this.corpusIngest.ingestBatch(files, tenantId);
   }
 
   /**
@@ -133,8 +137,10 @@ export class CorpusController {
       'Devuelve totalPapers, papersByYear[] y topTopics[]. Pensado para el bar chart de papers/año y el listado de top tópicos en el frontend del Demo 03.',
   })
   @ApiResponse({ status: 200, type: CorpusStatsResponseDto })
-  async stats(): Promise<CorpusStatsResponseDto> {
-    return this.statsService.stats();
+  async stats(
+    @CurrentTenant() tenantId: string,
+  ): Promise<CorpusStatsResponseDto> {
+    return this.statsService.stats(tenantId);
   }
 
   /**
@@ -153,11 +159,15 @@ export class CorpusController {
   @ApiResponse({ status: 200, type: CorpusPapersResponseDto })
   async papers(
     @Query() query: CorpusPapersQueryDto,
+    @CurrentTenant() tenantId: string,
   ): Promise<CorpusPapersResponseDto> {
-    return this.statsService.papers({
-      limit: query.limit,
-      offset: query.offset,
-    });
+    return this.statsService.papers(
+      {
+        limit: query.limit,
+        offset: query.offset,
+      },
+      tenantId,
+    );
   }
 
   /**
@@ -177,13 +187,19 @@ export class CorpusController {
     description:
       'Embebe la pregunta, busca chunks relevantes en pgvector (filtrados por demoId=corpus) y streamea la respuesta del LLM. Delegate del Chat del Demo 01.',
   })
-  search(@Query() query: CorpusSearchQueryDto): Observable<MessageEvent> {
+  search(
+    @Query() query: CorpusSearchQueryDto,
+    @CurrentTenant() tenantId: string,
+  ): Observable<MessageEvent> {
     return from(
-      this.chatService.streamChat({
-        q: query.q,
-        demoId: 'corpus',
-        topK: query.topK,
-      }),
+      this.chatService.streamChat(
+        {
+          q: query.q,
+          demoId: 'corpus',
+          topK: query.topK,
+        },
+        tenantId,
+      ),
     ).pipe(map((token) => ({ data: token })));
   }
 
@@ -206,8 +222,8 @@ export class CorpusController {
     description:
       'Map-reduce LLM: resume cada paper individualmente y después redacta el panorama del corpus en 2-3 párrafos. ~30-60s. Si total < 3 papers, devuelve mensaje fijo.',
   })
-  summary(): Observable<MessageEvent> {
-    return from(this.summaryService.streamSummary()).pipe(
+  summary(@CurrentTenant() tenantId: string): Observable<MessageEvent> {
+    return from(this.summaryService.streamSummary(tenantId)).pipe(
       map((token) => ({ data: token })),
     );
   }

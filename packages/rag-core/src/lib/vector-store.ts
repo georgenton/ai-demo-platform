@@ -35,6 +35,13 @@ export interface ChunkSearchResult {
 export interface SearchOptions {
   /** Si se provee, solo se buscan chunks de documentos de este demo. */
   demoId?: string;
+  /**
+   * Filtro multi-tenant (ADR-0013). Si se provee, sólo se buscan chunks de
+   * documentos del tenant. Si no se provee, la búsqueda no filtra por
+   * tenant — peligroso en producción multi-tenant; el caller debe pasarlo
+   * salvo en scripts de mantenimiento.
+   */
+  tenantId?: string;
 }
 
 export class VectorStore {
@@ -119,6 +126,35 @@ export class VectorStore {
 
     // `<=>` es el operador de distancia coseno de pgvector, alineado con el
     // op-class del índice HNSW (vector_cosine_ops). Lower = más similar.
+    //
+    // El JOIN a Document es necesario para filtrar por demoId/tenantId. Si
+    // ninguno de los dos viene en options, no hay JOIN y el plan usa el
+    // índice HNSW directamente.
+    if (options.tenantId && options.demoId) {
+      return prisma.$queryRaw<ChunkSearchResult[]>`
+        SELECT c.id, c.content, c."documentId", c."index",
+               (c.embedding <=> ${vectorStr}::vector) AS distance
+        FROM "Chunk" c
+        JOIN "Document" d ON c."documentId" = d.id
+        WHERE d."tenantId" = ${options.tenantId}
+          AND d."demoId" = ${options.demoId}
+          AND c.embedding IS NOT NULL
+        ORDER BY c.embedding <=> ${vectorStr}::vector
+        LIMIT ${k}
+      `;
+    }
+    if (options.tenantId) {
+      return prisma.$queryRaw<ChunkSearchResult[]>`
+        SELECT c.id, c.content, c."documentId", c."index",
+               (c.embedding <=> ${vectorStr}::vector) AS distance
+        FROM "Chunk" c
+        JOIN "Document" d ON c."documentId" = d.id
+        WHERE d."tenantId" = ${options.tenantId}
+          AND c.embedding IS NOT NULL
+        ORDER BY c.embedding <=> ${vectorStr}::vector
+        LIMIT ${k}
+      `;
+    }
     if (options.demoId) {
       return prisma.$queryRaw<ChunkSearchResult[]>`
         SELECT c.id, c.content, c."documentId", c."index",

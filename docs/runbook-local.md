@@ -317,6 +317,109 @@ Cuando abrás `http://localhost:4200`:
 El seed de demos es **idempotente** — si ya hay documentos con esos
 nombres, los skipea. Podés correrlo varias veces sin duplicar.
 
+> **Importante (post sprint multi-tenant MT1-MT5):** el seed de demos
+> ahora se autentica como `admin@nai.local` con contraseña
+> `demo-platform-2026` (defaults de `seed-tenants`). Si cambiaste esos
+> defaults, configura `DEMO_ADMIN_EMAIL` y `DEMO_ADMIN_PASSWORD` antes
+> de correr `db:seed:demos`. Y antes que nada, ejecuta `db:seed:tenants`
+> al menos una vez para que el tenant + superadmin existan.
+
+---
+
+## 6.5) Troubleshooting de autenticación
+
+Síntomas típicos cuando algo no anda con el flujo de auth, y cómo
+diagnosticarlos.
+
+### El browser redirige en loop a `/login`
+
+**Síntoma:** abrís `http://localhost:4200/`, va a `/login?from=/`, te
+logueas, vuelve a `/login?from=/`. Sin error visible.
+
+**Diagnóstico:** la cookie `auth` no se está seteando o no se está
+mandando en el siguiente request.
+
+**Pasos:**
+
+1. Abrí DevTools → Application → Cookies → `localhost:4200`. Después
+   del login, debería haber una cookie `auth`. Si no está:
+   - Mira la response del `POST /api/v1/auth/login` en Network. ¿Tiene
+     header `Set-Cookie`? Si no, el backend no la está emitiendo —
+     revisa `JWT_SECRET` en `.env` y reinicia `nx serve api`.
+2. Si la cookie está, pero el siguiente request a `/api/v1/me/demos`
+   sale **sin** el header `Cookie`:
+   - Verifica que el browser no esté bloqueando cookies de terceros
+     (raro en localhost, pero pasa con extensiones de privacidad
+     agresivas).
+   - Revisa que la cookie tenga `Path=/` (no `Path=/api`) y no tenga
+     `Domain` seteado en local.
+
+### Todos los fetches dan 401, dashboard vacío
+
+**Síntoma:** estás logueado (cookie visible), pero el dashboard
+muestra "loading" infinito y los fetches en Network dan 401.
+
+**Diagnóstico:** la cookie está, pero el backend la rechaza.
+
+**Pasos:**
+
+1. Decodifica el JWT con [jwt.io](https://jwt.io) — pega el valor de
+   la cookie `auth`. Si `exp` ya pasó, expiró → logout y login de
+   nuevo.
+2. Si el token es válido pero el backend lo rechaza, probablemente
+   `JWT_SECRET` cambió entre que se emitió y se verifica. Reseteo:
+   ```
+   # Limpia la cookie:
+   document.cookie = 'auth=; Max-Age=0; Path=/'  # en DevTools console
+   # Login de nuevo.
+   ```
+
+### "Database connection refused" en `/api/v1/me/demos`
+
+**Síntoma:** el login funciona (Postgres respondió a la query de
+user) pero `/me/demos` da 500 con error de conexión.
+
+**Diagnóstico:** Postgres se cayó después del login (poco probable),
+o hay un problema con el pool de conexiones de Prisma.
+
+**Pasos:**
+
+1. `docker compose ps` — ¿el contenedor `postgres` está `Up`?
+2. Si está Up pero el backend no se conecta, `docker compose restart
+postgres` y `pkill -f nx.*serve` + relanzar `nx serve api`.
+
+### "Demo no habilitado para tu organización" navegando demos
+
+**Síntoma:** el cliente abre `/demo/tutor` y ve un mensaje de error
+de demo no disponible.
+
+**Diagnóstico esperado:** comportamiento correcto del
+`DemoAccessGuard` (PR-MT3). El tenant no tiene `tutor` en su
+`enabledDemos`.
+
+**Pasos:**
+
+1. Verifica con `npx prisma studio`:
+   - `Tenant.enabledDemos` del tenant en cuestión.
+   - Si está vacío, hereda de `Industry.enabledDemos`.
+   - Si el cliente sí debería tener tutor, edita uno o el otro y
+     refrescá la página.
+
+### Cambios al branding en `/admin/tenant` no se reflejan en el sidebar
+
+**Síntoma:** guardás cambios en el admin panel, el banner dice
+"Cambios guardados", pero el sidebar sigue igual.
+
+**Diagnóstico:** el `useMyDemos().refresh()` no se ejecutó o falló
+silently.
+
+**Pasos:**
+
+1. Verifica en Network que el `PATCH /api/v1/admin/tenant` respondió 200.
+2. Después debería haber un `GET /api/v1/me/demos` nuevo. Si no
+   aparece, el `refresh()` no se llamó — revisa el código del form.
+3. Hard reload (`Cmd+Shift+R`) como workaround mientras debuggeas.
+
 ---
 
 ## 7) Referencias rápidas

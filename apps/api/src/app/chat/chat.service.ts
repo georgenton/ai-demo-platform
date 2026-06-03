@@ -29,18 +29,22 @@ export class ChatService {
     private readonly promptBuilder: PromptBuilder,
   ) {}
 
-  async *streamChat(query: ChatQueryDto): AsyncIterable<string> {
+  async *streamChat(
+    query: ChatQueryDto,
+    tenantId: string,
+  ): AsyncIterable<string> {
     this.logger.log(
-      `Chat for demo "${query.demoId}": "${query.q}" (topK=${query.topK ?? DEFAULT_TOP_K})`,
+      `Chat for tenant=${tenantId} demo=${query.demoId}: "${query.q}" (topK=${query.topK ?? DEFAULT_TOP_K})`,
     );
 
     // 1) Embed de la pregunta.
     const questionVector = await this.embeddings.embed(query.q);
 
     // 2) Retrieval — chunks más cercanos al vector de la pregunta,
-    //    filtrados por demoId.
+    //    filtrados por (tenantId, demoId).
     const topK = query.topK ?? DEFAULT_TOP_K;
     const chunks = await this.vectorStore.searchTopK(questionVector, topK, {
+      tenantId,
       demoId: query.demoId,
     });
     this.logger.log(`Retrieved ${chunks.length} chunks`);

@@ -21,6 +21,8 @@ import { map } from 'rxjs/operators';
 
 import type { AgentEvent } from './agent-events.js';
 import { AgentService } from './agent.service.js';
+import { CurrentTenant } from '../auth/current-user.decorator.js';
+import { RequireDemo } from '../auth/require-demo.decorator.js';
 import {
   AgentHistoryQueryDto,
   type AgentHistoryResponse,
@@ -29,6 +31,7 @@ import { AgentQueryDto } from './dto/agent-query.dto.js';
 
 @ApiTags('Agent (Demo 04)')
 @Controller({ path: 'agent' })
+@RequireDemo('agent')
 export class AgentController {
   constructor(private readonly agentService: AgentService) {}
 
@@ -50,8 +53,11 @@ export class AgentController {
     description:
       'Recibe una pregunta, el LLM genera SQL contra el schema académico, ejecutamos read-only y stremeamos eventos tipados (token, tool_call, tool_result, done, error). Hasta MAX_TURNS=5 vueltas.',
   })
-  agent(@Body() dto: AgentQueryDto): Observable<MessageEvent> {
-    return from(this.agentService.streamAgent(dto)).pipe(
+  agent(
+    @Body() dto: AgentQueryDto,
+    @CurrentTenant() tenantId: string,
+  ): Observable<MessageEvent> {
+    return from(this.agentService.streamAgent(dto, tenantId)).pipe(
       map((event) => this.toMessageEvent(event)),
     );
   }
@@ -70,8 +76,11 @@ export class AgentController {
     description:
       'Las más recientes primero. Cada entrada incluye la SQL generada, rowCount, duración total, success, errorMessage si falló, y turns del loop.',
   })
-  history(@Query() query: AgentHistoryQueryDto): Promise<AgentHistoryResponse> {
-    return this.agentService.findHistory(query);
+  history(
+    @Query() query: AgentHistoryQueryDto,
+    @CurrentTenant() tenantId: string,
+  ): Promise<AgentHistoryResponse> {
+    return this.agentService.findHistory(query, tenantId);
   }
 
   /**

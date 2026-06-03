@@ -28,11 +28,13 @@ import type { Request, Response } from 'express';
 import { LoginDto } from './dto/login.dto.js';
 import { AuthService } from './auth.service.js';
 import type { AuthResponse } from './auth.types.js';
+import { Public } from './public.decorator.js';
 
 const COOKIE_NAME = 'auth';
 
 @ApiTags('Auth')
 @Controller({ path: 'auth' })
+@Public()
 export class AuthController {
   constructor(
     private readonly authService: AuthService,

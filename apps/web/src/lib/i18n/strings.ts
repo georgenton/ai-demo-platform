@@ -291,6 +291,108 @@ const STRINGS_ES = {
   'costMini.uses.comparator': 'comparaciones/mes',
   'costMini.uses.corpus': 'búsquedas/mes',
   'costMini.uses.agent': 'queries/mes',
+
+  // --- Auth / login (PR-MT4)
+  'auth.login.title': 'Iniciar sesión',
+  'auth.login.subtitle': 'AI Demo Platform — Nutanix Enterprise AI',
+  'auth.login.email': 'Correo',
+  'auth.login.emailPlaceholder': 'tu@dominio.com',
+  'auth.login.password': 'Contraseña',
+  'auth.login.passwordPlaceholder': 'Tu contraseña',
+  'auth.login.submit': 'Entrar',
+  'auth.login.submitting': 'Verificando…',
+  'auth.login.error.invalid':
+    'Credenciales inválidas. Verifica el correo y la contraseña.',
+  'auth.login.error.network':
+    'No se pudo contactar al servidor. Intenta de nuevo en un momento.',
+  'auth.logout': 'Cerrar sesión',
+  'auth.session.loading': 'Cargando sesión…',
+  'auth.session.error':
+    'Hubo un problema cargando tu sesión. Vuelve a iniciar sesión.',
+
+  // --- Dashboard / home (PR-MT5)
+  'dashboard.welcome': 'Hola, {name}',
+  'dashboard.subtitle':
+    '{tenantName} · {industryName}. Estas son las demos habilitadas para tu organización.',
+  'dashboard.empty.title': 'No hay demos habilitados',
+  'dashboard.empty.body':
+    'Tu organización aún no tiene demos asignados. Contacta al administrador para activar al menos uno.',
+  'dashboard.openDemo': 'Abrir',
+  'dashboard.loading': 'Cargando tu cartelera…',
+  'dashboard.error':
+    'Hubo un problema cargando tus demos. Intenta refrescar la página.',
+
+  // --- Admin panel (PR-MT5)
+  'admin.title': 'Administración del tenant',
+  'admin.subtitle':
+    'Edita el nombre visible, los demos habilitados y el branding del tenant.',
+  'admin.displayName.label': 'Nombre del tenant',
+  'admin.enabledDemos.label': 'Demos habilitados',
+  'admin.enabledDemos.hint':
+    'Si dejas todo desmarcado, se heredan los demos por default de tu industria ({industry}).',
+  'admin.branding.title': 'Branding',
+  'admin.branding.accentColor': 'Color de acento (hex)',
+  'admin.branding.logoUrl': 'URL del logo',
+  'admin.branding.displayName': 'Nombre mostrado en el header',
+  'admin.save': 'Guardar cambios',
+  'admin.saving': 'Guardando…',
+  'admin.saved': 'Cambios guardados.',
+  'admin.error.forbidden':
+    'No tienes permisos para editar este tenant. Solo los administradores pueden hacerlo.',
+  'admin.error.generic':
+    'No se pudieron guardar los cambios. Revisa los datos e intenta de nuevo.',
+
+  // --- Refinamiento UI multi-tenant (post sprint MT7)
+  // Login — panel de marca + extras
+  'auth.login.forgot': '¿Olvidaste tu contraseña?',
+  'auth.login.secured':
+    'Conexión cifrada · acceso exclusivo para organizaciones con NAI on-prem',
+  'auth.brand.eyebrow': 'Acceso seguro',
+  'auth.brand.headline': 'Tus demos de IA, sobre tu propia infraestructura.',
+  'auth.brand.sub':
+    'Inicia sesión para entrar a la cartelera de demos habilitada para tu organización.',
+  'auth.brand.point.privacy': 'Los documentos nunca salen de tu nube privada',
+  'auth.brand.point.tenant': 'Aislamiento por organización (multi-tenant)',
+  'auth.brand.point.onprem': 'Anthropic API → NAI on-prem',
+
+  // Header — menú de usuario
+  'header.user.menu': 'Menú de cuenta',
+  'header.user.admin': 'Administración',
+  'header.user.adminHint': 'Editar demos habilitados y branding',
+  'header.user.role.member': 'Miembro',
+  'header.user.role.admin': 'Administrador',
+  'header.user.role.superadmin': 'Superadmin',
+
+  // Dashboard — extras
+  'dashboard.section.demos': 'Tus demos',
+  'dashboard.card.audience': 'Audiencia',
+  'dashboard.card.comingSoon': 'Próximamente',
+  'dashboard.overridden.badge': 'Cartelera personalizada',
+  'dashboard.error.title': 'No se pudieron cargar tus demos',
+  'dashboard.error.retry': 'Reintentar',
+
+  // Admin — secciones + branding refinado
+  'admin.section.general': 'General',
+  'admin.section.general.hint': 'Identidad del tenant',
+  'admin.section.demos': 'Demos',
+  'admin.section.branding': 'Branding',
+  'admin.industry.label': 'Industria',
+  'admin.industry.readonly': 'solo lectura',
+  'admin.enabledDemos.inherited': 'Heredado de tu industria ({industry})',
+  'admin.branding.preview': 'Vista previa · sidebar',
+  'admin.branding.logoUrl.hint':
+    'Los logos vienen de dominios arbitrarios — se renderizan sin optimizar.',
+  'admin.branding.contrast.warning':
+    'Este color tiene poco contraste en tema {theme} y no se aplicará. Elige uno más oscuro o más claro para que funcione en ambos temas.',
+  'admin.branding.contrast.theme.light': 'claro',
+  'admin.branding.contrast.theme.dark': 'oscuro',
+  'admin.preview.refreshNote':
+    'El sidebar se refresca sin recargar al guardar.',
+
+  // Sidebar — powered-by + tooltip de industria
+  'shell.brand.poweredBy': 'Powered by',
+  'shell.tenant.industry': 'Industria',
+
   'costMini.tooltip':
     'Estimación visual (~4 caracteres por token, regla de la industria). Cobro real de {provider}: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 por consulta.',
 } as const;
@@ -556,6 +658,103 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'costMini.uses.comparator': 'comparisons/month',
   'costMini.uses.corpus': 'searches/month',
   'costMini.uses.agent': 'queries/month',
+
+  // --- Auth / login (PR-MT4)
+  'auth.login.title': 'Sign in',
+  'auth.login.subtitle': 'AI Demo Platform — Nutanix Enterprise AI',
+  'auth.login.email': 'Email',
+  'auth.login.emailPlaceholder': 'you@domain.com',
+  'auth.login.password': 'Password',
+  'auth.login.passwordPlaceholder': 'Your password',
+  'auth.login.submit': 'Sign in',
+  'auth.login.submitting': 'Verifying…',
+  'auth.login.error.invalid':
+    'Invalid credentials. Double-check the email and password.',
+  'auth.login.error.network':
+    'Could not reach the server. Please try again shortly.',
+  'auth.logout': 'Sign out',
+  'auth.session.loading': 'Loading session…',
+  'auth.session.error':
+    'There was a problem loading your session. Please sign in again.',
+
+  // --- Dashboard / home (PR-MT5)
+  'dashboard.welcome': 'Hello, {name}',
+  'dashboard.subtitle':
+    '{tenantName} · {industryName}. These are the demos enabled for your organization.',
+  'dashboard.empty.title': 'No demos enabled',
+  'dashboard.empty.body':
+    'Your organization has no demos assigned yet. Contact your administrator to enable at least one.',
+  'dashboard.openDemo': 'Open',
+  'dashboard.loading': 'Loading your demos…',
+  'dashboard.error':
+    'There was a problem loading your demos. Please refresh the page.',
+
+  // --- Admin panel (PR-MT5)
+  'admin.title': 'Tenant administration',
+  'admin.subtitle':
+    'Edit display name, enabled demos and branding of your tenant.',
+  'admin.displayName.label': 'Tenant name',
+  'admin.enabledDemos.label': 'Enabled demos',
+  'admin.enabledDemos.hint':
+    'If you leave everything unchecked, defaults from your industry ({industry}) are inherited.',
+  'admin.branding.title': 'Branding',
+  'admin.branding.accentColor': 'Accent color (hex)',
+  'admin.branding.logoUrl': 'Logo URL',
+  'admin.branding.displayName': 'Display name in header',
+  'admin.save': 'Save changes',
+  'admin.saving': 'Saving…',
+  'admin.saved': 'Changes saved.',
+  'admin.error.forbidden':
+    "You don't have permission to edit this tenant. Only administrators can.",
+  'admin.error.generic':
+    'Could not save changes. Check your inputs and try again.',
+
+  // --- Multi-tenant UI refinement (post sprint MT7)
+  'auth.login.forgot': 'Forgot your password?',
+  'auth.login.secured':
+    'Encrypted connection · access restricted to organizations with NAI on-prem',
+  'auth.brand.eyebrow': 'Secure access',
+  'auth.brand.headline': 'Your AI demos, on your own infrastructure.',
+  'auth.brand.sub':
+    'Sign in to access the demos enabled for your organization.',
+  'auth.brand.point.privacy': 'Your documents never leave your private cloud',
+  'auth.brand.point.tenant': 'Per-organization isolation (multi-tenant)',
+  'auth.brand.point.onprem': 'Anthropic API → NAI on-prem',
+
+  'header.user.menu': 'Account menu',
+  'header.user.admin': 'Administration',
+  'header.user.adminHint': 'Edit enabled demos and branding',
+  'header.user.role.member': 'Member',
+  'header.user.role.admin': 'Administrator',
+  'header.user.role.superadmin': 'Superadmin',
+
+  'dashboard.section.demos': 'Your demos',
+  'dashboard.card.audience': 'Audience',
+  'dashboard.card.comingSoon': 'Coming soon',
+  'dashboard.overridden.badge': 'Custom lineup',
+  'dashboard.error.title': 'Could not load your demos',
+  'dashboard.error.retry': 'Retry',
+
+  'admin.section.general': 'General',
+  'admin.section.general.hint': 'Tenant identity',
+  'admin.section.demos': 'Demos',
+  'admin.section.branding': 'Branding',
+  'admin.industry.label': 'Industry',
+  'admin.industry.readonly': 'read only',
+  'admin.enabledDemos.inherited': 'Inherited from your industry ({industry})',
+  'admin.branding.preview': 'Preview · sidebar',
+  'admin.branding.logoUrl.hint':
+    'Logos come from arbitrary domains — rendered unoptimized.',
+  'admin.branding.contrast.warning':
+    'This color has low contrast in {theme} mode and will not be applied. Pick a darker or lighter one so it works in both themes.',
+  'admin.branding.contrast.theme.light': 'light',
+  'admin.branding.contrast.theme.dark': 'dark',
+  'admin.preview.refreshNote':
+    'The sidebar refreshes without reloading on save.',
+
+  'shell.brand.poweredBy': 'Powered by',
+  'shell.tenant.industry': 'Industry',
+
   'costMini.tooltip':
     'Visual estimate (~4 chars per token, industry rule of thumb). {provider} actual price: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 per query.',
 };

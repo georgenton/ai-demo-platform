@@ -13,6 +13,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app/app.module';
+import { AuthGuard } from './app/auth/auth.guard.js';
+import { DemoAccessGuard } from './app/auth/demo-access.guard.js';
+import { RolesGuard } from './app/auth/roles.guard.js';
+import { TenantGuard } from './app/auth/tenant.guard.js';
 import { AllExceptionsFilter } from './app/common/all-exceptions.filter.js';
 import { InternalKeyGuard } from './app/common/internal-key.guard.js';
 
@@ -57,7 +61,32 @@ async function bootstrap() {
   // Auth simple por shared secret. En dev (sin INTERNAL_API_KEY) el guard
   // queda inactivo; en prod (Railway) exige el header X-Internal-Key que
   // inyecta el proxy de Next.js — ver apps/web/src/app/api/[...path]/route.ts.
-  app.useGlobalGuards(new InternalKeyGuard());
+  //
+  // Cadena de guards globales (ADR-0013, ADR-0014, PR-MT3/MT5):
+  //   1) InternalKeyGuard — X-Internal-Key (solo activo en prod).
+  //   2) AuthGuard        — JWT en cookie obligatorio (excepto @Public()).
+  //   3) TenantGuard      — pone request.tenantId desde el JWT.
+  //   4) DemoAccessGuard  — si el handler declara @RequireDemo(), valida
+  //                         que el tenant tenga ese demo habilitado.
+  //   5) RolesGuard       — si el handler declara @RequireRole(), valida
+  //                         que el rol del usuario sea >= al requerido.
+  //
+  // El orden importa: cada guard depende de que el anterior haya corrido.
+  //
+  // Los obtenemos del container para que NestJS resuelva sus dependencias
+  // (Reflector, AuthService, IndustryService). `new InternalKeyGuard()` se
+  // queda construido a mano porque no necesita DI.
+  const authGuard = app.get(AuthGuard);
+  const tenantGuard = app.get(TenantGuard);
+  const demoAccessGuard = app.get(DemoAccessGuard);
+  const rolesGuard = app.get(RolesGuard);
+  app.useGlobalGuards(
+    new InternalKeyGuard(),
+    authGuard,
+    tenantGuard,
+    demoAccessGuard,
+    rolesGuard,
+  );
 
   // CORS: en prod el frontend NO llama al backend desde el browser — todo va
   // server-side por el proxy de Next. CORS no es la línea de defensa (lo es

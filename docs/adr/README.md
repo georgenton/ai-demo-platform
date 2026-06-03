@@ -40,8 +40,9 @@ Usamos **MADR** (Markdown ADR), uno de los formatos estándar:
 | 0010 | [Web/API coupling: Next.js rewrites + duplicated types](./0010-web-api-coupling-rewrites-and-no-contracts-pkg.md) | Aceptado                    |
 | 0011 | [Demo 03 (corpus académico) espera a la entrada de Python](./0011-demo-03-waits-for-python.md)                    | Superado por sprint Demo 03 |
 | 0012 | [Demo 05 — Tutor de inglés con cost calculator](./0012-demo-05-english-tutor.md)                                  | Aceptado                    |
-| 0013 | [Multi-tenant SaaS architecture (soft tenancy con tenantId)](./0013-multi-tenant-saas-architecture.md)            | Propuesto                   |
-| 0014 | [Auth: email + contraseña con JWT en cookie httpOnly](./0014-auth-email-password-jwt.md)                          | Propuesto                   |
+| 0013 | [Multi-tenant SaaS architecture (soft tenancy con tenantId)](./0013-multi-tenant-saas-architecture.md)            | Aceptado                    |
+| 0014 | [Auth: email + contraseña con JWT en cookie httpOnly](./0014-auth-email-password-jwt.md)                          | Aceptado                    |
+| 0015 | [Multi-tenant: notas de implementación del sprint MT1..MT5](./0015-multi-tenant-implementation-notes.md)          | Aceptado                    |
 
 ## Cuándo agregar un nuevo ADR
 

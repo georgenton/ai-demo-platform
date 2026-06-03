@@ -25,9 +25,11 @@ import { map } from 'rxjs/operators';
 import { TutorChatRequestDto } from './dto/chat-request.dto.js';
 import { TutorService } from './tutor.service.js';
 import { NAI_ON_PREM, PROVIDERS } from './cost/pricing.constants.js';
+import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 @ApiTags('Tutor (Demo 05)')
 @Controller({ path: 'tutor' })
+@RequireDemo('tutor')
 export class TutorController {
   constructor(private readonly tutorService: TutorService) {}
 

@@ -17,6 +17,10 @@
 //   - El backend (nx serve api) debe estar corriendo en localhost:3000.
 //   - `.env` con CHAT_API_KEY y EMBEDDINGS_API_KEY válidas (sin esto el
 //     embedding del ingest falla; el seed reporta el error y continúa).
+//   - Tenant + superadmin sembrados antes: `npm run db:seed:tenants`. El
+//     seed se loguea con DEMO_ADMIN_EMAIL/DEMO_ADMIN_PASSWORD (o los
+//     defaults del seed-tenants) para obtener la cookie de auth y todos
+//     los documentos quedan asignados al tenant 'demo'.
 //
 // Idempotencia:
 //   Antes de postear, consulta `GET /documents?demoId=...` y verifica si
@@ -27,6 +31,7 @@
 //   # Terminal 1
 //   npx nx serve api
 //   # Terminal 2
+//   npm run db:seed:tenants    # solo la primera vez
 //   npm run db:seed:demos
 // -----------------------------------------------------------------------------
 
@@ -58,6 +63,13 @@ const DATA_DIR = join(__dirname, 'seed-demos-data');
 
 const API_BASE = process.env.SEED_API_BASE ?? 'http://localhost:3000/api/v1';
 const HEALTH_TIMEOUT_MS = 30_000;
+
+// Credenciales para loguearse contra /auth/login. Defaults coinciden con
+// los del seed-tenants para que el flujo "out-of-the-box" funcione en local.
+const ADMIN_EMAIL = (
+  process.env.DEMO_ADMIN_EMAIL ?? 'admin@nai.local'
+).toLowerCase();
+const ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD ?? 'demo-platform-2026';
 
 // ---------------------------------------------------------------------------
 // Cargar samples del filesystem
@@ -145,13 +157,61 @@ function sleep(ms: number): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Auth: login y manejo de cookie
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /auth/login → extrae la cookie `auth` del Set-Cookie y la devuelve
+ * para incluirla en los headers de cada request siguiente.
+ *
+ * Por qué la extraemos a mano: fetch nativo de Node 20+ no tiene un cookie
+ * jar automático. La cookie es httpOnly + SameSite=Strict + Secure (cuando
+ * aplica) — solo nos importa el par `auth=<jwt>` para reusarlo.
+ */
+async function login(): Promise<string> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+  });
+  if (!res.ok) {
+    let detail = '';
+    try {
+      detail = JSON.stringify(await res.json());
+    } catch {
+      detail = res.statusText;
+    }
+    throw new Error(
+      `Falló login como ${ADMIN_EMAIL}: HTTP ${res.status} ${detail}\n` +
+        `¿Sembraste tenants primero? \`npm run db:seed:tenants\``,
+    );
+  }
+  const setCookie = res.headers.get('set-cookie');
+  if (!setCookie) {
+    throw new Error(
+      'Login OK pero no llegó Set-Cookie — revisa que /auth/login emita la cookie auth.',
+    );
+  }
+  // Extrae solo el "auth=<jwt>" — el resto (Path, HttpOnly, etc.) no aplica
+  // al request que vamos a mandar.
+  const authPair = setCookie.split(/;\s*/)[0];
+  if (!authPair.startsWith('auth=')) {
+    throw new Error(`Set-Cookie inesperado: ${setCookie}`);
+  }
+  return authPair;
+}
+
+// ---------------------------------------------------------------------------
 // Idempotencia: ¿ya existe el doc?
 // ---------------------------------------------------------------------------
 
 async function existingNames(
   demoId: 'rag' | 'comparator',
+  authCookie: string,
 ): Promise<Set<string>> {
-  const res = await fetch(`${API_BASE}/documents?demoId=${demoId}&limit=100`);
+  const res = await fetch(`${API_BASE}/documents?demoId=${demoId}&limit=100`, {
+    headers: { cookie: authCookie },
+  });
   if (!res.ok) {
     throw new Error(
       `Falló GET /documents?demoId=${demoId}: HTTP ${res.status}`,
@@ -165,10 +225,16 @@ async function existingNames(
 // Ingest de un doc
 // ---------------------------------------------------------------------------
 
-async function ingest(doc: SampleDoc): Promise<IngestResponse> {
+async function ingest(
+  doc: SampleDoc,
+  authCookie: string,
+): Promise<IngestResponse> {
   const res = await fetch(`${API_BASE}/ingest`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      cookie: authCookie,
+    },
     body: JSON.stringify(doc),
   });
   if (!res.ok) {
@@ -193,13 +259,17 @@ async function main() {
   await waitForBackend();
   console.log('   ✓ Backend respondió.\n');
 
+  console.log(`🔐 Login como ${ADMIN_EMAIL}…`);
+  const authCookie = await login();
+  console.log('   ✓ Sesión activa (cookie auth obtenida).\n');
+
   const samples = loadSamples();
   console.log(`📚 ${samples.length} documentos cargados del filesystem.\n`);
 
   // Cache de docs existentes por demoId para evitar duplicados.
   const existingByDemo = new Map<string, Set<string>>();
   for (const demoId of ['rag', 'comparator'] as const) {
-    existingByDemo.set(demoId, await existingNames(demoId));
+    existingByDemo.set(demoId, await existingNames(demoId, authCookie));
   }
 
   let created = 0;
@@ -214,7 +284,7 @@ async function main() {
       continue;
     }
     try {
-      const result = await ingest(doc);
+      const result = await ingest(doc, authCookie);
       console.log(
         `✓  [${doc.demoId}] ${doc.name} → ${result.chunkCount} chunks`,
       );

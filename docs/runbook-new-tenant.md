@@ -134,6 +134,66 @@ columna `Tenant.branding` como JSON:
 
 ---
 
+## Paso 4b — Smoke test end-to-end (post sprint MT1-MT5)
+
+Después del alta del tenant, ejecuta esta lista para confirmar que el
+flujo completo funciona antes de pasarle accesos al cliente. Si
+cualquiera de los 6 pasos falla, no escribas el email del Paso 5 hasta
+arreglarlo.
+
+1. **Login del admin del cliente**
+   - Abre `https://app.nai-platform.com/login` en una pestaña incógnita
+     (sin cookies viejas).
+   - Loguea con el email del admin que creaste en el Paso 2 y la
+     contraseña temporal.
+   - **Esperado:** redirige a `/` y muestra el dashboard con las cards
+     de los demos habilitados del tenant.
+   - **Si redirige a `/login` otra vez:** revisa que el backend tenga
+     `JWT_SECRET` seteado y reiniciado tras la última deploy.
+
+2. **Dashboard filtrado correctamente**
+   - **Esperado:** solo aparecen los demos del `enabledDemos` del
+     tenant (heredados de la industry o overrideados).
+   - **Si aparecen demos extra:** el filtro `useMyDemos()` falló →
+     revisa que `GET /api/v1/me/demos` responda 200 y el array
+     `demos` coincida con la lista esperada.
+
+3. **Branding del sidebar**
+   - **Esperado:** el sidebar muestra el `branding.displayName` (o el
+     `tenant.displayName` si no hay branding override), el logo del
+     cliente, y el accent color en los items activos.
+   - **Si no se ve el logo:** verifica que `branding.logoUrl` sea
+     HTTPS y accesible (curl al URL). Si es CORS-bloqueado, el
+     `<Image unoptimized>` igual debería renderizar — revisa la
+     consola del browser.
+
+4. **Acceso negado a demos no habilitados**
+   - Mientras el admin del cliente está logueado, abre directamente
+     `/demo/<demoId>` para un demo que NO esté en su `enabledDemos`
+     (ej: si es un tenant universidad sin tutor habilitado, prueba
+     `/demo/tutor`).
+   - **Esperado:** el endpoint protegido responde 403 (visible en
+     DevTools Network) con mensaje "El demo X no está habilitado para
+     tu organización". La página puede mostrar un estado de error o
+     vacío — el `DemoAccessGuard` del backend está cumpliendo.
+
+5. **Admin panel funcional**
+   - El admin abre `/admin/tenant`.
+   - **Esperado:** ve el form con `displayName`, `enabledDemos` (con
+     los chequeados) y los campos de branding precargados.
+   - Cambia el accent color a otro hex y guarda.
+   - **Esperado:** banner "Cambios guardados", el sidebar refresca con
+     el nuevo color sin reload.
+
+6. **Aislamiento entre tenants (si hay más de un tenant en la DB)**
+   - Loguea con un user del tenant A y abre DevTools.
+   - Ejecuta en la consola:
+     `fetch('/api/v1/documents').then(r => r.json()).then(console.log)`
+   - **Esperado:** solo aparecen documentos del tenant A. Ningún doc
+     del tenant B debería estar en la lista.
+
+---
+
 ## Paso 5 — Entregar accesos al cliente
 
 Envía al admin del cliente un email con:
