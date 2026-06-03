@@ -10,6 +10,12 @@ export { ApiError, ingestPdf, ingestText, subscribeToChat } from './client';
 export { subscribeToCompare } from './compare';
 export { subscribeToAgent, getAgentHistory } from './agent';
 export {
+  getClinicalPatients,
+  getClinicalPatientDetail,
+  getClinicalProtocols,
+  subscribeToClinicalAnalyze,
+} from './clinical';
+export {
   fetchCorpusPapers,
   fetchCorpusStats,
   subscribeToCorpusSearch,
@@ -30,6 +36,12 @@ export {
 // ---------------------------------------------------------------------------
 
 export { useChatStream } from './use-chat-stream';
+export {
+  useClinicalAnalyze,
+  type ClinicalAnalyzeEntry,
+  type ClinicalAnalyzeStatus,
+  type UseClinicalAnalyzeResult,
+} from './use-clinical-analyze';
 export { useCorpusPapers } from './use-corpus-papers';
 export { useCorpusSearch } from './use-corpus-search';
 export { useCorpusStats } from './use-corpus-stats';
@@ -102,6 +114,27 @@ export type {
   TopTopicItem,
 } from './types-corpus';
 export type { DemoMetadata, DemoStatus } from './types-demos';
+export type {
+  ClinicalAnalyzeEvent,
+  ClinicalAnalyzeRequest,
+  ClinicalAnalyzeStreamHandlers,
+  ClinicalAnalyzeSubscription,
+  ClinicalConsultation,
+  ClinicalDoneEvent,
+  ClinicalErrorEvent,
+  ClinicalInteraction,
+  ClinicalInteractionSeverity,
+  ClinicalListPatientsQuery,
+  ClinicalListProtocolsQuery,
+  ClinicalPatientDetail,
+  ClinicalPatientListResponse,
+  ClinicalPatientSummary,
+  ClinicalProtocol,
+  ClinicalProtocolListResponse,
+  ClinicalTokenEvent,
+  ClinicalToolCallEvent,
+  ClinicalToolResultEvent,
+} from './types-clinical';
 export type {
   TutorChatRequest,
   TutorHistoryTurn,
