@@ -174,12 +174,14 @@ BACKEND_URL=https://<tu-railway-domain>
 
 # Mismo valor exacto que el backend (de 1.4)
 INTERNAL_API_KEY=<el-mismo-de-Railway>
-
-# Basic auth — elegí user/pass. Vas a compartir estas credenciales con
-# Edguitar y con clientes específicos para la demo.
-BASIC_AUTH_USER=demo
-BASIC_AUTH_PASSWORD=<elegí-uno>
 ```
+
+> **Histórico — basic auth retirado**: antes del sprint multi-tenant la
+> app también pedía credenciales HTTP Basic Auth a nivel deploy
+> (`BASIC_AUTH_USER` + `BASIC_AUTH_PASSWORD`). Con el login real de
+> aplicación esa capa ya no aporta protección y solo agregaba un alert
+> molesto antes de llegar a `/login`. Si tu deploy todavía las tiene
+> seteadas, podés borrarlas — el middleware ya no las consume.
 
 > Importante: **no setear `BACKEND_URL` ni `INTERNAL_API_KEY` como
 > `NEXT_PUBLIC_*`**. Solo se usan server-side en el Route Handler — si
@@ -195,8 +197,9 @@ BASIC_AUTH_PASSWORD=<elegí-uno>
 
 Abrí `https://<vercel-domain>` en una pestaña en incógnito:
 
-1. **Sin credenciales**: el browser muestra el prompt nativo de basic auth.
-2. **Con `demo` / `<tu-pass>`**: entrás a la landing.
+1. La app te redirige a `/login` (middleware: sin cookie auth → login).
+2. Loguea con `admin@nai.local` / la contraseña del seed-tenants. Aterrizás
+   en el dashboard con las cards de los demos habilitados.
 3. Navegá a `/demo/rag`. Hacé una pregunta sugerida ("¿Cuál es el horario
    de matrícula?"). Si el streaming arranca → **la cadena completa funciona**.
 4. Si el chat queda colgado en "streaming":
