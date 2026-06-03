@@ -291,6 +291,25 @@ const STRINGS_ES = {
   'costMini.uses.comparator': 'comparaciones/mes',
   'costMini.uses.corpus': 'búsquedas/mes',
   'costMini.uses.agent': 'queries/mes',
+
+  // --- Auth / login (PR-MT4)
+  'auth.login.title': 'Iniciar sesión',
+  'auth.login.subtitle': 'AI Demo Platform — Nutanix Enterprise AI',
+  'auth.login.email': 'Correo',
+  'auth.login.emailPlaceholder': 'tu@dominio.com',
+  'auth.login.password': 'Contraseña',
+  'auth.login.passwordPlaceholder': 'Tu contraseña',
+  'auth.login.submit': 'Entrar',
+  'auth.login.submitting': 'Verificando…',
+  'auth.login.error.invalid':
+    'Credenciales inválidas. Verifica el correo y la contraseña.',
+  'auth.login.error.network':
+    'No se pudo contactar al servidor. Intenta de nuevo en un momento.',
+  'auth.logout': 'Cerrar sesión',
+  'auth.session.loading': 'Cargando sesión…',
+  'auth.session.error':
+    'Hubo un problema cargando tu sesión. Vuelve a iniciar sesión.',
+
   'costMini.tooltip':
     'Estimación visual (~4 caracteres por token, regla de la industria). Cobro real de {provider}: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 por consulta.',
 } as const;
@@ -556,6 +575,25 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'costMini.uses.comparator': 'comparisons/month',
   'costMini.uses.corpus': 'searches/month',
   'costMini.uses.agent': 'queries/month',
+
+  // --- Auth / login (PR-MT4)
+  'auth.login.title': 'Sign in',
+  'auth.login.subtitle': 'AI Demo Platform — Nutanix Enterprise AI',
+  'auth.login.email': 'Email',
+  'auth.login.emailPlaceholder': 'you@domain.com',
+  'auth.login.password': 'Password',
+  'auth.login.passwordPlaceholder': 'Your password',
+  'auth.login.submit': 'Sign in',
+  'auth.login.submitting': 'Verifying…',
+  'auth.login.error.invalid':
+    'Invalid credentials. Double-check the email and password.',
+  'auth.login.error.network':
+    'Could not reach the server. Please try again shortly.',
+  'auth.logout': 'Sign out',
+  'auth.session.loading': 'Loading session…',
+  'auth.session.error':
+    'There was a problem loading your session. Please sign in again.',
+
   'costMini.tooltip':
     'Visual estimate (~4 chars per token, industry rule of thumb). {provider} actual price: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 per query.',
 };
