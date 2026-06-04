@@ -56,11 +56,14 @@ const INDUSTRIES = [
   },
   {
     slug: 'salud',
+    // Demo 06 ('clinical') agregado en sprint Demo 06: primer demo
+    // nicho-salud (ADR-0016). Los pacientes ficticios viven en el tenant
+    // compartido 'clinical-shared' que el ClinicalService resuelve internamente.
     displayName: 'Clínicas y centros médicos',
-    enabledDemos: ['rag', 'agent'],
+    enabledDemos: ['rag', 'agent', 'clinical'],
     defaultConfig: {
       welcomeCopy:
-        'Plataforma de IA para salud: protocolos clínicos consultables y agente sobre indicadores hospitalarios.',
+        'Plataforma de IA para salud: protocolos clínicos consultables, asistente sobre la historia del paciente y agente sobre indicadores hospitalarios.',
     },
   },
   {

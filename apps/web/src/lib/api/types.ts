@@ -22,7 +22,13 @@
  * 'tutor' (Demo 05) entró como 'coming-soon' — la UI lo muestra
  * deshabilitado mientras se construye. Ver ADR-0012.
  */
-export type DemoId = 'rag' | 'comparator' | 'corpus' | 'agent' | 'tutor';
+export type DemoId =
+  | 'rag'
+  | 'comparator'
+  | 'corpus'
+  | 'agent'
+  | 'tutor'
+  | 'clinical';
 
 // ---------------------------------------------------------------------------
 // Ingest — POST /api/v1/ingest  (text/JSON)

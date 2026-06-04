@@ -84,6 +84,21 @@ export class DemoRegistryService {
       status: 'available',
       route: '/demo/tutor',
     },
+    {
+      // Demo 06 — Asistente clínico (ADR-0016). Primer demo para industria
+      // 'salud'. Tres paneles + tool calling para interacciones medicamentosas
+      // sobre una vademécum mock. Datos sintéticos compartidos en el tenant
+      // 'clinical-shared' (decisión 1B del ADR). Banner permanente de "no usar
+      // con pacientes reales" en el frontend.
+      id: 'clinical',
+      title: 'Asistente clínico',
+      tagline: 'Apoyo al médico sobre la historia del paciente',
+      description:
+        'El médico abre el expediente de un paciente ficticio y pregunta en lenguaje natural ("¿Puedo recetarle amoxicilina?"). El asistente carga la historia clínica, consulta el vademécum vía tool calling y responde citando la consulta exacta del paciente con advertencias de interacciones.',
+      audience: ['Directores médicos', 'Jefes de servicio', 'CIO de hospital'],
+      status: 'available',
+      route: '/demo/clinical',
+    },
   ];
 
   /** Devuelve todos los demos en el orden definido. */

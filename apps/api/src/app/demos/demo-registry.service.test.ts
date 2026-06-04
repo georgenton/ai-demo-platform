@@ -19,17 +19,24 @@ describe('DemoRegistryService', () => {
   const service = new DemoRegistryService();
 
   describe('findAll()', () => {
-    it('devuelve los 5 demos del roadmap (rag, comparator, corpus, agent, tutor)', () => {
+    it('devuelve los 6 demos del roadmap (rag, comparator, corpus, agent, tutor, clinical)', () => {
       const demos = service.findAll();
       const ids = demos.map((d) => d.id);
-      expect(ids).toEqual(['rag', 'comparator', 'corpus', 'agent', 'tutor']);
+      expect(ids).toEqual([
+        'rag',
+        'comparator',
+        'corpus',
+        'agent',
+        'tutor',
+        'clinical',
+      ]);
     });
 
-    it('marca los 5 demos del roadmap como available', () => {
-      // Cierre del sprint Demo 05 (PR-E): tutor pasó a 'available'. Todos los
-      // demos del roadmap están funcionales. Si en algún momento se suma un
-      // demo nuevo 'coming-soon', conviene volver al patrón "key por key" de
-      // antes en lugar de iterar.
+    it('marca los 6 demos del roadmap como available', () => {
+      // Cierre del sprint Demo 06 (PR de integración de UI): clinical pasó
+      // a 'available' junto con los 5 previos. Si en algún momento se suma
+      // un demo nuevo 'coming-soon', conviene volver al patrón "key por key"
+      // de antes en lugar de iterar.
       const demos = service.findAll();
       const byId = Object.fromEntries(demos.map((d) => [d.id, d.status]));
       expect(byId.rag).toBe('available');
@@ -37,6 +44,7 @@ describe('DemoRegistryService', () => {
       expect(byId.corpus).toBe('available');
       expect(byId.agent).toBe('available');
       expect(byId.tutor).toBe('available');
+      expect(byId.clinical).toBe('available');
     });
 
     it('todos los demos traen los campos requeridos por la UI', () => {

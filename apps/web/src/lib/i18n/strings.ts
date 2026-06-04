@@ -275,6 +275,10 @@ const STRINGS_ES = {
   'audience.tutor.langCenters': 'Centros de idiomas universitarios',
   'audience.tutor.corporate': 'Capacitación corporativa',
   'audience.tutor.cio': 'CIO evaluando build vs buy',
+  // Demo 06 — Asistente clínico.
+  'audience.clinical.directors': 'Directores médicos',
+  'audience.clinical.heads': 'Jefes de servicio',
+  'audience.clinical.cio': 'CIO de hospital',
 
   // --- CostMiniWidget (sidebar de cada demo)
   'costMini.tokens': 'Tokens estimados',
@@ -291,6 +295,7 @@ const STRINGS_ES = {
   'costMini.uses.comparator': 'comparaciones/mes',
   'costMini.uses.corpus': 'búsquedas/mes',
   'costMini.uses.agent': 'queries/mes',
+  'costMini.uses.clinical': 'análisis/mes',
 
   // --- Auth / login (PR-MT4)
   'auth.login.title': 'Iniciar sesión',
@@ -395,6 +400,79 @@ const STRINGS_ES = {
 
   'costMini.tooltip':
     'Estimación visual (~4 caracteres por token, regla de la industria). Cobro real de {provider}: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 por consulta.',
+
+  // --- Demo 06 (Asistente clínico) — sidebar + demo registry copy.
+  'demos.clinical.title': 'Asistente clínico',
+  'demos.clinical.tagline': 'Apoyo al médico sobre la historia del paciente',
+
+  // --- Demo 06 (Asistente clínico) — page copy.
+  // Banner permanente. Aparece arriba de todo el demo y NO se descarta.
+  // Es la advertencia que protege contra el uso accidental con datos reales.
+  'clinical.banner.title': 'Datos sintéticos',
+  'clinical.banner.text':
+    'No uses este demo con pacientes reales. La base farmacológica es de ejemplo (no certificada).',
+  // Header del demo.
+  'clinical.eyebrow': 'Demo 06 · Salud',
+  'clinical.title': 'Asistente clínico',
+  'clinical.tagline': 'Apoyo al médico sobre la historia del paciente',
+  // Etiquetas de los 3 paneles (sidebar interno del demo).
+  'clinical.panel.patients': 'Pacientes',
+  'clinical.panel.history': 'Historia clínica',
+  'clinical.panel.assistant': 'Asistente',
+  // Counter del panel izquierdo. Singular vs plural se decide en el render.
+  'clinical.counter': '{n} pacientes',
+  'clinical.counter.one': '{n} paciente',
+  // Buscador del panel izquierdo.
+  'clinical.search.placeholder': 'Buscar paciente…',
+  'clinical.search.empty': 'No hay pacientes que coincidan con la búsqueda.',
+  // Empty states (cuando no hay paciente seleccionado).
+  'clinical.empty.history': 'Selecciona un paciente para ver su historia.',
+  'clinical.empty.assistant':
+    'Selecciona un paciente para empezar el análisis.',
+  // Formato del meta del paciente: "{n} años · Hombre".
+  'clinical.patient.age': '{n} años',
+  'clinical.gender.M': 'Hombre',
+  'clinical.gender.F': 'Mujer',
+  // Etiquetas de las secciones de la historia clínica.
+  'clinical.section.allergies': 'Alergias',
+  'clinical.section.conditions': 'Condiciones crónicas',
+  'clinical.section.medications': 'Medicación actual',
+  'clinical.section.consultations': 'Últimas consultas',
+  'clinical.none': 'Ninguna registrada',
+  // Etiquetas de los campos de cada consulta (accordion abierto).
+  'clinical.consult.physician': 'Médico tratante',
+  'clinical.consult.reason': 'Motivo de consulta',
+  'clinical.consult.exam': 'Examen físico',
+  'clinical.consult.diagnosis': 'Diagnóstico',
+  'clinical.consult.treatment': 'Tratamiento',
+  'clinical.consult.notes': 'Notas',
+  // Sugerencias iniciales del panel derecho. Las 4 se muestran cuando
+  // hay paciente seleccionado pero ninguna pregunta hecha aún.
+  'clinical.suggest.title': 'Preguntas frecuentes para empezar',
+  'clinical.suggest.1': '¿Puedo recetarle amoxicilina?',
+  'clinical.suggest.2': 'Resume su historia clínica de los últimos 12 meses',
+  'clinical.suggest.3': '¿Qué diagnóstico diferencial debo considerar?',
+  'clinical.suggest.4': '¿Su medicación actual tiene interacciones?',
+  // Composer del asistente.
+  'clinical.input.placeholder': 'Escribe tu pregunta…',
+  'clinical.input.voice': 'Voz disponible próximamente',
+  // Cards de tool calling para interacciones medicamentosas. El `kicker`
+  // es la etiqueta tipo eyebrow; `calling` se concatena con la lista de
+  // drogas que se muestra a continuación.
+  'clinical.tool.kicker': 'Interacciones',
+  'clinical.tool.calling': 'Consultando interacciones de: {drugs}',
+  'clinical.tool.resultKicker': 'Resultado de interacciones',
+  'clinical.tool.none':
+    'No se encontraron interacciones conocidas entre estas drogas.',
+  'clinical.tool.found': '{n} interacción encontrada',
+  'clinical.tool.found.many': '{n} interacciones encontradas',
+  // Severidad de la interacción. El backend manda los 3 valores literales.
+  'clinical.sev.leve': 'Leve',
+  'clinical.sev.moderada': 'Moderada',
+  'clinical.sev.grave': 'Grave',
+  // Estados del stream.
+  'clinical.status.thinking': 'Pensando…',
+  'clinical.status.error': 'Algo salió mal. Intenta de nuevo.',
 } as const;
 
 const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
@@ -642,6 +720,10 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'audience.tutor.langCenters': 'University language centers',
   'audience.tutor.corporate': 'Corporate training',
   'audience.tutor.cio': 'CIO evaluating build vs buy',
+  // Demo 06 — Clinical assistant.
+  'audience.clinical.directors': 'Medical directors',
+  'audience.clinical.heads': 'Service chiefs',
+  'audience.clinical.cio': 'Hospital CIO',
 
   // --- CostMiniWidget (each demo header)
   'costMini.tokens': 'Estimated tokens',
@@ -658,6 +740,7 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'costMini.uses.comparator': 'comparisons/month',
   'costMini.uses.corpus': 'searches/month',
   'costMini.uses.agent': 'queries/month',
+  'costMini.uses.clinical': 'analyses/month',
 
   // --- Auth / login (PR-MT4)
   'auth.login.title': 'Sign in',
@@ -757,6 +840,60 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
 
   'costMini.tooltip':
     'Visual estimate (~4 chars per token, industry rule of thumb). {provider} actual price: ${priceIn}/M input + ${priceOut}/M output. NAI on-prem: $0 per query.',
+
+  // --- Demo 06 (Clinical assistant) — sidebar + demo registry copy.
+  'demos.clinical.title': 'Clinical assistant',
+  'demos.clinical.tagline': 'Physician support over the patient record',
+
+  // --- Demo 06 (Clinical assistant) — page copy.
+  'clinical.banner.title': 'Synthetic data',
+  'clinical.banner.text':
+    'Do not use this demo with real patients. The drug database is illustrative (not certified).',
+  'clinical.eyebrow': 'Demo 06 · Healthcare',
+  'clinical.title': 'Clinical assistant',
+  'clinical.tagline': 'Physician support over the patient record',
+  'clinical.panel.patients': 'Patients',
+  'clinical.panel.history': 'Clinical record',
+  'clinical.panel.assistant': 'Assistant',
+  'clinical.counter': '{n} patients',
+  'clinical.counter.one': '{n} patient',
+  'clinical.search.placeholder': 'Search patient…',
+  'clinical.search.empty': 'No patients match your search.',
+  'clinical.empty.history': 'Select a patient to see their record.',
+  'clinical.empty.assistant': 'Select a patient to start the analysis.',
+  'clinical.patient.age': '{n} years',
+  'clinical.gender.M': 'Male',
+  'clinical.gender.F': 'Female',
+  'clinical.section.allergies': 'Allergies',
+  'clinical.section.conditions': 'Chronic conditions',
+  'clinical.section.medications': 'Current medication',
+  'clinical.section.consultations': 'Recent visits',
+  'clinical.none': 'None on record',
+  'clinical.consult.physician': 'Treating physician',
+  'clinical.consult.reason': 'Reason for visit',
+  'clinical.consult.exam': 'Physical exam',
+  'clinical.consult.diagnosis': 'Diagnosis',
+  'clinical.consult.treatment': 'Treatment',
+  'clinical.consult.notes': 'Notes',
+  'clinical.suggest.title': 'Common questions to start',
+  'clinical.suggest.1': 'Can I prescribe amoxicillin?',
+  'clinical.suggest.2':
+    'Summarize their clinical history over the last 12 months',
+  'clinical.suggest.3': 'What differential diagnoses should I consider?',
+  'clinical.suggest.4': 'Does their current medication have interactions?',
+  'clinical.input.placeholder': 'Type your question…',
+  'clinical.input.voice': 'Voice available soon',
+  'clinical.tool.kicker': 'Interactions',
+  'clinical.tool.calling': 'Checking interactions for: {drugs}',
+  'clinical.tool.resultKicker': 'Interaction result',
+  'clinical.tool.none': 'No known interactions were found among these drugs.',
+  'clinical.tool.found': '{n} interaction found',
+  'clinical.tool.found.many': '{n} interactions found',
+  'clinical.sev.leve': 'Mild',
+  'clinical.sev.moderada': 'Moderate',
+  'clinical.sev.grave': 'Severe',
+  'clinical.status.thinking': 'Thinking…',
+  'clinical.status.error': 'Something went wrong. Try again.',
 };
 
 // ---------------------------------------------------------------------------

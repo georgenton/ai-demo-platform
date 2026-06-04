@@ -87,4 +87,16 @@ export const DEMO_COST_DEFAULTS: Record<DemoId, DemoCostDefaults> = {
     referenceTokensPerUse: { inputTokens: 1_000, outputTokens: 500 },
     usesLabelKey: 'costMini.uses.rag',
   },
+  clinical: {
+    // Demo 06 — no usa CostMiniWidget en su primera vuelta (la página
+    // del asistente clínico no tiene proyección de costo todavía). Los
+    // valores son razonables para una clínica mediana: 30 médicos × 60
+    // consultas mensuales por médico ≈ 1.800 análisis. Cubre el
+    // Record<DemoId, …> exhaustivo y queda listo si en el futuro se
+    // suma el widget.
+    defaultUsers: 30,
+    defaultUsesPerUserPerMonth: 60,
+    referenceTokensPerUse: { inputTokens: 4_000, outputTokens: 1_000 },
+    usesLabelKey: 'costMini.uses.clinical',
+  },
 };

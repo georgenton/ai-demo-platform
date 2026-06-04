@@ -2036,3 +2036,593 @@ html.presenting .app-shell > .sidebar {
   box-shadow: 0 0 0 4px var(--color-danger-bg);
   animation: none;
 }
+
+/* ===========================================================================
+ * Demo 06 — Asistente clínico (ADR-0016).
+ *
+ * Layout: banner sticky arriba + 3 paneles (300px | 1fr | 1fr).
+ * Convención de naming: `.clinical-*` para el shell del demo, `.clin-*` para
+ * componentes co-localizados (chip, suggest, tool, etc.). Mantenido para
+ * que el diff contra el kit de Claude Design sea 1:1.
+ * ========================================================================= */
+
+/* ---------- Console root + sticky banner -------------------------------- */
+.clinical-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.clinical-banner {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 20px;
+  font-size: 12px;
+  line-height: 1.2;
+  background: var(--nai-amber-100);
+  color: var(--nai-amber-700);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--nai-amber-500) 35%, transparent);
+}
+[data-theme='dark'] .clinical-banner {
+  background: rgba(224, 138, 31, 0.16);
+  color: var(--nai-amber-300);
+  border-bottom-color: rgba(224, 138, 31, 0.3);
+}
+.clinical-banner .ic {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+.clinical-banner strong {
+  font-weight: 700;
+}
+.clinical-banner-text {
+  color: inherit;
+  opacity: 0.92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Compact head + 3-panel grid --------------------------------- */
+.clinical-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 20px 12px 20px;
+  white-space: nowrap;
+}
+.clinical-head-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+  flex-shrink: 0;
+}
+.clinical-head-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  flex-shrink: 0;
+}
+.clinical-head-sub {
+  font-size: 13px;
+  color: var(--color-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.clinical-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 0 20px 20px 20px;
+}
+
+/* ---------- Panel shell ------------------------------------------------- */
+.clinical-panel {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.clinical-panel-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.clinical-panel-head .label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+}
+.clinical-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+/* Helpers agregados al portar — el kit los inlineaba con style={{...}} en JSX. */
+.clinical-panel-empty {
+  padding: 8px 14px 16px;
+  font-size: 13px;
+  color: var(--color-fg-muted);
+}
+.clinical-panel-error {
+  padding: 14px 18px;
+  font-size: 13px;
+  color: var(--nai-crimson-700);
+  background: var(--color-danger-bg);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+/* ---------- Patient list ------------------------------------------------ */
+.patient-search {
+  padding: 12px 12px 8px 12px;
+  flex-shrink: 0;
+}
+.patient-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 12px 12px 12px;
+}
+
+.patient-card {
+  text-align: left;
+  font: inherit;
+  width: 100%;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.patient-card:hover {
+  border-color: var(--color-border-strong);
+}
+.patient-card.selected {
+  border-color: var(--nai-mint-500);
+  background: var(--nai-mint-50);
+}
+[data-theme='dark'] .patient-card.selected {
+  background: rgba(67, 193, 148, 0.08);
+}
+.patient-card-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+.patient-card-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-fg-muted);
+}
+.patient-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+/* ---------- Clinical chips ---------------------------------------------- */
+.clin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+.clin-chip.muted {
+  color: var(--color-fg-subtle);
+  font-style: italic;
+}
+.clin-chip-allergy {
+  background: var(--nai-crimson-100);
+  border-color: var(--nai-crimson-300);
+  color: var(--nai-crimson-700);
+  font-weight: 500;
+}
+[data-theme='dark'] .clin-chip-allergy {
+  background: rgba(210, 52, 86, 0.16);
+  border-color: rgba(210, 52, 86, 0.4);
+  color: var(--nai-crimson-300);
+}
+.clin-chip .ic {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2;
+}
+
+/* ---------- Clinical data sections -------------------------------------- */
+.clin-section {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.clin-section:last-child {
+  border-bottom: 0;
+}
+.clin-section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+  margin-bottom: 9px;
+}
+.clin-patient-name {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+.clin-patient-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  margin-top: 3px;
+}
+.med-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.med-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--color-fg);
+}
+.med-row .bullet {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--nai-mint-500);
+  flex-shrink: 0;
+}
+
+/* ---------- Consultation accordion -------------------------------------- */
+.consult {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-bg-elevated);
+}
+.consult + .consult {
+  margin-top: 8px;
+}
+.consult-head {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.consult-head:hover {
+  background: var(--color-surface-hover);
+}
+.consult-date {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-fg-muted);
+  flex-shrink: 0;
+}
+.consult-reason {
+  font-size: 13px;
+  color: var(--color-fg);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.consult-chevron {
+  color: var(--color-fg-subtle);
+  transition: transform var(--dur-fast) var(--ease-out);
+  flex-shrink: 0;
+}
+.consult.open .consult-chevron {
+  transform: rotate(90deg);
+}
+.consult-body {
+  padding: 2px 13px 13px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.consult-field-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg-subtle);
+  margin-bottom: 2px;
+}
+.consult-field-value {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-fg);
+}
+
+/* ---------- Assistant: suggestions + tool cards ------------------------- */
+.clin-suggest {
+  text-align: left;
+  font: inherit;
+  color: var(--color-fg);
+  width: 100%;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 11px 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.45;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.clin-suggest:hover:not(:disabled) {
+  border-color: var(--nai-mint-500);
+  background: var(--nai-mint-50);
+}
+[data-theme='dark'] .clin-suggest:hover:not(:disabled) {
+  background: rgba(67, 193, 148, 0.06);
+}
+.clin-suggest:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clin-tool {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 13px 15px;
+}
+.clin-tool.pending {
+  border-color: var(--nai-amber-300);
+}
+.clin-tool-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.clin-tool-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-warn-bg);
+  color: var(--nai-amber-700);
+  flex-shrink: 0;
+}
+[data-theme='dark'] .clin-tool-icon {
+  color: var(--nai-amber-300);
+}
+.clin-tool-icon.ok {
+  background: var(--color-success-bg);
+  color: var(--nai-mint-700);
+}
+[data-theme='dark'] .clin-tool-icon.ok {
+  color: var(--nai-mint-300);
+}
+.clin-tool-kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg-muted);
+}
+.clin-tool-drugs {
+  font-size: 13px;
+  color: var(--color-fg);
+  line-height: 1.5;
+}
+.clin-tool-drugs .mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--color-fg);
+}
+.clin-tool-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--nai-amber-500);
+  animation: clin-pulse 1.1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes clin-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.clin-tool-none {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--nai-mint-700);
+  background: var(--color-success-bg);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+}
+[data-theme='dark'] .clin-tool-none {
+  color: var(--nai-mint-300);
+}
+
+.interaction-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.interaction-row:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+.interaction-drugs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.interaction-drug {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+.interaction-x {
+  color: var(--color-fg-subtle);
+  font-size: 12px;
+}
+.interaction-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-fg-muted);
+}
+
+.sev-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+}
+.sev-pill .ic {
+  width: 10px;
+  height: 10px;
+  stroke-width: 2.5;
+}
+.sev-leve {
+  background: var(--nai-amber-100);
+  color: var(--nai-amber-700);
+}
+.sev-moderada {
+  background: #fbd9c2;
+  color: #a8530c;
+}
+.sev-grave {
+  background: var(--nai-crimson-100);
+  color: var(--nai-crimson-700);
+}
+[data-theme='dark'] .sev-leve {
+  background: rgba(224, 138, 31, 0.16);
+  color: var(--nai-amber-300);
+}
+[data-theme='dark'] .sev-moderada {
+  background: rgba(214, 110, 30, 0.22);
+  color: #f0b483;
+}
+[data-theme='dark'] .sev-grave {
+  background: rgba(210, 52, 86, 0.18);
+  color: var(--nai-crimson-300);
+}
+
+/* ---------- Voice placeholder button ------------------------------------ */
+.voice-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-fg-subtle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: not-allowed;
+}
+.voice-btn .ic {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.75;
+}
+
+/* ---------- ThinkingDots (placeholder mientras el LLM razona) ----------- */
+/* El kit usa un ThinkingDots compartido del ui-kit (ui.jsx). Acá lo
+   inlineamos porque es chico y solo lo usa este demo en el ThinkingRow. */
+.thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.thinking-dots > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-fg-subtle);
+  animation: clin-pulse 1.1s ease-in-out infinite;
+}
+.thinking-dots > span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.thinking-dots > span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .thinking-dots > span,
+  .clin-tool-pulse {
+    animation: none;
+  }
+}
