@@ -51,6 +51,33 @@ const HOP_BY_HOP = new Set([
 /** Métodos que pueden llevar body. */
 const METHODS_WITH_BODY = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+/**
+ * Headers de la response upstream que NO debemos reenviar al cliente.
+ *
+ * El crítico es `content-encoding`: cuando Node's `fetch` (undici) recibe
+ * una respuesta con `Content-Encoding: gzip/br/deflate`, **descomprime el
+ * body automáticamente** antes de exponerlo como ReadableStream. Si dejamos
+ * el header `content-encoding: gzip` en la respuesta que mandamos al cliente,
+ * el browser intentará descomprimir un body que ya es texto plano y tirará
+ * `ERR_CONTENT_DECODING_FAILED 200 (OK)`.
+ *
+ * El bug se manifestaba en producción (donde Railway comprime las respuestas
+ * del backend) pero NO en dev (donde el backend NestJS sin compression middleware
+ * no setea el header). El curl manual con `Accept-Encoding: identity` tampoco
+ * lo reproducía, por eso fue invisible hasta que el browser lo pidió.
+ *
+ * También quitamos `content-length` porque cambia con la decompression y el
+ * runtime lo recalcula igual; y los hop-by-hop estándar que no tiene sentido
+ * propagar.
+ */
+const RESPONSE_HOP_BY_HOP = new Set([
+  'content-encoding',
+  'content-length',
+  'transfer-encoding',
+  'connection',
+  'keep-alive',
+]);
+
 async function proxy(req: NextRequest, segments: string[]): Promise<Response> {
   const pathname = segments.join('/');
   const url = new URL(req.url);
@@ -97,13 +124,22 @@ async function proxy(req: NextRequest, segments: string[]): Promise<Response> {
     );
   }
 
+  // Filtramos los headers de la response — específicamente quitamos
+  // `content-encoding` porque undici ya descomprimió el body. Ver la nota
+  // larga en RESPONSE_HOP_BY_HOP.
+  const cleanHeaders = new Headers();
+  upstream.headers.forEach((value, key) => {
+    if (RESPONSE_HOP_BY_HOP.has(key.toLowerCase())) return;
+    cleanHeaders.set(key, value);
+  });
+
   // Devolvemos la respuesta como stream — Next la pasa directo al cliente.
   // Para SSE (Content-Type: text/event-stream) esto preserva el streaming
   // token a token sin buffering.
   return new Response(upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,
-    headers: upstream.headers,
+    headers: cleanHeaders,
   });
 }
 
