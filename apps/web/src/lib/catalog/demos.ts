@@ -104,6 +104,20 @@ export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
       'audience.tutor.cio',
     ],
   },
+  {
+    // Demo 06 — asistente clínico (ADR-0016). Sidebar lo muestra solo para
+    // tenants de industria 'salud'; el filtrado se hace en el shell con
+    // el `enabledDemos` que viene de `/me/demos`.
+    id: 'clinical',
+    icon: 'stethoscope',
+    status: 'live',
+    route: '/demo/clinical',
+    audienceKeys: [
+      'audience.clinical.directors',
+      'audience.clinical.heads',
+      'audience.clinical.cio',
+    ],
+  },
 ] as const;
 
 /**

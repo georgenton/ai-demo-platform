@@ -1,6 +1,6 @@
 # ADR-0016 — Demo 06: Asistente clínico para historia clínica + protocolos
 
-- **Estado:** Propuesto (pendiente confirmación de alcance con Jorge)
+- **Estado:** Aceptado
 - **Fecha:** 2026-06-04
 - **Decisores:** Jorge
 - **Relacionado:**
