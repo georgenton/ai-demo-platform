@@ -30,6 +30,7 @@ import type { Request } from 'express';
 
 import { IndustryService } from '../industries/industry.service.js';
 
+import type { JwtPayload } from './auth.types.js';
 import {
   REQUIRE_DEMO_KEY,
   type RequireDemoSpec,
@@ -56,10 +57,20 @@ export class DemoAccessGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<
       Request & {
         tenantId?: string;
+        user?: JwtPayload;
         query: Record<string, unknown>;
         body: Record<string, unknown>;
       }
     >();
+
+    // Bypass del superadmin: administra la plataforma entera, no un tenant
+    // específico. Si quiere acceder a un demo (típicamente para QA), lo
+    // dejamos pasar sin chequear enabledDemos. Coherente con el bypass del
+    // GET /me/demos: lo que muestra la cartelera, el guard también lo permite.
+    if (req.user?.role === 'superadmin') {
+      return true;
+    }
+
     const demoId = this.resolveDemoId(spec, req);
     if (!demoId) {
       throw new ForbiddenException(

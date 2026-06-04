@@ -89,6 +89,26 @@ describe('ClinicalService', () => {
         service.listPatients('tenant-inexistente', {}),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('superadmin pasa siempre, aunque su tenant no sea salud', async () => {
+      // Bypass del superadmin: la cuenta admin@nai.local vive en el tenant
+      // interno (industria 'universidad') pero necesita poder hacer QA del
+      // demo clínico. Sin este bypass, vería el demo en el sidebar pero
+      // recibiría 403 al consultarlo.
+      (prisma.patient.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(
+        [],
+      );
+
+      await service.listPatients('tenant-superadmin', {}, 'superadmin');
+
+      // No debería consultar el tenant en absoluto — el bypass corta antes.
+      expect(prisma.tenant.findUnique).not.toHaveBeenCalled();
+      expect(prisma.patient.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ tenantId: SHARED_TENANT_ID }),
+        }),
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------

@@ -12,7 +12,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { CurrentTenant } from '../auth/current-user.decorator.js';
+import { CurrentTenant, CurrentUser } from '../auth/current-user.decorator.js';
+import type { JwtPayload } from '../auth/auth.types.js';
 import { DemoRegistryService } from '../demos/demo-registry.service.js';
 import { IndustryService } from '../industries/industry.service.js';
 
@@ -46,21 +47,34 @@ export class MeController {
       'Aplica la regla de herencia ADR-0013: si Tenant.enabledDemos está vacío, hereda Industry.enabledDemos; si no, override del tenant. Devuelve la lista final con metadata completa del registry.',
   })
   @ApiResponse({ status: 200, type: MeDemosResponseDto })
-  async demos(@CurrentTenant() tenantId: string): Promise<MeDemosResponseDto> {
+  async demos(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<MeDemosResponseDto> {
     const resolved = await this.industryService.resolveEnabledDemos(tenantId);
 
-    // Filtra el catálogo completo a solo los IDs habilitados — el front
-    // recibe metadata completa para pintar tarjetas, no solo IDs sueltos.
-    // Preserva el orden del registry (Demo 01 primero, Demo 05 último).
-    const enabledSet = new Set(resolved.enabledDemos);
-    const demos = this.demoRegistry
-      .findAll()
-      .filter((demo) => enabledSet.has(demo.id));
+    // Superadmin bypass: el rol 'superadmin' administra la plataforma entera
+    // (no un tenant específico). Para poder ver/QA todos los demos al hacer
+    // smoke tests en producción, devolvemos el catálogo completo en vez de
+    // filtrar por enabledDemos. Sin esto, un demo nuevo registrado para una
+    // industria (ej. Demo 06 para 'salud') no se vería desde la cuenta del
+    // superadmin si su tenant interno está en otra industria.
+    //
+    // No es relajación de permisos: el DemoAccessGuard sigue chequeando
+    // `enabledDemos` en cada request al demo — solo cambiamos qué se
+    // muestra en la cartelera.
+    const allDemos = this.demoRegistry.findAll();
+    const demos =
+      user.role === 'superadmin'
+        ? [...allDemos]
+        : allDemos.filter((demo) =>
+            new Set(resolved.enabledDemos).has(demo.id),
+          );
 
     return {
       tenant: resolved.tenant,
       industry: resolved.industry,
-      demos: [...demos],
+      demos,
       overridden: resolved.overridden,
     };
   }

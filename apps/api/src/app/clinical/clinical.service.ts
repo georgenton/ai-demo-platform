@@ -117,7 +117,17 @@ export class ClinicalService {
    * firmado), devolvemos su propio id. Eso se implementa cuando llegue el
    * primer cliente real.
    */
-  private async resolveDataTenantId(userTenantId: string): Promise<string> {
+  private async resolveDataTenantId(
+    userTenantId: string,
+    userRole?: string,
+  ): Promise<string> {
+    // Bypass del superadmin: para poder hacer QA del demo en producción sin
+    // tener que cambiar la industria de su tenant interno. Coherente con el
+    // bypass del DemoAccessGuard y del GET /me/demos.
+    if (userRole === 'superadmin') {
+      return SHARED_CLINICAL_TENANT_ID;
+    }
+
     // El Tenant referencia a Industry por industryId. Para conocer el slug de
     // la industria, hacemos un select con include de la relación. Más limpio
     // que dos queries.
@@ -144,8 +154,12 @@ export class ClinicalService {
    * Lista pacientes ordenados por displayName ascendente. Search es
    * case-insensitive y matchea substring.
    */
-  async listPatients(userTenantId: string, dto: ListPatientsQueryDto) {
-    const dataTenantId = await this.resolveDataTenantId(userTenantId);
+  async listPatients(
+    userTenantId: string,
+    dto: ListPatientsQueryDto,
+    userRole?: string,
+  ) {
+    const dataTenantId = await this.resolveDataTenantId(userTenantId, userRole);
     const limit = dto.limit ?? DEFAULT_LIST_LIMIT;
 
     const where = {
@@ -180,8 +194,8 @@ export class ClinicalService {
    * Detalle del paciente + últimas N consultas (DESC por fecha). Si no existe
    * en el tenant resuelto, 404.
    */
-  async getPatient(userTenantId: string, patientId: string) {
-    const dataTenantId = await this.resolveDataTenantId(userTenantId);
+  async getPatient(userTenantId: string, patientId: string, userRole?: string) {
+    const dataTenantId = await this.resolveDataTenantId(userTenantId, userRole);
 
     const patient = await prisma.patient.findFirst({
       where: { id: patientId, tenantId: dataTenantId },
@@ -206,8 +220,12 @@ export class ClinicalService {
    * Lista protocolos clínicos. Si `category` viene, filtra; si no, devuelve
    * todos agrupables por categoría en el frontend.
    */
-  async listProtocols(userTenantId: string, dto: ListProtocolsQueryDto) {
-    const dataTenantId = await this.resolveDataTenantId(userTenantId);
+  async listProtocols(
+    userTenantId: string,
+    dto: ListProtocolsQueryDto,
+    userRole?: string,
+  ) {
+    const dataTenantId = await this.resolveDataTenantId(userTenantId, userRole);
 
     const protocols = await prisma.clinicalProtocol.findMany({
       where: {
@@ -243,8 +261,9 @@ export class ClinicalService {
   async *streamAnalyze(
     dto: AnalyzeRequestDto,
     userTenantId: string,
+    userRole?: string,
   ): AsyncIterable<ClinicalEvent> {
-    const dataTenantId = await this.resolveDataTenantId(userTenantId);
+    const dataTenantId = await this.resolveDataTenantId(userTenantId, userRole);
 
     // Cargamos paciente + contexto. Si no existe, lanzamos antes de empezar
     // el stream (el controller lo convierte en HTTP 404 normal, no SSE error).

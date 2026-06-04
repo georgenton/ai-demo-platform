@@ -33,7 +33,8 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { CurrentTenant } from '../auth/current-user.decorator.js';
+import { CurrentTenant, CurrentUser } from '../auth/current-user.decorator.js';
+import type { JwtPayload } from '../auth/auth.types.js';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 import type { ClinicalEvent } from './clinical-events.js';
@@ -65,8 +66,9 @@ export class ClinicalController {
   listPatients(
     @Query() dto: ListPatientsQueryDto,
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.clinicalService.listPatients(tenantId, dto);
+    return this.clinicalService.listPatients(tenantId, dto, user.role);
   }
 
   /**
@@ -82,8 +84,12 @@ export class ClinicalController {
       'Devuelve el paciente con sus últimas 10 consultas (orden DESC por ' +
       'fecha). 404 si el id no pertenece al tenant resuelto.',
   })
-  getPatient(@Param('id') id: string, @CurrentTenant() tenantId: string) {
-    return this.clinicalService.getPatient(tenantId, id);
+  getPatient(
+    @Param('id') id: string,
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.clinicalService.getPatient(tenantId, id, user.role);
   }
 
   /**
@@ -102,8 +108,9 @@ export class ClinicalController {
   listProtocols(
     @Query() dto: ListProtocolsQueryDto,
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.clinicalService.listProtocols(tenantId, dto);
+    return this.clinicalService.listProtocols(tenantId, dto, user.role);
   }
 
   /**
@@ -134,10 +141,11 @@ export class ClinicalController {
   analyze(
     @Body() dto: AnalyzeRequestDto,
     @CurrentTenant() tenantId: string,
+    @CurrentUser() user: JwtPayload,
   ): Observable<MessageEvent> {
-    return from(this.clinicalService.streamAnalyze(dto, tenantId)).pipe(
-      map((event) => this.toMessageEvent(event)),
-    );
+    return from(
+      this.clinicalService.streamAnalyze(dto, tenantId, user.role),
+    ).pipe(map((event) => this.toMessageEvent(event)));
   }
 
   /** Convierte un ClinicalEvent (union) en MessageEvent SSE de NestJS. */
