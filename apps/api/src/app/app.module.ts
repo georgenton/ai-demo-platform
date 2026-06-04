@@ -14,6 +14,7 @@ import { CorpusModule } from './corpus/corpus.module.js';
 import { DemosModule } from './demos/demos.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { HealthModule } from './health/health.module.js';
+import { HrModule } from './hr/hr.module.js';
 import { IndustryModule } from './industries/industry.module.js';
 import { IngestModule } from './ingest/ingest.module.js';
 import { MeModule } from './me/me.module.js';
@@ -43,6 +44,7 @@ import { TutorModule } from './tutor/tutor.module.js';
     DemosModule,
     DocumentsModule,
     HealthModule,
+    HrModule,
     IndustryModule,
     IngestModule,
     MeModule,
