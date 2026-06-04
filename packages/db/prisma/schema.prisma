@@ -63,24 +63,24 @@ model Industry {
 /// a una Industry y tiene su propio set de Users + (en PR-MT2) Documents,
 /// Chunks, AgentQueries.
 model Tenant {
-  id           String       @id @default(cuid())
+  id                String             @id @default(cuid())
   /// Identificador legible (ej. 'utpl', 'banco-pichincha'). Usado en URLs y
   /// logs. Sin espacios, minúsculas, sin acentos.
-  slug         String       @unique
-  displayName  String
-  industryId   String
-  industry     Industry     @relation(fields: [industryId], references: [id])
+  slug              String             @unique
+  displayName       String
+  industryId        String
+  industry          Industry           @relation(fields: [industryId], references: [id])
   /// Sobreescribe enabledDemos de la industry si no está vacío. Si está
   /// vacío `[]`, hereda los de la industry.
-  enabledDemos String[]     @default([])
+  enabledDemos      String[]           @default([])
   /// Branding: `{ logoUrl, accentColor, ... }`. Vacío por default; la UI
   /// usa fallbacks del proyecto.
-  branding     Json         @default("{}")
-  status       TenantStatus @default(trial)
-  createdAt    DateTime     @default(now())
-  users        User[]
-  documents    Document[]
-  agentQueries AgentQuery[]
+  branding          Json               @default("{}")
+  status            TenantStatus       @default(trial)
+  createdAt         DateTime           @default(now())
+  users             User[]
+  documents         Document[]
+  agentQueries      AgentQuery[]
   // Demo 06 — Asistente clínico (ADR-0016). En el MVP los pacientes y
   // consultas viven en un tenant especial 'clinical-shared' compartido por
   // todas las clínicas que prueban el demo (decisión 1B del ADR). Los
@@ -90,6 +90,11 @@ model Tenant {
   patients          Patient[]
   consultations     Consultation[]
   clinicalProtocols ClinicalProtocol[]
+  // Demo 07 — Avatar entrevistador HR (ADR-0017). Los roles (Job) son por
+  // tenant: cada empresa define sus propios puestos y rúbricas. Las
+  // interviews también son del tenant del reclutador.
+  jobs              Job[]
+  interviews        Interview[]
 
   @@index([industryId])
 }
@@ -160,12 +165,12 @@ model Document {
   // --- Metadata de corpus (Demo 03) — null para docs de otros demos ---
   /// Año de publicación extraído por LLM del texto del paper. Null si el
   /// LLM no encontró un año claro en el texto.
-  year      Int?
+  year     Int?
   /// Autores extraídos por LLM. Array Postgres nativo. Vacío si no se
   /// encontraron autores.
-  authors   String[] @default([])
+  authors  String[] @default([])
   /// Resumen / abstract del paper si el LLM lo identifica claramente.
-  abstract  String?
+  abstract String?
 
   topics DocumentTopic[]
 
@@ -333,28 +338,28 @@ enum ExamType {
 /// "qué preguntó la gente"; si en algún momento es regulatorio, vamos a
 /// outbox + worker.
 model AgentQuery {
-  id            String   @id @default(cuid())
+  id           String   @id @default(cuid())
   /// Pregunta original en lenguaje natural.
-  question      String
+  question     String
   /// SQL final que generó el LLM. Null si el agente nunca llegó a generar
   /// una (ej: el LLM no usó tools, o falló antes).
-  sql           String?
+  sql          String?
   /// Filas devueltas por la SQL final. Null si no se llegó a ejecutar.
-  rowCount      Int?
+  rowCount     Int?
   /// Duración total del agent loop end-to-end (incluye todas las vueltas).
-  durationMs    Int
+  durationMs   Int
   /// El loop completó normalmente (stopReason=end_turn). False si falló o
   /// se truncó por MAX_TURNS.
-  success       Boolean
+  success      Boolean
   /// Mensaje de error humano cuando success=false. Null en success=true.
-  errorMessage  String?
+  errorMessage String?
   /// Cantidad de turns que ejecutó el loop (1 = el LLM respondió sin tools).
-  turns         Int
+  turns        Int
   /// Tenant que generó esta query (ADR-0013). El AgentController inyecta el
   /// tenantId desde el JWT; la consulta de history filtra por este campo.
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
 
   // History es siempre "del tenant actual, más recientes primero".
   @@index([tenantId, createdAt(sort: Desc)])
@@ -388,9 +393,9 @@ model AgentQuery {
 /// El demo NUNCA guarda pacientes reales sin pasar por un trámite de
 /// certificación HIPAA/Ley Salud (Ecuador) que está fuera del scope MVP.
 model Patient {
-  id                 String   @id @default(cuid())
+  id                 String         @id @default(cuid())
   tenantId           String
-  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant             Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   /// ID externo en el HIS (Hospital Information System) del cliente. Solo
   /// se usa si el cliente conecta su HIS real; en el MVP es null.
   externalId         String?
@@ -400,15 +405,15 @@ model Patient {
   /// 'M' | 'F' | 'O'. Texto libre para no atarnos a un enum que cambia.
   gender             String
   /// Lista de alergias declaradas. Texto plano normalizado (ej. ['penicilina', 'mariscos']).
-  allergies          String[] @default([])
+  allergies          String[]       @default([])
   /// Condiciones crónicas activas (ej. ['HTA', 'DM2', 'EPOC']).
-  chronicConditions  String[] @default([])
+  chronicConditions  String[]       @default([])
   /// Medicación actual con dosis. Texto libre por simplicidad
   /// (ej. ['metformina 850mg BID', 'enalapril 10mg QD']).
-  currentMedications String[] @default([])
+  currentMedications String[]       @default([])
   consultations      Consultation[]
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   /// (tenantId, externalId) único cuando externalId está. NULL no rompe el
   /// índice — Postgres permite múltiples NULLs en un UNIQUE.
@@ -469,4 +474,109 @@ model ClinicalProtocol {
   updatedAt DateTime @updatedAt
 
   @@index([tenantId, category])
+}
+
+// -----------------------------------------------------------------------------
+// Demo 07 — Avatar entrevistador HR (ADR-0017)
+//
+// Cuatro modelos:
+//   - Job: rol/puesto vacante, con sus dimensiones a evaluar.
+//   - JobQuestion: cada pregunta del set, en orden estable.
+//   - Interview: una sesión de entrevista de un candidato para un rol.
+//   - InterviewAnswer: transcripción literal de cada respuesta.
+//
+// Por qué `Job.dimensions` como String[] y no tabla separada: cada rol tiene
+// sus propias dimensiones (técnico vs comercial vs admin) y solo se consumen
+// en el prompt del scoring del LLM. Tabla separada agrega overhead sin
+// amortización. Trade-off: pierdes type-safety SQL para los valores de las
+// dimensiones; ganas flexibilidad para evolucionar el catálogo de dimensiones
+// por rol sin migraciones.
+//
+// Por qué `Interview.scoring` como Json: el shape del resultado del LLM
+// (dimensiones, scores, evidencias, recomendación, fortalezas, oportunidades)
+// puede evolucionar con el prompt. Json absorbe la evolución sin migraciones.
+// El frontend lo lee con un type guard.
+// -----------------------------------------------------------------------------
+
+model Job {
+  id          String        @id @default(cuid())
+  tenantId    String
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slug        String // ej. 'dev-junior-backend'
+  title       String // ej. 'Desarrollador junior backend'
+  description String // 1-2 párrafos describiendo el puesto
+  dimensions  String[] // ej: ['claridad', 'conocimiento técnico', 'cultural fit']
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  questions   JobQuestion[]
+  interviews  Interview[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+model JobQuestion {
+  id      String            @id @default(cuid())
+  jobId   String
+  job     Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  order   Int // 0-indexed dentro del job, define la secuencia
+  text    String // pregunta literal que el avatar dice por TTS
+  rubric  String // qué debería contener una buena respuesta — input del LLM al scoring
+  answers InterviewAnswer[]
+
+  @@unique([jobId, order])
+  @@index([jobId])
+}
+
+enum InterviewStatus {
+  // Entrevista iniciada, candidato respondiendo. Las preguntas no
+  // contestadas todavía no tienen su InterviewAnswer.
+  in_progress
+  // Entrevista terminada por el reclutador y el LLM ya emitió scoring.
+  finalized
+  // El reclutador cerró el browser / abandonó. No hay scoring.
+  abandoned
+}
+
+model Interview {
+  id                  String            @id @default(cuid())
+  tenantId            String
+  tenant              Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jobId               String
+  job                 Job               @relation(fields: [jobId], references: [id])
+  candidateName       String // nombre del candidato (entrada libre del reclutador)
+  candidateExternalId String? // cédula / ID externo opcional
+  status              InterviewStatus   @default(in_progress)
+  startedAt           DateTime          @default(now())
+  finishedAt          DateTime?
+  // Resultado final del LLM. Shape esperado:
+  //   {
+  //     dimensions: [{ name, score: 0-100, evidence: string }],
+  //     overall: 0-100,
+  //     recommendation: 'hire' | 'reject' | 'reconsider',
+  //     strengths: string,
+  //     opportunities: string
+  //   }
+  scoring             Json?
+  answers             InterviewAnswer[]
+
+  @@index([tenantId])
+  @@index([tenantId, jobId])
+  @@index([tenantId, startedAt(sort: Desc)])
+}
+
+model InterviewAnswer {
+  id              String      @id @default(cuid())
+  interviewId     String
+  interview       Interview   @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  questionId      String
+  question        JobQuestion @relation(fields: [questionId], references: [id])
+  transcript      String // transcripción literal palabra-por-palabra
+  durationSeconds Int? // opcional; el cliente lo manda
+  answeredAt      DateTime    @default(now())
+
+  // Una pregunta por entrevista — re-grabar antes de confirmar es OK porque
+  // el upsert pisa el transcript, pero después de confirmar queda registro.
+  @@unique([interviewId, questionId])
+  @@index([interviewId])
 }
