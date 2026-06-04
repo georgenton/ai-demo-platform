@@ -455,7 +455,21 @@ const STRINGS_ES = {
   'clinical.suggest.4': '¿Su medicación actual tiene interacciones?',
   // Composer del asistente.
   'clinical.input.placeholder': 'Escribe tu pregunta…',
+  // String legacy del placeholder de voz — queda como fallback histórico
+  // para no romper builds antiguos; el nuevo flujo usa clinical.voice.*.
   'clinical.input.voice': 'Voz disponible próximamente',
+  // Voz (PR Demo 06 voz). El médico dicta la pregunta por mic y opcionalmente
+  // el asistente le lee la respuesta de vuelta. Tooltips deben quedar
+  // visibles en los 3 estados del botón mic + el toggle de auto-speak.
+  'clinical.voice.mic.start': 'Hablar (dictar pregunta)',
+  'clinical.voice.mic.stop': 'Detener mic',
+  'clinical.voice.unsupported':
+    'Tu navegador no soporta reconocimiento de voz. Prueba Chrome.',
+  'clinical.voice.autoSpeak.label': 'Escuchar respuesta',
+  'clinical.voice.autoSpeak.tip':
+    'El asistente lee la respuesta del LLM en voz alta cuando termina.',
+  'clinical.voice.speaking': 'Hablando…',
+  'clinical.voice.stopSpeaking': 'Detener voz del asistente',
   // Cards de tool calling para interacciones medicamentosas. El `kicker`
   // es la etiqueta tipo eyebrow; `calling` se concatena con la lista de
   // drogas que se muestra a continuación.
@@ -883,6 +897,15 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'clinical.suggest.4': 'Does their current medication have interactions?',
   'clinical.input.placeholder': 'Type your question…',
   'clinical.input.voice': 'Voice available soon',
+  'clinical.voice.mic.start': 'Speak (dictate question)',
+  'clinical.voice.mic.stop': 'Stop mic',
+  'clinical.voice.unsupported':
+    'Your browser does not support speech recognition. Try Chrome.',
+  'clinical.voice.autoSpeak.label': 'Hear response',
+  'clinical.voice.autoSpeak.tip':
+    'The assistant reads the LLM response aloud when finished.',
+  'clinical.voice.speaking': 'Speaking…',
+  'clinical.voice.stopSpeaking': 'Stop assistant voice',
   'clinical.tool.kicker': 'Interactions',
   'clinical.tool.calling': 'Checking interactions for: {drugs}',
   'clinical.tool.resultKicker': 'Interaction result',
