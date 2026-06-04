@@ -33,6 +33,10 @@ import { ClinicalHistory } from '@/components/demo/clinical/ClinicalHistory';
 import { PatientCard } from '@/components/demo/clinical/PatientCard';
 import { usePatientDetail } from '@/components/demo/clinical/use-patient-detail';
 import { usePatientList } from '@/components/demo/clinical/use-patient-list';
+import {
+  useSpeechRecognition,
+  useSpeechSynthesis,
+} from '@/components/shared/voice';
 import { useClinicalAnalyze } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
@@ -59,6 +63,20 @@ export default function DemoClinicalPage() {
 
   const running = status === 'streaming';
 
+  // -------------------------------------------------------------------------
+  // Voz nativa (ADR-0016 decisión 2B). Reusa los hooks compartidos del
+  // tutor (Demo 05). Lang: 'es-ES' porque el demo se presenta en español.
+  // El médico dicta la pregunta, opcionalmente el asistente le lee la
+  // respuesta de vuelta (toggle).
+  // -------------------------------------------------------------------------
+  const recognition = useSpeechRecognition({ lang: 'es-ES' });
+  const synthesis = useSpeechSynthesis({ lang: 'es-ES' });
+  const [autoSpeak, setAutoSpeak] = useState(false);
+  // Detectamos transición running → done para disparar el TTS sobre la
+  // respuesta del LLM. Sin este ref, leeríamos la respuesta cada vez que
+  // entries cambia (= cada token).
+  const wasRunningRef = useRef(false);
+
   // Autoscroll del panel del asistente cuando llegan tokens nuevos.
   const streamRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -72,7 +90,39 @@ export default function DemoClinicalPage() {
     reset();
     setQuestionText(null);
     setInput('');
-  }, [lang, reset]);
+    synthesis.cancel();
+  }, [lang, reset, synthesis]);
+
+  // Cuando el reconocedor devuelve un transcript final, lo movemos al input
+  // y reseteamos el hook para que el próximo start() arranque limpio. Mismo
+  // patrón del tutor — el usuario puede editar antes de enviar.
+  useEffect(() => {
+    if (recognition.transcript) {
+      setInput((prev) =>
+        prev ? prev + ' ' + recognition.transcript : recognition.transcript,
+      );
+      recognition.reset();
+    }
+  }, [recognition.transcript, recognition]);
+
+  // Auto-speak: cuando el stream pasa de 'streaming' a 'done', concatenamos
+  // todos los entries de texto del LLM (sin las cards de tool) y los leemos.
+  // Solo si autoSpeak está activo y TTS soportado.
+  useEffect(() => {
+    const justFinished = wasRunningRef.current && !running && status === 'done';
+    if (justFinished && autoSpeak && synthesis.isSupported) {
+      // El hook ya compacta los token deltas en una sola entry `kind: 'text'`
+      // por burbuja del LLM. Concatenamos esas entries y dejamos afuera las
+      // cards de tool (que no tienen sentido leerlas en voz alta).
+      const fullAnswer = entries
+        .filter((e): e is { kind: 'text'; text: string } => e.kind === 'text')
+        .map((e) => e.text)
+        .join(' ')
+        .trim();
+      if (fullAnswer) synthesis.speak(fullAnswer);
+    }
+    wasRunningRef.current = running;
+  }, [running, status, autoSpeak, synthesis, entries]);
 
   // Cambio de paciente: cortar el stream activo y limpiar la timeline.
   function selectPatient(id: string) {
@@ -81,14 +131,39 @@ export default function DemoClinicalPage() {
     reset();
     setQuestionText(null);
     setInput('');
+    // Si el TTS estaba leyendo la respuesta del paciente anterior, corte limpio.
+    synthesis.cancel();
   }
 
   function ask(rawText: string) {
     const text = rawText.trim();
     if (!text || !patient || running) return;
+    // Si el médico envía mientras el mic estaba activo, lo apagamos primero
+    // — no queremos que siga grabando con el input vacío.
+    if (recognition.isListening) recognition.stop();
+    // Si había TTS sonando de la respuesta anterior, lo cortamos.
+    synthesis.cancel();
     setInput('');
     setQuestionText(text);
     start({ patientId: patient.id, question: text });
+  }
+
+  function handleMicToggle() {
+    if (recognition.isListening) {
+      recognition.stop();
+    } else {
+      // Si el asistente estaba hablando, cortamos — no queremos que el mic
+      // capture el TTS en loop.
+      synthesis.cancel();
+      recognition.start();
+    }
+  }
+
+  function handleAutoSpeakToggle() {
+    setAutoSpeak((on) => {
+      if (on) synthesis.cancel();
+      return !on;
+    });
   }
 
   // Timeline visual: la pregunta local + las entries que vienen del hook.
@@ -285,11 +360,44 @@ export default function DemoClinicalPage() {
             )}
           </div>
 
+          {/* Toggle del TTS — sólo se muestra si el browser lo soporta y hay
+              paciente seleccionado. Útil para uso manos-libres del médico
+              entre paciente y paciente. */}
+          {patient && synthesis.isSupported && (
+            <div className="clinical-voice-bar">
+              <button
+                type="button"
+                className={`clinical-voice-toggle${autoSpeak ? ' on' : ''}`}
+                onClick={handleAutoSpeakToggle}
+                title={t('clinical.voice.autoSpeak.tip')}
+                aria-pressed={autoSpeak}
+              >
+                <Icon name={autoSpeak ? 'volume-2' : 'volume-x'} size={13} />
+                <span>{t('clinical.voice.autoSpeak.label')}</span>
+              </button>
+              {synthesis.isSpeaking && (
+                <button
+                  type="button"
+                  className="clinical-voice-stop"
+                  onClick={() => synthesis.cancel()}
+                  title={t('clinical.voice.stopSpeaking')}
+                >
+                  <Icon name="square" size={11} strokeWidth={2.5} />
+                  <span>{t('clinical.voice.speaking')}</span>
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="chat-composer">
             <div className="chat-composer-inner">
               <textarea
                 className="chat-composer-input"
-                placeholder={t('clinical.input.placeholder')}
+                placeholder={
+                  recognition.isListening && recognition.interimTranscript
+                    ? recognition.interimTranscript
+                    : t('clinical.input.placeholder')
+                }
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -301,16 +409,32 @@ export default function DemoClinicalPage() {
                 rows={1}
                 disabled={!patient}
               />
-              {/* Voz: placeholder deshabilitado — entra en PR siguiente.
-                  Reservamos su lugar para que el layout no salte al activarlo. */}
+              {/* Voz: si el browser no soporta SpeechRecognition (Firefox,
+                  Safari iOS), el botón queda deshabilitado con tooltip. Si
+                  soporta, alterna entre idle → listening → idle. */}
               <button
                 type="button"
-                className="voice-btn"
-                disabled
-                title={t('clinical.input.voice')}
-                aria-label={t('clinical.input.voice')}
+                className={`voice-btn${recognition.isListening ? ' active' : ''}`}
+                disabled={!patient || !recognition.isSupported}
+                onClick={handleMicToggle}
+                title={
+                  !recognition.isSupported
+                    ? t('clinical.voice.unsupported')
+                    : recognition.isListening
+                      ? t('clinical.voice.mic.stop')
+                      : t('clinical.voice.mic.start')
+                }
+                aria-pressed={recognition.isListening}
+                aria-label={
+                  recognition.isListening
+                    ? t('clinical.voice.mic.stop')
+                    : t('clinical.voice.mic.start')
+                }
               >
-                <Icon name="mic" size={16} />
+                <Icon
+                  name={recognition.isListening ? 'mic' : 'mic'}
+                  size={16}
+                />
               </button>
               <button
                 type="button"
@@ -326,6 +450,11 @@ export default function DemoClinicalPage() {
                 />
               </button>
             </div>
+            {recognition.error && (
+              <div className="clinical-voice-error" role="alert">
+                <Icon name="triangle-alert" size={11} /> {recognition.error}
+              </div>
+            )}
           </div>
         </section>
       </div>

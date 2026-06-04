@@ -15,8 +15,13 @@ import { TutorChatPanel } from '@/components/demo/tutor/TutorChatPanel';
 import { TutorCostPanel } from '@/components/demo/tutor/TutorCostPanel';
 import { TutorFeedbackPanel } from '@/components/demo/tutor/TutorFeedbackPanel';
 import { extractTip } from '@/components/demo/tutor/extract-tip';
-import { useSpeechRecognition } from '@/components/demo/tutor/use-speech-recognition';
-import { useSpeechSynthesis } from '@/components/demo/tutor/use-speech-synthesis';
+// Voz nativa — los hooks viven en components/shared/voice/ para que el
+// clínico (Demo 06) y el avatar HR (Demo 07) los reusen. El tutor pasa
+// 'en-US' explícito; antes ese era el hardcode interno del hook.
+import {
+  useSpeechRecognition,
+  useSpeechSynthesis,
+} from '@/components/shared/voice';
 import { useTutorChat } from '@/components/demo/tutor/use-tutor-chat';
 import { useTutorPricing } from '@/components/demo/tutor/use-tutor-pricing';
 import { AudienceLine } from '@/components/shared/AudienceLine';
@@ -51,8 +56,10 @@ export default function DemoTutorPage() {
   // -------------------------------------------------------------------------
   // Voz (PR-D)
   // -------------------------------------------------------------------------
-  const recognition = useSpeechRecognition();
-  const synthesis = useSpeechSynthesis();
+  // El tutor practica inglés — el reconocedor y el TTS son ambos 'en-US'.
+  // Otros demos pasan su lang específico al mismo hook compartido.
+  const recognition = useSpeechRecognition({ lang: 'en-US' });
+  const synthesis = useSpeechSynthesis({ lang: 'en-US' });
   const [autoSpeak, setAutoSpeak] = useState(true);
   // Refs para detectar transiciones del stream → trigger auto-speak.
   const wasStreamingRef = useRef(false);
