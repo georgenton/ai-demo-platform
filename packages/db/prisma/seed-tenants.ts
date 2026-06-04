@@ -30,19 +30,30 @@ const INDUSTRIES = [
   {
     slug: 'universidad',
     displayName: 'Educación superior',
-    enabledDemos: ['rag', 'comparator', 'corpus', 'agent', 'tutor'],
+    // 'interview' agregado en sprint Demo 07 (ADR-0017) — admisiones
+    // universitarias es uno de los casos de uso primarios.
+    enabledDemos: [
+      'rag',
+      'comparator',
+      'corpus',
+      'agent',
+      'tutor',
+      'interview',
+    ],
     defaultConfig: {
       welcomeCopy:
-        'Plataforma de IA para universidades: chat con reglamentos, análisis de corpus académico y agente sobre datos académicos.',
+        'Plataforma de IA para universidades: chat con reglamentos, análisis de corpus académico, agente sobre datos académicos y entrevistas para admisiones.',
     },
   },
   {
     slug: 'banca',
     displayName: 'Banca y servicios financieros',
-    enabledDemos: ['rag', 'comparator', 'agent'],
+    // 'interview' agregado en sprint Demo 07 — selección de talento en banca
+    // tiene volumen alto y compliance estricto.
+    enabledDemos: ['rag', 'comparator', 'agent', 'interview'],
     defaultConfig: {
       welcomeCopy:
-        'Plataforma de IA para banca: consulta a regulación, análisis de pólizas y asistente a gerencia.',
+        'Plataforma de IA para banca: consulta a regulación, análisis de pólizas, asistente a gerencia y screening de candidatos.',
     },
   },
   {
@@ -69,19 +80,23 @@ const INDUSTRIES = [
   {
     slug: 'gobierno',
     displayName: 'Sector público',
-    enabledDemos: ['rag', 'agent', 'tutor'],
+    // 'interview' agregado en sprint Demo 07 — gobiernos seccionales contratan
+    // call centers y operativos en alto volumen.
+    enabledDemos: ['rag', 'agent', 'tutor', 'interview'],
     defaultConfig: {
       welcomeCopy:
-        'Plataforma de IA para gobierno: chat con normativa, agente sobre indicadores y capacitación interna.',
+        'Plataforma de IA para gobierno: chat con normativa, agente sobre indicadores, capacitación interna y entrevistas de selección.',
     },
   },
   {
     slug: 'retail',
     displayName: 'Cadenas de tiendas',
-    enabledDemos: ['rag', 'agent'],
+    // 'interview' agregado en sprint Demo 07 — retail tiene rotación alta y
+    // necesita screening rápido a escala.
+    enabledDemos: ['rag', 'agent', 'interview'],
     defaultConfig: {
       welcomeCopy:
-        'Plataforma de IA para retail: asistente de catálogo y agente sobre indicadores de venta.',
+        'Plataforma de IA para retail: asistente de catálogo, agente sobre indicadores y entrevistas de primer filtro.',
     },
   },
 ] as const;

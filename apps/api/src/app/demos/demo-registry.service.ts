@@ -99,6 +99,24 @@ export class DemoRegistryService {
       status: 'available',
       route: '/demo/clinical',
     },
+    {
+      // Demo 07 — Avatar entrevistador HR (ADR-0017). Primer demo de IA
+      // conversacional con voz pura. Cross-industry. Roles/preguntas
+      // seedeados en el tenant compartido 'hr-shared'; banner de auditoría
+      // obligatorio en el frontend (compromiso anti-bias).
+      id: 'interview',
+      title: 'Avatar entrevistador',
+      tagline: 'Entrevistas estructuradas con scoring auditado',
+      description:
+        'El reclutador elige un rol del catálogo, registra al candidato y le pasa el equipo. El avatar dice cada pregunta por voz, el candidato responde por mic y, al cerrar, el LLM evalúa la transcripción completa y devuelve un scoring por dimensión con citas textuales y una recomendación final auditada.',
+      audience: [
+        'Directores de RRHH',
+        'Jefes de selección',
+        'Admisiones universitarias',
+      ],
+      status: 'available',
+      route: '/demo/interview',
+    },
   ];
 
   /** Devuelve todos los demos en el orden definido. */
