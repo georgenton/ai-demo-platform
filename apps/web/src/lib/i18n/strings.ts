@@ -279,6 +279,10 @@ const STRINGS_ES = {
   'audience.clinical.directors': 'Directores médicos',
   'audience.clinical.heads': 'Jefes de servicio',
   'audience.clinical.cio': 'CIO de hospital',
+  // Demo 07 — Avatar entrevistador HR.
+  'audience.interview.hr': 'Directores de RRHH',
+  'audience.interview.selection': 'Jefes de selección',
+  'audience.interview.admissions': 'Admisiones universitarias',
 
   // --- CostMiniWidget (sidebar de cada demo)
   'costMini.tokens': 'Tokens estimados',
@@ -296,6 +300,7 @@ const STRINGS_ES = {
   'costMini.uses.corpus': 'búsquedas/mes',
   'costMini.uses.agent': 'queries/mes',
   'costMini.uses.clinical': 'análisis/mes',
+  'costMini.uses.interview': 'entrevistas/mes',
 
   // --- Auth / login (PR-MT4)
   'auth.login.title': 'Iniciar sesión',
@@ -405,6 +410,10 @@ const STRINGS_ES = {
   'demos.clinical.title': 'Asistente clínico',
   'demos.clinical.tagline': 'Apoyo al médico sobre la historia del paciente',
 
+  // --- Demo 07 (Avatar entrevistador) — sidebar + demo registry copy.
+  'demos.interview.title': 'Avatar entrevistador',
+  'demos.interview.tagline': 'Entrevistas estructuradas con scoring auditado',
+
   // --- Demo 06 (Asistente clínico) — page copy.
   // Banner permanente. Aparece arriba de todo el demo y NO se descarta.
   // Es la advertencia que protege contra el uso accidental con datos reales.
@@ -487,6 +496,62 @@ const STRINGS_ES = {
   // Estados del stream.
   'clinical.status.thinking': 'Pensando…',
   'clinical.status.error': 'Algo salió mal. Intenta de nuevo.',
+
+  // --- Demo 07 (Avatar entrevistador HR) — ADR-0017.
+  // Página completa: selección de rol, entrevista en vivo, cierre, resultado.
+  // El demo usa voz pura — el candidato responde solo por mic. Banner de
+  // auditoría obligatorio en la pantalla de resultado (compromiso anti-bias).
+  'interview.eyebrow': 'Demo 07 · HR',
+  'interview.audit.text':
+    'El scoring es generado por IA y debe ser revisado por un reclutador humano antes de tomar una decisión de contratación.',
+  // Pantalla 1 — selección de rol.
+  'interview.selectRole.title': 'Selecciona el rol que vas a entrevistar',
+  'interview.selectRole.subtitle':
+    '6 roles seedeados con preguntas adaptadas a cada perfil.',
+  'interview.selectRole.questionsCount': '{n} preguntas',
+  'interview.selectRole.loading': 'Cargando roles…',
+  // Form del candidato (debajo de la selección).
+  'interview.candidateForm.title': 'Datos del candidato',
+  'interview.candidateForm.nameLabel': 'Nombre del candidato',
+  'interview.candidateForm.namePlaceholder': 'Ej. Juan Pérez',
+  'interview.candidateForm.cedulaLabel': 'Cédula o ID externo (opcional)',
+  'interview.candidateForm.cedulaPlaceholder': 'Ej. 1717182632',
+  'interview.candidateForm.start': 'Iniciar entrevista',
+  'interview.candidateForm.starting': 'Preparando entrevista…',
+  // Pantalla 2 — entrevista en vivo.
+  'interview.live.progress': 'Pregunta {n} de {total}',
+  'interview.live.askLabel': 'El entrevistador pregunta',
+  'interview.live.speaking': 'Hablando…',
+  'interview.live.repeat': 'Repetir pregunta',
+  'interview.live.micStart': 'Hablar',
+  'interview.live.micStop': 'Detener',
+  'interview.live.micListening': 'Escuchando… toca para detener',
+  'interview.live.micHint': 'Toca el micrófono para responder por voz',
+  'interview.live.micUnsupported': 'Tu navegador no soporta voz. Usa Chrome.',
+  'interview.live.transcriptHint':
+    'Esto es lo que el sistema entendió. Puedes regrabar o confirmar.',
+  'interview.live.rerecord': 'Volver a grabar',
+  'interview.live.confirm': 'Confirmar y seguir',
+  'interview.live.confirming': 'Guardando respuesta…',
+  // Pantalla 2b — cierre antes del finalize.
+  'interview.ready.title': 'Has completado las {n} preguntas.',
+  'interview.ready.subtitle': 'Vamos a generar la evaluación del candidato.',
+  'interview.ready.finalize': 'Generar evaluación',
+  // Pantalla 3 — resultado.
+  'interview.result.finalizing': 'Generando evaluación…',
+  'interview.result.finalizingHint':
+    'El sistema está analizando cada respuesta. Las dimensiones aparecerán a medida que se evalúen.',
+  'interview.result.overall': 'Score global',
+  'interview.result.dimensions': 'Dimensiones evaluadas',
+  'interview.result.strengths': 'Fortalezas',
+  'interview.result.opportunities': 'Oportunidades de mejora',
+  'interview.result.restart': 'Volver al inicio',
+  'interview.result.recHire': 'Recomendado',
+  'interview.result.recReconsider': 'Vale otra mirada',
+  'interview.result.recReject': 'No recomendado',
+  // Pantalla de error.
+  'interview.error.title': 'Algo salió mal',
+  'interview.error.restart': 'Volver al inicio',
 } as const;
 
 const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
@@ -738,6 +803,10 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'audience.clinical.directors': 'Medical directors',
   'audience.clinical.heads': 'Service chiefs',
   'audience.clinical.cio': 'Hospital CIO',
+  // Demo 07 — AI interviewer.
+  'audience.interview.hr': 'HR directors',
+  'audience.interview.selection': 'Heads of recruiting',
+  'audience.interview.admissions': 'University admissions',
 
   // --- CostMiniWidget (each demo header)
   'costMini.tokens': 'Estimated tokens',
@@ -755,6 +824,7 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'costMini.uses.corpus': 'searches/month',
   'costMini.uses.agent': 'queries/month',
   'costMini.uses.clinical': 'analyses/month',
+  'costMini.uses.interview': 'interviews/month',
 
   // --- Auth / login (PR-MT4)
   'auth.login.title': 'Sign in',
@@ -858,6 +928,9 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   // --- Demo 06 (Clinical assistant) — sidebar + demo registry copy.
   'demos.clinical.title': 'Clinical assistant',
   'demos.clinical.tagline': 'Physician support over the patient record',
+  // --- Demo 07 (AI interviewer) — sidebar + demo registry copy.
+  'demos.interview.title': 'AI interviewer',
+  'demos.interview.tagline': 'Structured interviews with audited scoring',
 
   // --- Demo 06 (Clinical assistant) — page copy.
   'clinical.banner.title': 'Synthetic data',
@@ -917,6 +990,56 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'clinical.sev.grave': 'Severe',
   'clinical.status.thinking': 'Thinking…',
   'clinical.status.error': 'Something went wrong. Try again.',
+
+  // --- Demo 07 (AI interviewer HR) — ADR-0017.
+  'interview.eyebrow': 'Demo 07 · HR',
+  'interview.audit.text':
+    'Scoring is generated by AI and must be reviewed by a human recruiter before making a hiring decision.',
+  'interview.selectRole.title':
+    'Select the role you are going to interview for',
+  'interview.selectRole.subtitle':
+    '6 seeded roles with questions tailored to each profile.',
+  'interview.selectRole.questionsCount': '{n} questions',
+  'interview.selectRole.loading': 'Loading roles…',
+  'interview.candidateForm.title': 'Candidate details',
+  'interview.candidateForm.nameLabel': 'Candidate name',
+  'interview.candidateForm.namePlaceholder': 'e.g. Juan Pérez',
+  'interview.candidateForm.cedulaLabel':
+    'National ID or external ID (optional)',
+  'interview.candidateForm.cedulaPlaceholder': 'e.g. 1717182632',
+  'interview.candidateForm.start': 'Start interview',
+  'interview.candidateForm.starting': 'Preparing interview…',
+  'interview.live.progress': 'Question {n} of {total}',
+  'interview.live.askLabel': 'The interviewer asks',
+  'interview.live.speaking': 'Speaking…',
+  'interview.live.repeat': 'Repeat question',
+  'interview.live.micStart': 'Speak',
+  'interview.live.micStop': 'Stop',
+  'interview.live.micListening': 'Listening… tap to stop',
+  'interview.live.micHint': 'Tap the microphone to answer by voice',
+  'interview.live.micUnsupported':
+    'Your browser does not support voice. Use Chrome.',
+  'interview.live.transcriptHint':
+    'This is what the system understood. You can re-record or confirm.',
+  'interview.live.rerecord': 'Re-record',
+  'interview.live.confirm': 'Confirm and continue',
+  'interview.live.confirming': 'Saving answer…',
+  'interview.ready.title': 'You have completed all {n} questions.',
+  'interview.ready.subtitle': 'We will now generate the candidate evaluation.',
+  'interview.ready.finalize': 'Generate evaluation',
+  'interview.result.finalizing': 'Generating evaluation…',
+  'interview.result.finalizingHint':
+    'The system is analyzing each answer. Dimensions will appear as they are evaluated.',
+  'interview.result.overall': 'Overall score',
+  'interview.result.dimensions': 'Evaluated dimensions',
+  'interview.result.strengths': 'Strengths',
+  'interview.result.opportunities': 'Areas to improve',
+  'interview.result.restart': 'Back to start',
+  'interview.result.recHire': 'Recommended',
+  'interview.result.recReconsider': 'Worth a second look',
+  'interview.result.recReject': 'Not recommended',
+  'interview.error.title': 'Something went wrong',
+  'interview.error.restart': 'Back to start',
 };
 
 // ---------------------------------------------------------------------------

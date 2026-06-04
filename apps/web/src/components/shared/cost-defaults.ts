@@ -99,4 +99,15 @@ export const DEMO_COST_DEFAULTS: Record<DemoId, DemoCostDefaults> = {
     referenceTokensPerUse: { inputTokens: 4_000, outputTokens: 1_000 },
     usesLabelKey: 'costMini.uses.clinical',
   },
+  interview: {
+    // Demo 07 — el avatar entrevistador no usa CostMiniWidget tampoco (es
+    // un demo más conversacional). Si en el futuro se suma, una empresa
+    // mediana ≈ 5 reclutadores × 100 entrevistas/mes = 500 entrevistas.
+    // Cada entrevista termina en un finalize con scoring estructurado
+    // (~6K input + 1.5K output por entrevista, no por respuesta).
+    defaultUsers: 5,
+    defaultUsesPerUserPerMonth: 100,
+    referenceTokensPerUse: { inputTokens: 6_000, outputTokens: 1_500 },
+    usesLabelKey: 'costMini.uses.interview',
+  },
 };

@@ -118,6 +118,21 @@ export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
       'audience.clinical.cio',
     ],
   },
+  {
+    // Demo 07 — avatar entrevistador HR (ADR-0017). Cross-industry: el sidebar
+    // lo muestra para los tenants cuyo `enabledDemos` (de /me/demos) incluye
+    // 'interview' (universidad, banca, retail, gobierno — no salud, no legal).
+    // Icon `circle-user` representa al candidato (más HR-friendly que `mic`).
+    id: 'interview',
+    icon: 'circle-user',
+    status: 'live',
+    route: '/demo/interview',
+    audienceKeys: [
+      'audience.interview.hr',
+      'audience.interview.selection',
+      'audience.interview.admissions',
+    ],
+  },
 ] as const;
 
 /**

@@ -28,7 +28,8 @@ export type DemoId =
   | 'corpus'
   | 'agent'
   | 'tutor'
-  | 'clinical';
+  | 'clinical'
+  | 'interview';
 
 // ---------------------------------------------------------------------------
 // Ingest — POST /api/v1/ingest  (text/JSON)
