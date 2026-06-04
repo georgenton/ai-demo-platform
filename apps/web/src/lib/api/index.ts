@@ -16,6 +16,14 @@ export {
   subscribeToClinicalAnalyze,
 } from './clinical';
 export {
+  getHrJobs,
+  getHrJob,
+  createHrInterview,
+  getHrNextQuestion,
+  recordHrAnswer,
+  subscribeToHrFinalize,
+} from './hr';
+export {
   fetchCorpusPapers,
   fetchCorpusStats,
   subscribeToCorpusSearch,
@@ -42,6 +50,11 @@ export {
   type ClinicalAnalyzeStatus,
   type UseClinicalAnalyzeResult,
 } from './use-clinical-analyze';
+export {
+  useInterviewSession,
+  type InterviewPhase,
+  type UseInterviewSessionResult,
+} from './use-interview-session';
 export { useCorpusPapers } from './use-corpus-papers';
 export { useCorpusSearch } from './use-corpus-search';
 export { useCorpusStats } from './use-corpus-stats';
@@ -135,6 +148,27 @@ export type {
   ClinicalToolCallEvent,
   ClinicalToolResultEvent,
 } from './types-clinical';
+export type {
+  HrAnswerRequest,
+  HrAnswerResponse,
+  HrCreateInterviewRequest,
+  HrCreateInterviewResponse,
+  HrDimensionScored,
+  HrDimensionScoredEvent,
+  HrDoneEvent,
+  HrErrorEvent,
+  HrFinalEvent,
+  HrFinalResult,
+  HrFinalizeEvent,
+  HrFinalizeStreamHandlers,
+  HrFinalizeSubscription,
+  HrJobListResponse,
+  HrJobSummary,
+  HrNextQuestionResponse,
+  HrQuestion,
+  HrScoringTone,
+  HrTokenEvent,
+} from './types-hr';
 export type {
   TutorChatRequest,
   TutorHistoryTurn,
