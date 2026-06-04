@@ -44,6 +44,7 @@ Usamos **MADR** (Markdown ADR), uno de los formatos estándar:
 | 0014 | [Auth: email + contraseña con JWT en cookie httpOnly](./0014-auth-email-password-jwt.md)                          | Aceptado                    |
 | 0015 | [Multi-tenant: notas de implementación del sprint MT1..MT5](./0015-multi-tenant-implementation-notes.md)          | Aceptado                    |
 | 0016 | [Demo 06 — Asistente clínico para historia clínica + protocolos](./0016-demo-06-clinical-assistant.md)            | Aceptado                    |
+| 0017 | [Demo 07 — Avatar entrevistador HR (screening de candidatos)](./0017-demo-07-hr-interview.md)                     | Aceptado                    |
 
 ## Cuándo agregar un nuevo ADR
 
