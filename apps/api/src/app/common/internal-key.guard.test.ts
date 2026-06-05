@@ -7,16 +7,25 @@
 // -----------------------------------------------------------------------------
 
 import { UnauthorizedException, type ExecutionContext } from '@nestjs/common';
+import type { Reflector } from '@nestjs/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { InternalKeyGuard } from './internal-key.guard.js';
 
 function makeContext(path: string, headers: Record<string, string> = {}) {
   return {
+    getHandler: () => makeContext,
+    getClass: () => Object,
     switchToHttp: () => ({
       getRequest: () => ({ path, headers }),
     }),
   } as unknown as ExecutionContext;
+}
+
+function makeReflector(isPublic: boolean): Reflector {
+  return {
+    getAllAndOverride: () => isPublic,
+  } as unknown as Reflector;
 }
 
 describe('InternalKeyGuard', () => {
@@ -63,5 +72,13 @@ describe('InternalKeyGuard', () => {
     process.env.INTERNAL_API_KEY = 'shh-secret';
     const guard = new InternalKeyGuard();
     expect(guard.canActivate(makeContext('/api/v1/health'))).toBe(true);
+  });
+
+  it('@Public() pasa sin header incluso con guard activo', () => {
+    process.env.INTERNAL_API_KEY = 'shh-secret';
+    const guard = new InternalKeyGuard(makeReflector(true));
+    expect(
+      guard.canActivate(makeContext('/api/v1/private-llm-handshake')),
+    ).toBe(true);
   });
 });

@@ -8,7 +8,7 @@
  */
 
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 
@@ -74,14 +74,15 @@ async function bootstrap() {
   // El orden importa: cada guard depende de que el anterior haya corrido.
   //
   // Los obtenemos del container para que NestJS resuelva sus dependencias
-  // (Reflector, AuthService, IndustryService). `new InternalKeyGuard()` se
-  // queda construido a mano porque no necesita DI.
+  // (Reflector, AuthService, IndustryService). InternalKeyGuard se construye
+  // a mano, pero recibe Reflector para respetar @Public().
+  const reflector = app.get(Reflector);
   const authGuard = app.get(AuthGuard);
   const tenantGuard = app.get(TenantGuard);
   const demoAccessGuard = app.get(DemoAccessGuard);
   const rolesGuard = app.get(RolesGuard);
   app.useGlobalGuards(
-    new InternalKeyGuard(),
+    new InternalKeyGuard(reflector),
     authGuard,
     tenantGuard,
     demoAccessGuard,

@@ -180,11 +180,19 @@ export interface EmbeddingsAdapter {
  * para CI y tests E2E sin keys. NUNCA usar en producción — la responde
  * solo lo que tiene precableado.
  */
-export type ChatProvider = 'anthropic' | 'openai-compat' | 'fake';
+export type ChatProvider =
+  | 'anthropic'
+  | 'openai-compat'
+  | 'private-mac'
+  | 'fake';
 
 /** Proveedores soportados para embeddings. `fake` análogo al de chat:
  * vectores determinísticos vía bag-of-words. */
-export type EmbeddingsProvider = 'openai' | 'openai-compat' | 'fake';
+export type EmbeddingsProvider =
+  | 'openai'
+  | 'openai-compat'
+  | 'private-mac'
+  | 'fake';
 
 /**
  * Configuración del ChatAdapter. Se construye desde:

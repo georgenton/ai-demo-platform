@@ -48,9 +48,27 @@ describe('validateEnv', () => {
     ).not.toThrow();
   });
 
+  it('acepta private-mac usando PRIVATE_LLM_*', () => {
+    expect(() =>
+      validateEnv({
+        ...VALID,
+        CHAT_PROVIDER: 'private-mac',
+        EMBEDDINGS_PROVIDER: 'private-mac',
+        CHAT_API_KEY: undefined,
+        CHAT_MODEL: undefined,
+        EMBEDDINGS_API_KEY: undefined,
+        EMBEDDINGS_MODEL: undefined,
+        PRIVATE_LLM_BASE_URL: 'https://private-llm.millenialsoft.com',
+        PRIVATE_LLM_API_KEY: 'demo-key',
+        PRIVATE_LLM_MODEL: 'qwen2.5:7b',
+        PRIVATE_EMBEDDING_MODEL: 'nomic-embed-text',
+      }),
+    ).not.toThrow();
+  });
+
   it('rechaza CHAT_PROVIDER fuera del enum con mensaje útil', () => {
     expect(() => validateEnv({ ...VALID, CHAT_PROVIDER: 'cohere' })).toThrow(
-      /CHAT_PROVIDER.*anthropic.*openai-compat/,
+      /CHAT_PROVIDER.*anthropic.*openai-compat.*private-mac/,
     );
   });
 

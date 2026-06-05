@@ -31,7 +31,10 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
+
+import { IS_PUBLIC_KEY } from '../auth/public.decorator.js';
 
 const HEADER = 'x-internal-key';
 
@@ -44,7 +47,7 @@ export class InternalKeyGuard implements CanActivate {
   private readonly required: string;
   private readonly active: boolean;
 
-  constructor() {
+  constructor(private readonly reflector?: Reflector) {
     this.required = process.env.INTERNAL_API_KEY ?? '';
     this.active = this.required.length > 0;
 
@@ -59,6 +62,12 @@ export class InternalKeyGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     if (!this.active) return true;
+
+    const isPublic = this.reflector?.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
 
     const req = context.switchToHttp().getRequest<Request>();
 
