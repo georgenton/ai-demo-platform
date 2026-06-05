@@ -9,6 +9,7 @@
 import { AnthropicChatAdapter } from './providers/anthropic-chat.js';
 import { FakeChatAdapter } from './providers/fake-chat.js';
 import { OpenAICompatChatAdapter } from './providers/openai-compat-chat.js';
+import { PrivateMacChatAdapter } from './providers/private-mac-chat.js';
 import type { ChatAdapter, ChatConfig } from './types.js';
 
 /**
@@ -28,10 +29,11 @@ export function readChatConfig(): ChatConfig {
   if (
     provider !== 'anthropic' &&
     provider !== 'openai-compat' &&
+    provider !== 'private-mac' &&
     provider !== 'fake'
   ) {
     throw new Error(
-      `CHAT_PROVIDER inválido: "${provider}". Esperado: 'anthropic', 'openai-compat' o 'fake'.`,
+      `CHAT_PROVIDER inválido: "${provider}". Esperado: 'anthropic', 'openai-compat', 'private-mac' o 'fake'.`,
     );
   }
 
@@ -45,20 +47,42 @@ export function readChatConfig(): ChatConfig {
     };
   }
 
-  const apiKey = process.env.CHAT_API_KEY;
+  const apiKey =
+    provider === 'private-mac'
+      ? (process.env.PRIVATE_LLM_API_KEY ?? process.env.CHAT_API_KEY)
+      : process.env.CHAT_API_KEY;
   if (!apiKey) {
-    throw new Error('CHAT_API_KEY no está definida en el entorno.');
-  }
-
-  const model = process.env.CHAT_MODEL;
-  if (!model) {
-    throw new Error('CHAT_MODEL no está definida en el entorno.');
-  }
-
-  const baseUrl = process.env.CHAT_BASE_URL;
-  if (provider === 'openai-compat' && !baseUrl) {
     throw new Error(
-      'CHAT_BASE_URL es obligatoria cuando CHAT_PROVIDER=openai-compat.',
+      provider === 'private-mac'
+        ? 'PRIVATE_LLM_API_KEY/CHAT_API_KEY no está definida en el entorno.'
+        : 'CHAT_API_KEY no está definida en el entorno.',
+    );
+  }
+
+  const model =
+    provider === 'private-mac'
+      ? (process.env.PRIVATE_LLM_MODEL ?? process.env.CHAT_MODEL)
+      : process.env.CHAT_MODEL;
+  if (!model) {
+    throw new Error(
+      provider === 'private-mac'
+        ? 'PRIVATE_LLM_MODEL/CHAT_MODEL no está definida en el entorno.'
+        : 'CHAT_MODEL no está definida en el entorno.',
+    );
+  }
+
+  const baseUrl =
+    provider === 'private-mac'
+      ? (process.env.PRIVATE_LLM_BASE_URL ?? process.env.CHAT_BASE_URL)
+      : process.env.CHAT_BASE_URL;
+  if (
+    (provider === 'openai-compat' || provider === 'private-mac') &&
+    !baseUrl
+  ) {
+    throw new Error(
+      provider === 'private-mac'
+        ? 'PRIVATE_LLM_BASE_URL/CHAT_BASE_URL es obligatoria cuando CHAT_PROVIDER=private-mac.'
+        : 'CHAT_BASE_URL es obligatoria cuando CHAT_PROVIDER=openai-compat.',
     );
   }
 
@@ -72,6 +96,12 @@ export function createChatAdapter(config: ChatConfig): ChatAdapter {
       return new AnthropicChatAdapter(config);
     case 'openai-compat':
       return new OpenAICompatChatAdapter(config);
+    case 'private-mac':
+      return new PrivateMacChatAdapter({
+        ...config,
+        demoName: process.env.PRIVATE_LLM_DEMO_NAME,
+        timeoutMs: Number(process.env.PRIVATE_LLM_TIMEOUT_MS ?? 120000),
+      });
     case 'fake':
       return new FakeChatAdapter(config);
     default: {

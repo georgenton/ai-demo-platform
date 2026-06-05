@@ -5,6 +5,7 @@
 
 import { FakeEmbeddingsAdapter } from './providers/fake-embeddings.js';
 import { OpenAIEmbeddingsAdapter } from './providers/openai-embeddings.js';
+import { PrivateMacEmbeddingsAdapter } from './providers/private-mac-embeddings.js';
 import type { EmbeddingsAdapter, EmbeddingsConfig } from './types.js';
 
 export function readEmbeddingsConfig(): EmbeddingsConfig {
@@ -15,10 +16,11 @@ export function readEmbeddingsConfig(): EmbeddingsConfig {
   if (
     provider !== 'openai' &&
     provider !== 'openai-compat' &&
+    provider !== 'private-mac' &&
     provider !== 'fake'
   ) {
     throw new Error(
-      `EMBEDDINGS_PROVIDER inválido: "${provider}". Esperado: 'openai', 'openai-compat' o 'fake'.`,
+      `EMBEDDINGS_PROVIDER inválido: "${provider}". Esperado: 'openai', 'openai-compat', 'private-mac' o 'fake'.`,
     );
   }
 
@@ -32,20 +34,42 @@ export function readEmbeddingsConfig(): EmbeddingsConfig {
     };
   }
 
-  const apiKey = process.env.EMBEDDINGS_API_KEY;
+  const apiKey =
+    provider === 'private-mac'
+      ? (process.env.PRIVATE_LLM_API_KEY ?? process.env.EMBEDDINGS_API_KEY)
+      : process.env.EMBEDDINGS_API_KEY;
   if (!apiKey) {
-    throw new Error('EMBEDDINGS_API_KEY no está definida en el entorno.');
-  }
-
-  const model = process.env.EMBEDDINGS_MODEL;
-  if (!model) {
-    throw new Error('EMBEDDINGS_MODEL no está definida en el entorno.');
-  }
-
-  const baseUrl = process.env.EMBEDDINGS_BASE_URL;
-  if (provider === 'openai-compat' && !baseUrl) {
     throw new Error(
-      'EMBEDDINGS_BASE_URL es obligatoria cuando EMBEDDINGS_PROVIDER=openai-compat.',
+      provider === 'private-mac'
+        ? 'PRIVATE_LLM_API_KEY/EMBEDDINGS_API_KEY no está definida en el entorno.'
+        : 'EMBEDDINGS_API_KEY no está definida en el entorno.',
+    );
+  }
+
+  const model =
+    provider === 'private-mac'
+      ? (process.env.PRIVATE_EMBEDDING_MODEL ?? process.env.EMBEDDINGS_MODEL)
+      : process.env.EMBEDDINGS_MODEL;
+  if (!model) {
+    throw new Error(
+      provider === 'private-mac'
+        ? 'PRIVATE_EMBEDDING_MODEL/EMBEDDINGS_MODEL no está definida en el entorno.'
+        : 'EMBEDDINGS_MODEL no está definida en el entorno.',
+    );
+  }
+
+  const baseUrl =
+    provider === 'private-mac'
+      ? (process.env.PRIVATE_LLM_BASE_URL ?? process.env.EMBEDDINGS_BASE_URL)
+      : process.env.EMBEDDINGS_BASE_URL;
+  if (
+    (provider === 'openai-compat' || provider === 'private-mac') &&
+    !baseUrl
+  ) {
+    throw new Error(
+      provider === 'private-mac'
+        ? 'PRIVATE_LLM_BASE_URL/EMBEDDINGS_BASE_URL es obligatoria cuando EMBEDDINGS_PROVIDER=private-mac.'
+        : 'EMBEDDINGS_BASE_URL es obligatoria cuando EMBEDDINGS_PROVIDER=openai-compat.',
     );
   }
 
@@ -61,6 +85,12 @@ export function createEmbeddingsAdapter(
       // El mismo adapter sirve para OpenAI nativo y para endpoints
       // OpenAI-compatible (NAI). La diferencia es solo el baseURL del cliente.
       return new OpenAIEmbeddingsAdapter(config);
+    case 'private-mac':
+      return new PrivateMacEmbeddingsAdapter({
+        ...config,
+        demoName: process.env.PRIVATE_LLM_DEMO_NAME,
+        timeoutMs: Number(process.env.PRIVATE_LLM_TIMEOUT_MS ?? 120000),
+      });
     case 'fake':
       return new FakeEmbeddingsAdapter(config);
     default: {

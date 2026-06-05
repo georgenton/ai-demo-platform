@@ -17,6 +17,7 @@ import { createChatAdapter, readChatConfig } from './chat.js';
 import { AnthropicChatAdapter } from './providers/anthropic-chat.js';
 import { FakeChatAdapter } from './providers/fake-chat.js';
 import { OpenAICompatChatAdapter } from './providers/openai-compat-chat.js';
+import { PrivateMacChatAdapter } from './providers/private-mac-chat.js';
 
 describe('readChatConfig', () => {
   // Antes de cada test borramos las CHAT_* para empezar desde un estado limpio.
@@ -26,6 +27,9 @@ describe('readChatConfig', () => {
     delete process.env.CHAT_API_KEY;
     delete process.env.CHAT_MODEL;
     delete process.env.CHAT_BASE_URL;
+    delete process.env.PRIVATE_LLM_BASE_URL;
+    delete process.env.PRIVATE_LLM_API_KEY;
+    delete process.env.PRIVATE_LLM_MODEL;
   });
 
   it('lanza un error claro si CHAT_PROVIDER no está definida', () => {
@@ -98,6 +102,19 @@ describe('readChatConfig', () => {
     process.env.CHAT_MODEL = 'mi-modelo-custom';
     expect(readChatConfig().model).toBe('mi-modelo-custom');
   });
+
+  it('devuelve config válida con provider=private-mac y variables PRIVATE_LLM_*', () => {
+    process.env.CHAT_PROVIDER = 'private-mac';
+    process.env.PRIVATE_LLM_BASE_URL = 'https://private-llm.example.com';
+    process.env.PRIVATE_LLM_API_KEY = 'demo-key';
+    process.env.PRIVATE_LLM_MODEL = 'qwen2.5:7b';
+    expect(readChatConfig()).toEqual({
+      provider: 'private-mac',
+      apiKey: 'demo-key',
+      model: 'qwen2.5:7b',
+      baseUrl: 'https://private-llm.example.com',
+    });
+  });
 });
 
 describe('createChatAdapter', () => {
@@ -127,5 +144,15 @@ describe('createChatAdapter', () => {
       model: 'fake-model',
     });
     expect(adapter).toBeInstanceOf(FakeChatAdapter);
+  });
+
+  it('devuelve PrivateMacChatAdapter para provider="private-mac"', () => {
+    const adapter = createChatAdapter({
+      provider: 'private-mac',
+      apiKey: 'demo-key',
+      model: 'qwen2.5:7b',
+      baseUrl: 'https://private-llm.example.com',
+    });
+    expect(adapter).toBeInstanceOf(PrivateMacChatAdapter);
   });
 });

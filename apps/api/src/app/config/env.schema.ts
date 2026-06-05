@@ -41,11 +41,13 @@ import {
 export enum ChatProvider {
   anthropic = 'anthropic',
   openaiCompat = 'openai-compat',
+  privateMac = 'private-mac',
 }
 
 export enum EmbeddingsProvider {
   openai = 'openai',
   openaiCompat = 'openai-compat',
+  privateMac = 'private-mac',
 }
 
 /**
@@ -68,10 +70,12 @@ export class EnvSchema {
   CHAT_PROVIDER!: ChatProvider;
 
   @IsString()
+  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER !== ChatProvider.privateMac)
   @IsNotEmpty()
   CHAT_API_KEY!: string;
 
   @IsString()
+  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER !== ChatProvider.privateMac)
   @IsNotEmpty()
   CHAT_MODEL!: string;
 
@@ -90,6 +94,34 @@ export class EnvSchema {
   )
   CHAT_BASE_URL?: string;
 
+  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER === ChatProvider.privateMac)
+  @IsUrl(
+    { require_tld: false, require_protocol: true },
+    {
+      message:
+        'PRIVATE_LLM_BASE_URL es obligatoria con CHAT_PROVIDER=private-mac y debe ser una URL con protocolo.',
+    },
+  )
+  PRIVATE_LLM_BASE_URL?: string;
+
+  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER === ChatProvider.privateMac)
+  @IsString()
+  @IsNotEmpty()
+  PRIVATE_LLM_API_KEY?: string;
+
+  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER === ChatProvider.privateMac)
+  @IsString()
+  @IsNotEmpty()
+  PRIVATE_LLM_MODEL?: string;
+
+  @IsOptional()
+  @IsString()
+  PRIVATE_LLM_DEMO_NAME?: string;
+
+  @IsOptional()
+  @IsString()
+  PRIVATE_LLM_TIMEOUT_MS?: string;
+
   // ---------------------------------------------------------------------------
   // Embeddings
   // ---------------------------------------------------------------------------
@@ -100,10 +132,16 @@ export class EnvSchema {
   EMBEDDINGS_PROVIDER!: EmbeddingsProvider;
 
   @IsString()
+  @ValidateIf(
+    (o: EnvSchema) => o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateMac,
+  )
   @IsNotEmpty()
   EMBEDDINGS_API_KEY!: string;
 
   @IsString()
+  @ValidateIf(
+    (o: EnvSchema) => o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateMac,
+  )
   @IsNotEmpty()
   EMBEDDINGS_MODEL!: string;
 
@@ -118,6 +156,13 @@ export class EnvSchema {
     },
   )
   EMBEDDINGS_BASE_URL?: string;
+
+  @ValidateIf(
+    (o: EnvSchema) => o.EMBEDDINGS_PROVIDER === EmbeddingsProvider.privateMac,
+  )
+  @IsString()
+  @IsNotEmpty()
+  PRIVATE_EMBEDDING_MODEL?: string;
 
   // ---------------------------------------------------------------------------
   // Server
