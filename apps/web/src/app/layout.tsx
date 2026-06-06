@@ -19,6 +19,7 @@ import './global.css';
 
 import { AuthProvider } from '@/lib/auth';
 import { LangProvider } from '@/lib/i18n';
+import { LlmProviderProvider } from '@/lib/llm';
 import { ThemeInlineScript, ThemeProvider } from '@/lib/theme';
 
 export const metadata = {
@@ -40,11 +41,17 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <LangProvider>
-            {/* AuthProvider envuelve toda la app — el portero que sabe quién
-                está logueado. Las páginas públicas (/login) también lo tienen
-                arriba; ahí useAuth() devuelve status="unauthenticated" tras el
-                getMe() inicial y no rompe nada. */}
-            <AuthProvider>{children}</AuthProvider>
+            {/* LlmProviderProvider — switch dinámico Anthropic ↔ NAI on-prem
+                desde el dropdown del header. El elemento NO bloquea el
+                login: si el user no eligió, los clientes HTTP no mandan el
+                header y el backend cae al singleton del env. */}
+            <LlmProviderProvider>
+              {/* AuthProvider envuelve toda la app — el portero que sabe quién
+                  está logueado. Las páginas públicas (/login) también lo tienen
+                  arriba; ahí useAuth() devuelve status="unauthenticated" tras el
+                  getMe() inicial y no rompe nada. */}
+              <AuthProvider>{children}</AuthProvider>
+            </LlmProviderProvider>
           </LangProvider>
         </ThemeProvider>
       </body>

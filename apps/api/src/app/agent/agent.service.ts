@@ -24,6 +24,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { prisma } from '@org/db';
 import { chat } from '@org/llm-adapter';
 import type {
+  ChatProvider,
   ChatRichMessage,
   ChatTool,
   TextBlock,
@@ -101,6 +102,7 @@ export class AgentService {
   async *streamAgent(
     query: AgentQueryDto,
     tenantId: string,
+    llmProvider?: ChatProvider,
   ): AsyncIterable<AgentEvent> {
     this.logger.log(`Agent query: "${query.q}" (tenant=${tenantId})`);
 
@@ -136,9 +138,11 @@ export class AgentService {
         }[] = [];
         let stopReason: string = 'other';
 
-        for await (const event of chat.streamWithTools(messages, [
-          RUN_SQL_TOOL,
-        ])) {
+        for await (const event of chat.streamWithTools(
+          messages,
+          [RUN_SQL_TOOL],
+          { provider: llmProvider },
+        )) {
           if (event.type === 'text_delta') {
             // Acumulamos el texto en el último TextBlock o creamos uno nuevo.
             const last = assistantBlocks[assistantBlocks.length - 1];

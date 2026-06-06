@@ -41,7 +41,11 @@ import {
 import { CorpusSearchQueryDto } from './dto/corpus-search.dto.js';
 import { CorpusStatsResponseDto } from './dto/corpus-stats.dto.js';
 import { CorpusUploadResponseDto } from './dto/corpus-upload.dto.js';
-import { CurrentTenant } from '../auth/current-user.decorator.js';
+import {
+  CurrentLlmProvider,
+  CurrentTenant,
+} from '../auth/current-user.decorator.js';
+import type { ChatProvider } from '@org/llm-adapter';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 /** 10 MB por archivo — mismo límite que ingest base. */
@@ -190,6 +194,7 @@ export class CorpusController {
   search(
     @Query() query: CorpusSearchQueryDto,
     @CurrentTenant() tenantId: string,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
   ): Observable<MessageEvent> {
     return from(
       this.chatService.streamChat(
@@ -199,6 +204,7 @@ export class CorpusController {
           topK: query.topK,
         },
         tenantId,
+        llmProvider,
       ),
     ).pipe(map((token) => ({ data: token })));
   }
@@ -222,8 +228,11 @@ export class CorpusController {
     description:
       'Map-reduce LLM: resume cada paper individualmente y después redacta el panorama del corpus en 2-3 párrafos. ~30-60s. Si total < 3 papers, devuelve mensaje fijo.',
   })
-  summary(@CurrentTenant() tenantId: string): Observable<MessageEvent> {
-    return from(this.summaryService.streamSummary(tenantId)).pipe(
+  summary(
+    @CurrentTenant() tenantId: string,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
+  ): Observable<MessageEvent> {
+    return from(this.summaryService.streamSummary(tenantId, llmProvider)).pipe(
       map((token) => ({ data: token })),
     );
   }

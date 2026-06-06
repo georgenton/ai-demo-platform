@@ -27,6 +27,14 @@ const STRINGS_ES = {
   'shell.brand.tag': 'NUTANIX ENTERPRISE AI',
   'shell.coming': 'Pronto',
   'shell.dev': 'dev',
+  // --- LLM provider switch (dropdown del header).
+  // Elige Anthropic API (cloud) vs NAI on-prem (private-mac local).
+  'llm.provider.choose': 'Elige modelo',
+  'llm.provider.chooseHint':
+    'Selecciona el modelo de LLM antes de enviar la primera consulta.',
+  'llm.provider.changeHint': 'Cambiar el modelo de LLM activo',
+  'llm.provider.anthropic': 'Anthropic API',
+  'llm.provider.privateMac': 'NAI on-prem',
   'shell.theme.tip': 'Cambiar tema',
   'shell.lang.tip': 'Cambiar idioma',
   'shell.presentation.enter': 'Modo presentación (Shift + P)',
@@ -561,6 +569,12 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'shell.brand.tag': 'NUTANIX ENTERPRISE AI',
   'shell.coming': 'Soon',
   'shell.dev': 'dev',
+  'llm.provider.choose': 'Choose model',
+  'llm.provider.chooseHint':
+    'Select the LLM model before sending the first request.',
+  'llm.provider.changeHint': 'Change the active LLM model',
+  'llm.provider.anthropic': 'Anthropic API',
+  'llm.provider.privateMac': 'NAI on-prem',
   'shell.theme.tip': 'Toggle theme',
   'shell.lang.tip': 'Change language',
   'shell.presentation.enter': 'Presentation mode (Shift + P)',

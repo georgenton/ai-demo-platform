@@ -33,9 +33,14 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { CurrentTenant, CurrentUser } from '../auth/current-user.decorator.js';
+import {
+  CurrentLlmProvider,
+  CurrentTenant,
+  CurrentUser,
+} from '../auth/current-user.decorator.js';
 import type { JwtPayload } from '../auth/auth.types.js';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
+import type { ChatProvider } from '@org/llm-adapter';
 
 import type { ClinicalEvent } from './clinical-events.js';
 import { ClinicalService } from './clinical.service.js';
@@ -142,9 +147,10 @@ export class ClinicalController {
     @Body() dto: AnalyzeRequestDto,
     @CurrentTenant() tenantId: string,
     @CurrentUser() user: JwtPayload,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
   ): Observable<MessageEvent> {
     return from(
-      this.clinicalService.streamAnalyze(dto, tenantId, user.role),
+      this.clinicalService.streamAnalyze(dto, tenantId, user.role, llmProvider),
     ).pipe(map((event) => this.toMessageEvent(event)));
   }
 

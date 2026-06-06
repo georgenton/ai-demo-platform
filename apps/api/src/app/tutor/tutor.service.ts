@@ -15,7 +15,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { chat } from '@org/llm-adapter';
-import type { ChatMessage, ChatUsage } from '@org/llm-adapter';
+import type { ChatMessage, ChatProvider, ChatUsage } from '@org/llm-adapter';
 
 import type { TutorChatRequestDto } from './dto/chat-request.dto.js';
 import { buildTutorSystemPrompt } from './persona/tutor-prompts.js';
@@ -46,7 +46,10 @@ export class TutorService {
    * Si el LLM falla a mitad del stream, propagamos el error — el controller
    * SSE lo convierte en `error` event y el frontend muestra el mensaje.
    */
-  async *streamChat(dto: TutorChatRequestDto): AsyncIterable<TutorStreamEvent> {
+  async *streamChat(
+    dto: TutorChatRequestDto,
+    llmProvider?: ChatProvider,
+  ): AsyncIterable<TutorStreamEvent> {
     const scenario = dto.scenario ?? 'general';
     const messages = this.buildMessages(dto, scenario);
 
@@ -54,7 +57,9 @@ export class TutorService {
       `tutor chat → level=${dto.level} scenario=${scenario} history_turns=${dto.history.length} msg_len=${dto.message.length}`,
     );
 
-    const { stream, usage } = chat.completeStreamWithUsage(messages);
+    const { stream, usage } = chat.completeStreamWithUsage(messages, {
+      provider: llmProvider,
+    });
 
     for await (const token of stream) {
       yield { type: 'token', text: token };

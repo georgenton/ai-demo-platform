@@ -28,6 +28,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { prisma } from '@org/db';
 import { chat } from '@org/llm-adapter';
+import type { ChatProvider } from '@org/llm-adapter';
 
 import { CorpusStatsService } from './corpus-stats.service.js';
 
@@ -79,7 +80,10 @@ export class CorpusSummaryService {
    *   3) MAP: resumen por paper en paralelo (cap MAP_CONCURRENCY)
    *   4) REDUCE: prompt con stats + resúmenes, streamea al cliente
    */
-  async *streamSummary(tenantId: string): AsyncIterable<string> {
+  async *streamSummary(
+    tenantId: string,
+    llmProvider?: ChatProvider,
+  ): AsyncIterable<string> {
     const stats = await this.statsService.stats(tenantId);
 
     if (stats.totalPapers < MIN_PAPERS_FOR_SUMMARY) {
@@ -116,10 +120,13 @@ export class CorpusSummaryService {
 
     // REDUCE: streamea el resumen ejecutivo al cliente.
     const reducePrompt = this.buildReducePrompt(stats, paperSummaries);
-    for await (const token of chat.completeStream([
-      { role: 'system', content: REDUCE_SYSTEM_PROMPT },
-      { role: 'user', content: reducePrompt },
-    ])) {
+    for await (const token of chat.completeStream(
+      [
+        { role: 'system', content: REDUCE_SYSTEM_PROMPT },
+        { role: 'user', content: reducePrompt },
+      ],
+      { provider: llmProvider },
+    )) {
       yield token;
     }
   }

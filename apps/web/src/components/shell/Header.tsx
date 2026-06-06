@@ -18,11 +18,12 @@
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 
-import { Badge, Icon } from '@/components/ui';
+import { Badge } from '@/components/ui';
 import { buildSidebarDemos } from '@/lib/catalog/demos';
 import { useT } from '@/lib/i18n';
 
 import { LangSwitch } from './LangSwitch';
+import { LlmProviderSwitch } from './LlmProviderSwitch';
 import { PresentationToggle } from './PresentationToggle';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
@@ -54,20 +55,20 @@ export function Header() {
 
       <div className="spacer" />
 
+      {/* Switch dinámico Anthropic ↔ NAI on-prem. Antes era un bloque
+          estático "Anthropic API → NAI on-prem · dev" puramente decorativo;
+          ahora refleja la elección real del usuario (ver
+          LlmProviderSwitch.tsx + lib/llm/llm-provider-context.tsx). */}
       <div
         className="row"
         style={{
           gap: 8,
           fontSize: 12,
-          color: 'var(--color-fg-muted)',
           whiteSpace: 'nowrap',
           flexShrink: 0,
         }}
       >
-        <Icon name="globe" size={14} />
-        <span>Anthropic API</span>
-        <span style={{ opacity: 0.5 }}>→</span>
-        <span>NAI on-prem</span>
+        <LlmProviderSwitch />
         <Badge tone="info">{t('shell.dev')}</Badge>
       </div>
 

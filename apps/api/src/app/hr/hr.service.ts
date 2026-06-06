@@ -29,6 +29,7 @@ import {
 import { prisma } from '@org/db';
 import { chat } from '@org/llm-adapter';
 import type {
+  ChatProvider,
   ChatRichMessage,
   ChatTool,
   TextBlock,
@@ -346,6 +347,7 @@ export class HrService {
   async *streamFinalize(
     recruiterTenantId: string,
     interviewId: string,
+    llmProvider?: ChatProvider,
   ): AsyncIterable<HrEvent> {
     const interview = await this.loadInterviewWithJobOrThrow(
       recruiterTenantId,
@@ -394,10 +396,11 @@ export class HrService {
         }[] = [];
         let stopReason: string = 'other';
 
-        for await (const event of chat.streamWithTools(messages, [
-          SCORE_DIMENSION_TOOL,
-          FINAL_RECOMMENDATION_TOOL,
-        ])) {
+        for await (const event of chat.streamWithTools(
+          messages,
+          [SCORE_DIMENSION_TOOL, FINAL_RECOMMENDATION_TOOL],
+          { provider: llmProvider },
+        )) {
           if (event.type === 'text_delta') {
             const last = assistantBlocks[assistantBlocks.length - 1];
             if (last && last.type === 'text') {

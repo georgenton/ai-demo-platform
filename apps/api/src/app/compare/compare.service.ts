@@ -19,6 +19,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { prisma } from '@org/db';
 import { chat } from '@org/llm-adapter';
+import type { ChatProvider } from '@org/llm-adapter';
 
 import {
   ComparePromptBuilder,
@@ -44,6 +45,7 @@ export class CompareService {
   async *streamCompare(
     request: CompareRequestDto,
     tenantId: string,
+    llmProvider?: ChatProvider,
   ): AsyncIterable<string> {
     this.logger.log(
       `Compare ${request.documentIds.length} documents across ${request.dimensions.length} dimensions (tenant=${tenantId})`,
@@ -96,6 +98,6 @@ export class CompareService {
       dimensions: request.dimensions,
     });
 
-    yield* chat.completeStream(messages);
+    yield* chat.completeStream(messages, { provider: llmProvider });
   }
 }

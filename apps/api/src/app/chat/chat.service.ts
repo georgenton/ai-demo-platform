@@ -12,6 +12,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { chat } from '@org/llm-adapter';
+import type { ChatProvider } from '@org/llm-adapter';
 import { EmbeddingService, PromptBuilder, VectorStore } from '@org/rag-core';
 
 import type { ChatQueryDto } from './dto/chat.dto.js';
@@ -32,6 +33,7 @@ export class ChatService {
   async *streamChat(
     query: ChatQueryDto,
     tenantId: string,
+    llmProvider?: ChatProvider,
   ): AsyncIterable<string> {
     this.logger.log(
       `Chat for tenant=${tenantId} demo=${query.demoId}: "${query.q}" (topK=${query.topK ?? DEFAULT_TOP_K})`,
@@ -61,6 +63,6 @@ export class ChatService {
 
     // 4) Streaming del LLM — yield de cada token cuesta abajo. yield* delega
     //    al AsyncIterable del adapter sin envolverlo, así no pagamos overhead.
-    yield* chat.completeStream(messages);
+    yield* chat.completeStream(messages, { provider: llmProvider });
   }
 }
