@@ -19,6 +19,8 @@
 // necesario para chat/compare (solo `data:`) y agent (`event:` + `data:`).
 // -----------------------------------------------------------------------------
 
+import { llmProviderHeader } from '../llm/llm-provider-storage';
+
 export interface ParsedSseEvent {
   /** Nombre del evento. Default 'message' si no vino `event:`. */
   type: string;
@@ -47,6 +49,11 @@ export async function* openSseStream(
     method: options.method ?? 'GET',
     headers: {
       Accept: 'text/event-stream',
+      // X-LLM-Provider — propaga la elección del dropdown del header al
+      // backend. Si el user no eligió aún, llmProviderHeader() devuelve {}
+      // y el backend cae al singleton del env. Caller puede pisar este
+      // valor pasando su propio header en options.headers.
+      ...llmProviderHeader(),
       ...options.headers,
     },
     body: options.body,

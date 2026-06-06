@@ -93,10 +93,15 @@ describe('ChatService.streamChat()', () => {
         { content: 'fragmento b', documentId: 'd1', index: 1 },
       ],
     });
-    expect(mockChatStream).toHaveBeenCalledWith([
-      { role: 'system', content: 'sys' },
-      { role: 'user', content: 'hi' },
-    ]);
+    expect(mockChatStream).toHaveBeenCalledWith(
+      [
+        { role: 'system', content: 'sys' },
+        { role: 'user', content: 'hi' },
+      ],
+      // El service propaga el provider del header X-LLM-Provider; sin
+      // override, undefined → singleton del env (path legacy).
+      { provider: undefined },
+    );
   });
 
   it('usa topK del query cuando se provee', async () => {

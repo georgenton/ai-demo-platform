@@ -11,6 +11,8 @@
 //     parsing en cada componente.
 // -----------------------------------------------------------------------------
 
+import { getActiveLlmProvider } from '../llm/llm-provider-storage';
+
 import type {
   ApiErrorPayload,
   ChatQuery,
@@ -142,6 +144,13 @@ function buildChatUrl(query: ChatQuery): string {
   });
   if (query.topK !== undefined) {
     params.set('topK', String(query.topK));
+  }
+  // EventSource NO soporta headers custom — propagamos el provider como
+  // query param. El backend lo lee con fallback al X-LLM-Provider header
+  // (ver `@CurrentLlmProvider()` decorator en apps/api).
+  const llmProvider = getActiveLlmProvider();
+  if (llmProvider) {
+    params.set('llmProvider', llmProvider);
   }
   return `/api/v1/chat?${params.toString()}`;
 }

@@ -11,9 +11,14 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import type { ChatProvider } from '@org/llm-adapter';
+
 import { ChatQueryDto } from './dto/chat.dto.js';
 import { ChatService } from './chat.service.js';
-import { CurrentTenant } from '../auth/current-user.decorator.js';
+import {
+  CurrentLlmProvider,
+  CurrentTenant,
+} from '../auth/current-user.decorator.js';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 @ApiTags('Chat (Demo 01)')
@@ -47,8 +52,9 @@ export class ChatController {
   chat(
     @Query() query: ChatQueryDto,
     @CurrentTenant() tenantId: string,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
   ): Observable<MessageEvent> {
-    return from(this.chatService.streamChat(query, tenantId)).pipe(
+    return from(this.chatService.streamChat(query, tenantId, llmProvider)).pipe(
       map((token) => ({ data: token })),
     );
   }

@@ -10,9 +10,14 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import type { ChatProvider } from '@org/llm-adapter';
+
 import { CompareService } from './compare.service.js';
 import { CompareRequestDto } from './dto/compare.dto.js';
-import { CurrentTenant } from '../auth/current-user.decorator.js';
+import {
+  CurrentLlmProvider,
+  CurrentTenant,
+} from '../auth/current-user.decorator.js';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 @ApiTags('Compare (Demo 02)')
@@ -45,9 +50,10 @@ export class CompareController {
   compare(
     @Body() dto: CompareRequestDto,
     @CurrentTenant() tenantId: string,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
   ): Observable<MessageEvent> {
-    return from(this.compareService.streamCompare(dto, tenantId)).pipe(
-      map((token) => ({ data: token })),
-    );
+    return from(
+      this.compareService.streamCompare(dto, tenantId, llmProvider),
+    ).pipe(map((token) => ({ data: token })));
   }
 }

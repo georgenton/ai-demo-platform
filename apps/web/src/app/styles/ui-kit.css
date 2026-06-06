@@ -3680,3 +3680,103 @@ html.presenting .app-shell > .sidebar {
 [data-theme='dark'] .iv-mic-error {
   color: var(--nai-crimson-300);
 }
+
+/* ---------- LLM provider switch (header dropdown) ----------------------- */
+.llm-switch {
+  position: relative;
+  display: inline-flex;
+}
+.llm-switch-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-fg);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 4px 11px;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.llm-switch-trigger:hover {
+  border-color: var(--color-border-strong);
+}
+.llm-switch-trigger.pending {
+  color: var(--nai-amber-700);
+  border-color: var(--nai-amber-300);
+  background: var(--nai-amber-100);
+  animation: llm-switch-pulse 2s ease-in-out infinite;
+}
+[data-theme='dark'] .llm-switch-trigger.pending {
+  color: var(--nai-amber-300);
+  background: rgba(224, 138, 31, 0.16);
+  border-color: rgba(224, 138, 31, 0.4);
+}
+@keyframes llm-switch-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 4px
+      color-mix(in srgb, var(--nai-amber-500) 18%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .llm-switch-trigger.pending {
+    animation: none;
+  }
+}
+.llm-switch-trigger .ic {
+  flex-shrink: 0;
+}
+
+.llm-switch-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+}
+.llm-switch-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-fg);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.llm-switch-item:hover {
+  background: var(--color-surface-hover);
+}
+.llm-switch-item.selected {
+  background: var(--nai-mint-50);
+  color: var(--nai-mint-700);
+}
+[data-theme='dark'] .llm-switch-item.selected {
+  background: rgba(67, 193, 148, 0.1);
+  color: var(--nai-mint-300);
+}
+.llm-switch-item > span {
+  flex: 1;
+}

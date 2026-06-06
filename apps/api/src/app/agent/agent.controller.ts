@@ -21,8 +21,12 @@ import { map } from 'rxjs/operators';
 
 import type { AgentEvent } from './agent-events.js';
 import { AgentService } from './agent.service.js';
-import { CurrentTenant } from '../auth/current-user.decorator.js';
+import {
+  CurrentLlmProvider,
+  CurrentTenant,
+} from '../auth/current-user.decorator.js';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
+import type { ChatProvider } from '@org/llm-adapter';
 import {
   AgentHistoryQueryDto,
   type AgentHistoryResponse,
@@ -56,8 +60,9 @@ export class AgentController {
   agent(
     @Body() dto: AgentQueryDto,
     @CurrentTenant() tenantId: string,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
   ): Observable<MessageEvent> {
-    return from(this.agentService.streamAgent(dto, tenantId)).pipe(
+    return from(this.agentService.streamAgent(dto, tenantId, llmProvider)).pipe(
       map((event) => this.toMessageEvent(event)),
     );
   }

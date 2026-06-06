@@ -36,6 +36,7 @@ import {
 import { prisma } from '@org/db';
 import { chat } from '@org/llm-adapter';
 import type {
+  ChatProvider,
   ChatRichMessage,
   ChatTool,
   TextBlock,
@@ -262,6 +263,7 @@ export class ClinicalService {
     dto: AnalyzeRequestDto,
     userTenantId: string,
     userRole?: string,
+    llmProvider?: ChatProvider,
   ): AsyncIterable<ClinicalEvent> {
     const dataTenantId = await this.resolveDataTenantId(userTenantId, userRole);
 
@@ -303,9 +305,11 @@ export class ClinicalService {
         }[] = [];
         let stopReason: string = 'other';
 
-        for await (const event of chat.streamWithTools(messages, [
-          CHECK_INTERACTIONS_TOOL,
-        ])) {
+        for await (const event of chat.streamWithTools(
+          messages,
+          [CHECK_INTERACTIONS_TOOL],
+          { provider: llmProvider },
+        )) {
           if (event.type === 'text_delta') {
             const last = assistantBlocks[assistantBlocks.length - 1];
             if (last && last.type === 'text') {

@@ -29,8 +29,12 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { CurrentTenant } from '../auth/current-user.decorator.js';
+import {
+  CurrentLlmProvider,
+  CurrentTenant,
+} from '../auth/current-user.decorator.js';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
+import type { ChatProvider } from '@org/llm-adapter';
 
 import { AnswerQuestionDto } from './dto/answer-question.dto.js';
 import { CreateInterviewDto } from './dto/create-interview.dto.js';
@@ -125,8 +129,9 @@ export class HrController {
   finalize(
     @Param('id') id: string,
     @CurrentTenant() tenantId: string,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
   ): Observable<MessageEvent> {
-    return from(this.hr.streamFinalize(tenantId, id)).pipe(
+    return from(this.hr.streamFinalize(tenantId, id, llmProvider)).pipe(
       map((event) => this.toMessageEvent(event)),
     );
   }

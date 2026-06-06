@@ -22,9 +22,12 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { from, type Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import type { ChatProvider } from '@org/llm-adapter';
+
 import { TutorChatRequestDto } from './dto/chat-request.dto.js';
 import { TutorService } from './tutor.service.js';
 import { NAI_ON_PREM, PROVIDERS } from './cost/pricing.constants.js';
+import { CurrentLlmProvider } from '../auth/current-user.decorator.js';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 @ApiTags('Tutor (Demo 05)')
@@ -53,8 +56,11 @@ export class TutorController {
       'Streamea tokens del LLM como eventos type=token y emite un evento ' +
       'type=usage al cierre con el conteo de tokens facturables.',
   })
-  chat(@Body() dto: TutorChatRequestDto): Observable<MessageEvent> {
-    return from(this.tutorService.streamChat(dto)).pipe(
+  chat(
+    @Body() dto: TutorChatRequestDto,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
+  ): Observable<MessageEvent> {
+    return from(this.tutorService.streamChat(dto, llmProvider)).pipe(
       map((evt) => ({ data: JSON.stringify(evt) })),
     );
   }
