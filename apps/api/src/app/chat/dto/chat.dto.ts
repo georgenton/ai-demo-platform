@@ -39,4 +39,22 @@ export class ChatQueryDto {
   @Min(1)
   @Max(20)
   topK?: number;
+
+  /**
+   * Override del provider del LLM para esta llamada (`anthropic` |
+   * `private-mac` | etc.). Llega por query string porque `EventSource` del
+   * browser no soporta headers custom — los otros demos (POST + fetch)
+   * propagan lo mismo por el header `X-LLM-Provider`.
+   *
+   * Tiene que estar declarado acá aunque no lo usemos en el handler: el
+   * `ValidationPipe` global corre con `forbidNonWhitelisted: true` y
+   * rechazaría con 400 cualquier param no listado. La validación real del
+   * valor la hace el decorator `@CurrentLlmProvider()` con
+   * `isValidChatProvider()`; si el string no matchea un provider conocido,
+   * el decorator devuelve `undefined` y el adapter cae al singleton del env.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  llmProvider?: string;
 }
