@@ -174,11 +174,34 @@ model Document {
 
   topics DocumentTopic[]
 
+  // --- Metadata de embeddings (ADR-0018) ---
+  //
+  // Con qué proveedor / modelo / dimensión fue indexado este documento.
+  // Sirve para dos cosas:
+  //   1. Filtro de búsqueda en VectorStore.searchTopK: solo comparar contra
+  //      docs del mismo espacio vectorial (vectores de OpenAI no son
+  //      comparables con vectores de nomic-embed-text aunque tuvieran misma
+  //      dim — viven en idiomas semánticos distintos).
+  //   2. UI en /documents: mostrar al usuario con qué modelo se indexó cada
+  //      doc para que pueda decidir si necesita re-subir cuando cambie el
+  //      provider activo.
+  //
+  // Default 'private-mac' / 'nomic-embed-text' / 768: refleja el estado
+  // operativo post ADR-0018. El IngestService los popula explícitamente al
+  // crear cada Document; el default es una red de seguridad para inserts
+  // directos (seeds, scripts) que se olviden.
+  embeddingsProvider String @default("private-mac")
+  embeddingsModel    String @default("nomic-embed-text")
+  embeddingsDim      Int    @default(768)
+
   // Cada query del backend filtra por (tenantId, demoId) — índice compuesto
   // para evitar full scans. El tenantId primero porque tiene más selectividad.
   @@index([tenantId, demoId])
   // Para el gráfico papers-by-year del Demo 03, filtrado por tenant.
   @@index([tenantId, demoId, year])
+  // Para filtrar por provider de embeddings en RAG — evita mezclar espacios
+  // vectoriales cuando el sistema soporte múltiples providers en paralelo.
+  @@index([tenantId, demoId, embeddingsProvider, embeddingsModel], map: "Document_embeddings_provider_idx")
 }
 
 /// Tópico extraído por LLM de un Document del corpus. Cada paper tiene
@@ -215,14 +238,21 @@ model Chunk {
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   // ↑ Si se borra el Document, sus Chunks se borran en cascada — sin huérfanos.
 
-  // Embedding del chunk: vector(1536) por OpenAI text-embedding-3-small
-  // (ver docs/adr/0008-openai-embeddings-for-dev.md). Nullable porque
-  // durante la ingesta puede haber chunks recién creados sin embedding
-  // todavía. Prisma no maneja `vector` como tipo nativo — la columna se
-  // declara con Unsupported y las búsquedas de similitud se hacen con
-  // $queryRaw y el operador `<=>` (distancia coseno). El índice HNSW
-  // sobre esta columna se crea en la migración (Prisma no lo modela).
-  embedding Unsupported("vector(1536)")?
+  // Embedding del chunk: vector(768) por nomic-embed-text servido por NAI
+  // on-prem (ver docs/adr/0018-embeddings-on-prem.md, que superó al
+  // ADR-0008). Nullable porque durante la ingesta puede haber chunks recién
+  // creados sin embedding todavía. Prisma no maneja `vector` como tipo
+  // nativo — la columna se declara con Unsupported y las búsquedas de
+  // similitud se hacen con $queryRaw y el operador `<=>` (distancia
+  // coseno). El índice HNSW sobre esta columna se crea en la migración
+  // (Prisma no lo modela).
+  //
+  // La dimensión específica del documento se guarda en
+  // Document.embeddingsDim — esta declaración fija solo el shape del schema.
+  // Si el sistema evoluciona para soportar varios providers de embeddings
+  // en paralelo, hará falta cambiar a múltiples columnas o normalizar la
+  // dim (ver discusión en ADR-0018).
+  embedding Unsupported("vector(768)")?
 
   // (documentId, index) es único — dos chunks no comparten posición en el
   // mismo doc. El índice compuesto también sirve para listar chunks por doc.

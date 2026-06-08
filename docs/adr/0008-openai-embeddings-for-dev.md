@@ -1,8 +1,16 @@
 # ADR-0008 — OpenAI text-embedding-3-small como proveedor de embeddings en dev
 
-- **Estado:** Aceptado
+- **Estado:** Superseded por [`ADR-0018`](./0018-embeddings-on-prem.md) (2026-06-08)
 - **Fecha:** 2026-05-24
 - **Decisores:** Jorge
+
+> **Nota retrospectiva (2026-06-08).** Esta decisión fue revertida cuando
+> el hardware NAI on-prem quedó disponible y el proyecto pivotó a
+> embeddings 100% on-prem con `nomic-embed-text` (768 dim). Los argumentos
+> de simetría dev↔prod y baja fricción siguen siendo válidos para casos
+> futuros, pero ya no aplican al estado actual del proyecto. Ver
+> [ADR-0018](./0018-embeddings-on-prem.md) para el reasoning completo del
+> cambio.
 
 ## Contexto
 
