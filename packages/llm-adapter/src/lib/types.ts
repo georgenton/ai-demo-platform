@@ -160,9 +160,9 @@ export type AssistantStreamEvent =
  * `embed` convierte un texto en un vector numérico. `embedMany` hace lo mismo
  * para un batch — más eficiente en una sola llamada al proveedor.
  *
- * La dimensión del vector la fija el modelo subyacente (1536 con OpenAI
- * text-embedding-3-small — ver ADR-0008) y debe coincidir con la columna
- * `vector(N)` en pgvector.
+ * La dimensión del vector la fija el modelo subyacente (768 con
+ * nomic-embed-text servido por NAI on-prem — ver ADR-0018, que superó al
+ * ADR-0008) y debe coincidir con la columna `vector(N)` en pgvector.
  */
 export interface EmbeddingsAdapter {
   embed(text: string): Promise<number[]>;
