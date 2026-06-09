@@ -31,15 +31,22 @@ import { TotalPapersCard } from '@/components/demo/corpus/TotalPapersCard';
 import { useTutorPricing } from '@/components/demo/tutor/use-tutor-pricing';
 import { AudienceLine } from '@/components/shared/AudienceLine';
 import { CostMiniWidget } from '@/components/shared/CostMiniWidget';
+import { LlmProviderWarning } from '@/components/shared/LlmProviderWarning';
 import { useEstimatedCost } from '@/components/shared/use-estimated-cost';
 import { useCorpusStats } from '@/lib/api';
 import { getDemoAudience } from '@/lib/catalog/demos';
 import { useT } from '@/lib/i18n';
+import { useLlmProvider } from '@/lib/llm';
 
 const DEMO_ID = 'corpus' as const;
 
 export default function DemoCorpusPage() {
   const { t } = useT();
+  // Corpus también usa embeddings (indexa PDFs vía ingestService). Si el
+  // dropdown está en anthropic, las acciones de búsqueda y upload fallan
+  // con 400 — mostramos el banner y bloqueamos el upload (ver ADR-0018).
+  const { provider } = useLlmProvider();
+  const ragBlocked = provider === 'anthropic';
 
   const [uploadOpen, setUploadOpen] = useState(false);
   // refreshKey aumenta tras cada upload exitoso. Sus consumidores
@@ -126,11 +133,15 @@ export default function DemoCorpusPage() {
             variant="accent"
             icon="upload-cloud"
             onClick={() => setUploadOpen(true)}
+            disabled={ragBlocked}
+            title={ragBlocked ? t('rag.upload.disabled') : undefined}
           >
             {t('corpus.upload.button')}
           </Button>
         </div>
       </div>
+
+      {ragBlocked && <LlmProviderWarning />}
 
       {/* Stats row: total + year chart + top topics */}
       <div

@@ -35,6 +35,20 @@ const STRINGS_ES = {
   'llm.provider.changeHint': 'Cambiar el modelo de LLM activo',
   'llm.provider.anthropic': 'Anthropic API',
   'llm.provider.privateMac': 'NAI on-prem',
+  // Badge que aparece en la opción Anthropic del dropdown. Anthropic no
+  // fabrica embeddings, así que cuando está activo el demo RAG queda
+  // bloqueado (ver ADR-0018).
+  'llm.provider.anthropicNoRag': 'sin RAG',
+  'llm.provider.anthropicNoRagHint':
+    'Anthropic no ofrece embeddings — los demos que buscan en documentos requieren NAI on-prem.',
+  // Banner que aparece en /demo/rag y /demo/corpus cuando el provider activo
+  // es anthropic. Cuenta el porqué y ofrece un botón para cambiar.
+  'rag.providerWarning.title': 'Este demo necesita NAI on-prem',
+  'rag.providerWarning.body':
+    'Chatear con un documento requiere generar embeddings para buscar fragmentos relevantes. Anthropic no fabrica embeddings, por eso el demo solo funciona con el modelo on-prem.',
+  'rag.providerWarning.cta': 'Cambiar a NAI on-prem',
+  'rag.upload.disabled':
+    'Cambia el modelo a NAI on-prem para subir documentos.',
   'shell.theme.tip': 'Cambiar tema',
   'shell.lang.tip': 'Cambiar idioma',
   'shell.presentation.enter': 'Modo presentación (Shift + P)',
@@ -569,6 +583,14 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'shell.brand.tag': 'NUTANIX ENTERPRISE AI',
   'shell.coming': 'Soon',
   'shell.dev': 'dev',
+  'llm.provider.anthropicNoRag': 'no RAG',
+  'llm.provider.anthropicNoRagHint':
+    'Anthropic does not provide embeddings — demos that search inside documents require NAI on-prem.',
+  'rag.providerWarning.title': 'This demo needs NAI on-prem',
+  'rag.providerWarning.body':
+    'Chatting with a document requires embeddings to find relevant fragments. Anthropic does not provide embeddings, so this demo only works with the on-prem model.',
+  'rag.providerWarning.cta': 'Switch to NAI on-prem',
+  'rag.upload.disabled': 'Switch the model to NAI on-prem to upload documents.',
   'llm.provider.choose': 'Choose model',
   'llm.provider.chooseHint':
     'Select the LLM model before sending the first request.',

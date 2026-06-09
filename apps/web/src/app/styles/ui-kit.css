@@ -3780,3 +3780,91 @@ html.presenting .app-shell > .sidebar {
 .llm-switch-item > span {
   flex: 1;
 }
+
+/* Badge "sin RAG" en la opción Anthropic del dropdown (ADR-0018). */
+.llm-switch-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 1px 7px;
+  line-height: 1.4;
+  flex: 0;
+  white-space: nowrap;
+}
+.llm-switch-item.selected .llm-switch-badge {
+  /* Cuando el item está seleccionado (fondo mint) bajamos el contraste. */
+  background: transparent;
+  border-color: currentColor;
+  color: inherit;
+  opacity: 0.7;
+}
+
+/* ---------------------------------------------------------------------------
+ * Banner LlmProviderWarning (ADR-0018) — usado en /demo/rag y /demo/corpus
+ * cuando el provider activo es anthropic y el demo necesita embeddings.
+ * ------------------------------------------------------------------------- */
+.llm-provider-warning {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  background: var(--color-warning-bg, rgba(245, 158, 11, 0.08));
+  border: 1px solid var(--color-warning-border, rgba(245, 158, 11, 0.3));
+  border-radius: var(--radius-lg);
+}
+[data-theme='dark'] .llm-provider-warning {
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.llm-provider-warning-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-warning-icon-bg, rgba(245, 158, 11, 0.18));
+  color: var(--color-warning-fg, #b45309);
+  flex-shrink: 0;
+}
+[data-theme='dark'] .llm-provider-warning-icon {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+.llm-provider-warning-text {
+  flex: 1;
+  min-width: 0;
+}
+.llm-provider-warning-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--color-fg);
+}
+.llm-provider-warning-body {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-muted);
+  margin: 0;
+}
+.llm-provider-warning-cta {
+  flex-shrink: 0;
+}
+@media (max-width: 720px) {
+  /* En mobile el banner se apila: icono+texto arriba, botón abajo a la
+   * derecha. Evita que el botón pise el texto.  */
+  .llm-provider-warning {
+    flex-wrap: wrap;
+  }
+  .llm-provider-warning-cta {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
