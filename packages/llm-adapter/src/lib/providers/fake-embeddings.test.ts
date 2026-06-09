@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Tests del FakeEmbeddingsAdapter. Verifican las tres propiedades clave:
 //   1) Determinismo: mismo texto → mismo vector exacto.
-//   2) Dimensión: 1536 (matchea pgvector).
+//   2) Dimensión: 768 (matchea pgvector).
 //   3) Vector unitario: la norma L2 es ~1, así cosine = dot product.
 //   4) Discriminación: textos diferentes producen vectores diferentes y
 //      textos con vocabulario compartido tienen similarity > 0.
@@ -28,10 +28,10 @@ function norm(a: number[]): number {
 }
 
 describe('FakeEmbeddingsAdapter', () => {
-  it('devuelve vectores de dimensión 1536 (matchea pgvector)', async () => {
+  it('devuelve vectores de dimensión 768 (matchea pgvector)', async () => {
     const adapter = new FakeEmbeddingsAdapter(cfg);
     const v = await adapter.embed('cualquier texto');
-    expect(v).toHaveLength(1536);
+    expect(v).toHaveLength(768);
   });
 
   it('es determinístico: mismo texto → vector idéntico', async () => {
@@ -66,7 +66,7 @@ describe('FakeEmbeddingsAdapter', () => {
   it('texto vacío no rompe (devuelve vector unitario válido)', async () => {
     const adapter = new FakeEmbeddingsAdapter(cfg);
     const v = await adapter.embed('');
-    expect(v).toHaveLength(1536);
+    expect(v).toHaveLength(768);
     expect(norm(v)).toBeCloseTo(1, 5);
   });
 

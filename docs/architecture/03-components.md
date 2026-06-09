@@ -86,10 +86,11 @@ C4Component
 ### `@org/db` — `packages/db`
 
 - **Hoy:** schema con `Document` y `Chunk` (incluyendo columna
-  `embedding vector(1536)` + índice HNSW con `vector_cosine_ops`),
+  `embedding vector(768)` + índice HNSW con `vector_cosine_ops`),
   migraciones aplicadas, cliente Prisma singleton exportado. La
-  dimensión 1536 viene del modelo OpenAI text-embedding-3-small —
-  ver [`ADR-0008`](../adr/0008-openai-embeddings-for-dev.md).
+  dimensión 768 viene del modelo `nomic-embed-text` servido por NAI
+  on-prem — ver [`ADR-0018`](../adr/0018-embeddings-on-prem.md), que
+  superó al [`ADR-0008`](../adr/0008-openai-embeddings-for-dev.md).
 - **API pública:**
 
   ```ts

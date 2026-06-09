@@ -7,7 +7,7 @@
 //                     por doc; mandar 50 en un GET de listado sería absurdo).
 //   DocumentDetail:   para GET /:id. Incluye `content` completo.
 //   ChunkSummary:     para GET /:id/chunks. NO incluye el embedding vector
-//                     (1536 floats por chunk = ruido para la UI).
+//                     (768 floats por chunk = ruido para la UI).
 //
 // Son interfaces (no clases) — no van por el ValidationPipe (son outputs,
 // no inputs). El compilador asegura que el service devuelve la forma correcta.

@@ -84,9 +84,10 @@ embeddings parecidos aunque las palabras no se parezcan.
 
 ### Vector
 
-Una lista de números, generalmente de tamaño fijo (ej. 1024 o 1536). En este
-proyecto, cada chunk se convierte en un vector vía un **modelo de embeddings**
-y se guarda en Postgres con pgvector.
+Una lista de números, generalmente de tamaño fijo (ej. 768, 1024 o 1536). En
+este proyecto cada chunk se convierte en un vector de **768 dimensiones**
+(modelo `nomic-embed-text` servido por NAI on-prem) y se guarda en Postgres
+con pgvector. Ver [`ADR-0018`](./adr/0018-embeddings-on-prem.md).
 
 ### Similitud (coseno)
 

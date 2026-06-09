@@ -35,7 +35,7 @@ Usamos **MADR** (Markdown ADR), uno de los formatos estándar:
 | 0005 | [pgvector over a dedicated vector DB](./0005-pgvector-over-dedicated-vector-db.md)                                | Aceptado                    |
 | 0006 | [Prisma 6 over Prisma 7](./0006-prisma-6-over-7.md)                                                               | Aceptado                    |
 | 0007 | [Conventional Commits and branch-based PR flow](./0007-conventional-commits-and-pr-flow.md)                       | Aceptado                    |
-| 0008 | [OpenAI text-embedding-3-small for dev embeddings](./0008-openai-embeddings-for-dev.md)                           | Aceptado                    |
+| 0008 | [OpenAI text-embedding-3-small for dev embeddings](./0008-openai-embeddings-for-dev.md)                           | Superado por ADR-0018       |
 | 0009 | [Split LLMAdapter into ChatAdapter + EmbeddingsAdapter](./0009-split-llm-adapter.md)                              | Aceptado                    |
 | 0010 | [Web/API coupling: Next.js rewrites + duplicated types](./0010-web-api-coupling-rewrites-and-no-contracts-pkg.md) | Aceptado                    |
 | 0011 | [Demo 03 (corpus académico) espera a la entrada de Python](./0011-demo-03-waits-for-python.md)                    | Superado por sprint Demo 03 |

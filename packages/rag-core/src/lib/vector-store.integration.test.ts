@@ -45,10 +45,10 @@ let vectorStore: InstanceType<VectorStoreClass>;
 const TEST_TENANT_ID = 'tenant_vector_store_test';
 const TEST_INDUSTRY_ID = 'industry_vector_store_test';
 
-/** Dimensión del vector que define el schema (text-embedding-3-small). */
-const DIM = 1536;
+/** Dimensión del vector que define el schema (nomic-embed-text, ADR-0018). */
+const DIM = 768;
 
-/** Helper: vector 1536-dim con `1` en `index`, ceros en el resto. */
+/** Helper: vector 768-dim con `1` en `index`, ceros en el resto. */
 function unitVector(index: number): number[] {
   const v = new Array<number>(DIM).fill(0);
   v[index] = 1;

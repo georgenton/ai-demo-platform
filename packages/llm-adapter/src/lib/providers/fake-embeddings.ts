@@ -17,15 +17,16 @@
 //   2) Cada token → índice en [0, DIM) vía hash. Sumamos 1 en ese índice.
 //   3) Normalizamos a vector unitario (cosine = dot product entre unit vectors).
 //
-// Dimensión: 1536 — la misma que `text-embedding-3-small` de OpenAI (ver
-// ADR-0008). Igualar la dimensión es OBLIGATORIO porque pgvector valida que
-// el vector que insertás coincida con `vector(1536)` de la columna.
+// Dimensión: 768 — la misma que `nomic-embed-text` servido por NAI on-prem
+// (ver ADR-0018, que superó al ADR-0008). Igualar la dimensión es
+// OBLIGATORIO porque pgvector valida que el vector insertado coincida con
+// `vector(768)` declarado en `Chunk.embedding`.
 // -----------------------------------------------------------------------------
 
 import type { EmbeddingsAdapter, EmbeddingsConfig } from '../types.js';
 
-/** Dimensión que matchea la columna `vector(1536)` en pgvector. */
-const DIM = 1536;
+/** Dimensión que matchea la columna `vector(768)` en pgvector. */
+const DIM = 768;
 
 /** Stop words mínimas en es/en — sacamos solo las más ruidosas. No es nltk. */
 const STOP_WORDS = new Set([
@@ -85,7 +86,7 @@ const STOP_WORDS = new Set([
 ]);
 
 /**
- * Hash simple djb2 — bastante uniforme para nuestro caso (mod 1536).
+ * Hash simple djb2 — bastante uniforme para nuestro caso (mod DIM).
  * No necesitamos resistencia criptográfica, solo distribución decente.
  */
 function djb2(str: string): number {
