@@ -25,12 +25,21 @@ describe('EmbeddingService.embed()', () => {
     mockEmbedMany.mockReset();
   });
 
-  it('delega 1:1 al adapter', async () => {
+  it('delega 1:1 al adapter (sin opts → forward undefined)', async () => {
     mockEmbed.mockResolvedValue([0.1, 0.2, 0.3]);
     const service = new EmbeddingService();
     const result = await service.embed('hola');
     expect(result).toEqual([0.1, 0.2, 0.3]);
-    expect(mockEmbed).toHaveBeenCalledWith('hola');
+    // El wrapper siempre llama al adapter con el segundo arg — undefined si
+    // el caller no pasó opts. Ver embedding-service.ts.
+    expect(mockEmbed).toHaveBeenCalledWith('hola', undefined);
+  });
+
+  it('forwardea opts.provider al adapter cuando viene del caller', async () => {
+    mockEmbed.mockResolvedValue([0.5]);
+    const service = new EmbeddingService();
+    await service.embed('hola', { provider: 'private-mac' });
+    expect(mockEmbed).toHaveBeenCalledWith('hola', { provider: 'private-mac' });
   });
 });
 
@@ -42,8 +51,12 @@ describe('EmbeddingService.embedMany()', () => {
 
   it('lanza si batchSize <= 0', async () => {
     const service = new EmbeddingService();
-    await expect(service.embedMany(['x'], 0)).rejects.toThrow(/batchSize/);
-    await expect(service.embedMany(['x'], -1)).rejects.toThrow(/batchSize/);
+    await expect(service.embedMany(['x'], { batchSize: 0 })).rejects.toThrow(
+      /batchSize/,
+    );
+    await expect(service.embedMany(['x'], { batchSize: -1 })).rejects.toThrow(
+      /batchSize/,
+    );
   });
 
   it('devuelve [] sin llamar al adapter cuando el input está vacío', async () => {
@@ -56,10 +69,12 @@ describe('EmbeddingService.embedMany()', () => {
   it('hace UNA SOLA llamada cuando todo cabe en un batch', async () => {
     mockEmbedMany.mockResolvedValue([[1], [2], [3]]);
     const service = new EmbeddingService();
-    const result = await service.embedMany(['a', 'b', 'c'], 10);
+    const result = await service.embedMany(['a', 'b', 'c'], { batchSize: 10 });
     expect(result).toEqual([[1], [2], [3]]);
     expect(mockEmbedMany).toHaveBeenCalledTimes(1);
-    expect(mockEmbedMany).toHaveBeenCalledWith(['a', 'b', 'c']);
+    // Sin provider override en los opts, el adapter recibe undefined como
+    // segundo arg (path legacy del singleton del env).
+    expect(mockEmbedMany).toHaveBeenCalledWith(['a', 'b', 'c'], undefined);
   });
 
   it('parte los inputs en lotes de batchSize', async () => {
@@ -68,13 +83,15 @@ describe('EmbeddingService.embedMany()', () => {
       .mockResolvedValueOnce([[3], [4]])
       .mockResolvedValueOnce([[5]]);
     const service = new EmbeddingService();
-    const result = await service.embedMany(['a', 'b', 'c', 'd', 'e'], 2);
+    const result = await service.embedMany(['a', 'b', 'c', 'd', 'e'], {
+      batchSize: 2,
+    });
 
     expect(result).toEqual([[1], [2], [3], [4], [5]]);
     expect(mockEmbedMany).toHaveBeenCalledTimes(3);
-    expect(mockEmbedMany).toHaveBeenNthCalledWith(1, ['a', 'b']);
-    expect(mockEmbedMany).toHaveBeenNthCalledWith(2, ['c', 'd']);
-    expect(mockEmbedMany).toHaveBeenNthCalledWith(3, ['e']);
+    expect(mockEmbedMany).toHaveBeenNthCalledWith(1, ['a', 'b'], undefined);
+    expect(mockEmbedMany).toHaveBeenNthCalledWith(2, ['c', 'd'], undefined);
+    expect(mockEmbedMany).toHaveBeenNthCalledWith(3, ['e'], undefined);
   });
 
   it('preserva el orden del output entre lotes', async () => {
@@ -90,12 +107,26 @@ describe('EmbeddingService.embedMany()', () => {
         [4, 4],
       ]);
     const service = new EmbeddingService();
-    const result = await service.embedMany(['a', 'b', 'c', 'd'], 2);
+    const result = await service.embedMany(['a', 'b', 'c', 'd'], {
+      batchSize: 2,
+    });
     expect(result).toEqual([
       [1, 1],
       [2, 2],
       [3, 3],
       [4, 4],
     ]);
+  });
+
+  it('forwardea opts.provider al adapter en cada batch', async () => {
+    mockEmbedMany.mockResolvedValue([[1], [2]]);
+    const service = new EmbeddingService();
+    await service.embedMany(['a', 'b'], {
+      provider: 'private-mac',
+      batchSize: 10,
+    });
+    expect(mockEmbedMany).toHaveBeenCalledWith(['a', 'b'], {
+      provider: 'private-mac',
+    });
   });
 });

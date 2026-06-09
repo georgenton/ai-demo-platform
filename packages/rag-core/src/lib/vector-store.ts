@@ -42,6 +42,19 @@ export interface SearchOptions {
    * salvo en scripts de mantenimiento.
    */
   tenantId?: string;
+  /**
+   * Provider de embeddings con el que fue generado el `queryEmbedding`.
+   * Cuando se provee (junto con `embeddingsModel`), la búsqueda filtra los
+   * chunks para SOLO incluir aquellos cuyo Document fue indexado con el
+   * mismo par (provider, model). Es la guardia que impide cruzar espacios
+   * vectoriales — ver ADR-0018.
+   *
+   * Si se omite, no se filtra por embeddings provider (modo legacy /
+   * compatibilidad con código pre-ADR-0018 que solo tenía un provider).
+   */
+  embeddingsProvider?: string;
+  /** Modelo de embeddings. Solo aplica si `embeddingsProvider` también está. */
+  embeddingsModel?: string;
 }
 
 export class VectorStore {
@@ -127,53 +140,53 @@ export class VectorStore {
     // `<=>` es el operador de distancia coseno de pgvector, alineado con el
     // op-class del índice HNSW (vector_cosine_ops). Lower = más similar.
     //
-    // El JOIN a Document es necesario para filtrar por demoId/tenantId. Si
-    // ninguno de los dos viene en options, no hay JOIN y el plan usa el
-    // índice HNSW directamente.
-    if (options.tenantId && options.demoId) {
+    // Composición del WHERE: armamos un array de fragmentos `Prisma.sql` por
+    // cada filtro presente y los unimos con AND. Si no viene NINGÚN filtro,
+    // saltamos el JOIN (path legacy más rápido — el plan usa HNSW directo).
+    const needsJoin =
+      Boolean(options.tenantId) ||
+      Boolean(options.demoId) ||
+      Boolean(options.embeddingsProvider);
+
+    if (!needsJoin) {
       return prisma.$queryRaw<ChunkSearchResult[]>`
-        SELECT c.id, c.content, c."documentId", c."index",
-               (c.embedding <=> ${vectorStr}::vector) AS distance
-        FROM "Chunk" c
-        JOIN "Document" d ON c."documentId" = d.id
-        WHERE d."tenantId" = ${options.tenantId}
-          AND d."demoId" = ${options.demoId}
-          AND c.embedding IS NOT NULL
-        ORDER BY c.embedding <=> ${vectorStr}::vector
-        LIMIT ${k}
-      `;
-    }
-    if (options.tenantId) {
-      return prisma.$queryRaw<ChunkSearchResult[]>`
-        SELECT c.id, c.content, c."documentId", c."index",
-               (c.embedding <=> ${vectorStr}::vector) AS distance
-        FROM "Chunk" c
-        JOIN "Document" d ON c."documentId" = d.id
-        WHERE d."tenantId" = ${options.tenantId}
-          AND c.embedding IS NOT NULL
-        ORDER BY c.embedding <=> ${vectorStr}::vector
-        LIMIT ${k}
-      `;
-    }
-    if (options.demoId) {
-      return prisma.$queryRaw<ChunkSearchResult[]>`
-        SELECT c.id, c.content, c."documentId", c."index",
-               (c.embedding <=> ${vectorStr}::vector) AS distance
-        FROM "Chunk" c
-        JOIN "Document" d ON c."documentId" = d.id
-        WHERE d."demoId" = ${options.demoId}
-          AND c.embedding IS NOT NULL
-        ORDER BY c.embedding <=> ${vectorStr}::vector
+        SELECT id, content, "documentId", "index",
+               (embedding <=> ${vectorStr}::vector) AS distance
+        FROM "Chunk"
+        WHERE embedding IS NOT NULL
+        ORDER BY embedding <=> ${vectorStr}::vector
         LIMIT ${k}
       `;
     }
 
+    // Path con JOIN — armamos los WHEREs dinámicamente.
+    const conditions: Prisma.Sql[] = [Prisma.sql`c.embedding IS NOT NULL`];
+    if (options.tenantId) {
+      conditions.push(Prisma.sql`d."tenantId" = ${options.tenantId}`);
+    }
+    if (options.demoId) {
+      conditions.push(Prisma.sql`d."demoId" = ${options.demoId}`);
+    }
+    // Filtro de espacio vectorial (ADR-0018). Solo aplica si el caller
+    // pasó ambos: provider y model. Garantiza que no comparemos vectores
+    // que viven en idiomas semánticos distintos.
+    if (options.embeddingsProvider && options.embeddingsModel) {
+      conditions.push(
+        Prisma.sql`d."embeddingsProvider" = ${options.embeddingsProvider}`,
+      );
+      conditions.push(
+        Prisma.sql`d."embeddingsModel" = ${options.embeddingsModel}`,
+      );
+    }
+    const whereClause = Prisma.join(conditions, ' AND ');
+
     return prisma.$queryRaw<ChunkSearchResult[]>`
-      SELECT id, content, "documentId", "index",
-             (embedding <=> ${vectorStr}::vector) AS distance
-      FROM "Chunk"
-      WHERE embedding IS NOT NULL
-      ORDER BY embedding <=> ${vectorStr}::vector
+      SELECT c.id, c.content, c."documentId", c."index",
+             (c.embedding <=> ${vectorStr}::vector) AS distance
+      FROM "Chunk" c
+      JOIN "Document" d ON c."documentId" = d.id
+      WHERE ${whereClause}
+      ORDER BY c.embedding <=> ${vectorStr}::vector
       LIMIT ${k}
     `;
   }

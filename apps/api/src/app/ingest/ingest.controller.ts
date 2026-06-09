@@ -21,7 +21,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { CurrentTenant } from '../auth/current-user.decorator.js';
+import type { ChatProvider } from '@org/llm-adapter';
+
+import {
+  CurrentLlmProvider,
+  CurrentTenant,
+} from '../auth/current-user.decorator.js';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
 import { IngestFileBodyDto } from './dto/ingest-file.dto.js';
 import { IngestRequestDto, IngestResponseDto } from './dto/ingest.dto.js';
@@ -64,8 +69,9 @@ export class IngestController {
   async ingest(
     @Body() dto: IngestRequestDto,
     @CurrentTenant() tenantId: string,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
   ): Promise<IngestResponseDto> {
-    return this.ingestService.ingest(dto, tenantId);
+    return this.ingestService.ingest(dto, tenantId, llmProvider);
   }
 
   /**
@@ -124,6 +130,7 @@ export class IngestController {
     file: Express.Multer.File,
     @Body() body: IngestFileBodyDto,
     @CurrentTenant() tenantId: string,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
   ): Promise<IngestResponseDto> {
     const text = await this.pdfExtractor.extractText(file.buffer);
     if (!text) {
@@ -139,6 +146,7 @@ export class IngestController {
         demoId: body.demoId,
       },
       tenantId,
+      llmProvider,
     );
   }
 }
