@@ -14,7 +14,12 @@
 import { BadRequestException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockTxDocumentCreate, mockTransaction } = vi.hoisted(() => {
+const {
+  mockTxDocumentCreate,
+  mockTransaction,
+  mockResolveEmbeddingsProvider,
+  mockEmbeddingsInfoFor,
+} = vi.hoisted(() => {
   const mockTxDocumentCreate = vi.fn();
   // Imita Prisma.$transaction(callback): le pasa al callback un cliente
   // transaccional fake (`tx`) y devuelve lo que el callback devuelva.
@@ -23,13 +28,27 @@ const { mockTxDocumentCreate, mockTransaction } = vi.hoisted(() => {
     const tx = { document: { create: mockTxDocumentCreate } };
     return callback(tx);
   });
-  return { mockTxDocumentCreate, mockTransaction };
+  // Helpers de embeddings que el service ahora consume desde llm-adapter.
+  // Defaults se reasignan en beforeEach (sub-PR 2 + ADR-0018).
+  const mockResolveEmbeddingsProvider = vi.fn();
+  const mockEmbeddingsInfoFor = vi.fn();
+  return {
+    mockTxDocumentCreate,
+    mockTransaction,
+    mockResolveEmbeddingsProvider,
+    mockEmbeddingsInfoFor,
+  };
 });
 
 vi.mock('@org/db', () => ({
   prisma: {
     $transaction: mockTransaction,
   },
+}));
+
+vi.mock('@org/llm-adapter', () => ({
+  resolveEmbeddingsProvider: mockResolveEmbeddingsProvider,
+  embeddingsInfoFor: mockEmbeddingsInfoFor,
 }));
 
 import { IngestService } from './ingest.service.js';
@@ -49,6 +68,16 @@ describe('IngestService', () => {
   beforeEach(() => {
     mockTransaction.mockClear();
     mockTxDocumentCreate.mockReset();
+    mockResolveEmbeddingsProvider.mockReset();
+    mockEmbeddingsInfoFor.mockReset();
+
+    // Default: el helper devuelve la metadata típica del setup on-prem
+    // (ADR-0018). Los tests pueden override en casos específicos.
+    mockEmbeddingsInfoFor.mockReturnValue({
+      provider: 'private-mac',
+      model: 'nomic-embed-text',
+      dim: 768,
+    });
 
     // Stubs mínimos — solo los métodos que IngestService usa.
     chunker = { split: vi.fn() } as unknown as SlidingWindowChunker;
@@ -62,10 +91,33 @@ describe('IngestService', () => {
     vi.mocked(chunker.split).mockReturnValue([]);
 
     await expect(
-      service.ingest({ name: 'doc.txt', content: '   ', demoId: 'rag' }),
+      service.ingest(
+        { name: 'doc.txt', content: '   ', demoId: 'rag' },
+        'tenant-x',
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
 
     // Nunca llegamos siquiera a abrir la transacción.
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rechaza con 400 cuando llmProvider=anthropic (no tiene embeddings)', async () => {
+    // ADR-0018: el ingest necesita generar embeddings, y Anthropic no los
+    // ofrece. El service debe rechazar antes de chunkear / embeber / tocar
+    // la DB.
+    mockResolveEmbeddingsProvider.mockReturnValue(null);
+
+    await expect(
+      service.ingest(
+        { name: 'doc.txt', content: 'algo', demoId: 'rag' },
+        'tenant-x',
+        'anthropic',
+      ),
+    ).rejects.toThrow(/Anthropic/);
+
+    expect(mockResolveEmbeddingsProvider).toHaveBeenCalledWith('anthropic');
+    expect(chunker.split).not.toHaveBeenCalled();
+    expect(embeddings.embedMany).not.toHaveBeenCalled();
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
@@ -78,11 +130,14 @@ describe('IngestService', () => {
     mockTxDocumentCreate.mockResolvedValue({ id: 'doc-123' });
     vi.mocked(vectorStore.saveChunks).mockResolvedValue(undefined);
 
-    const result = await service.ingest({
-      name: 'reglamento.pdf',
-      content: 'long text here ...',
-      demoId: 'rag',
-    });
+    const result = await service.ingest(
+      {
+        name: 'reglamento.pdf',
+        content: 'long text here ...',
+        demoId: 'rag',
+      },
+      'tenant-x',
+    );
 
     expect(result).toEqual({ documentId: 'doc-123', chunkCount: 2 });
 
@@ -91,12 +146,22 @@ describe('IngestService', () => {
 
     // Cada paso recibió lo que esperábamos del anterior.
     expect(chunker.split).toHaveBeenCalledWith('long text here ...');
-    expect(embeddings.embedMany).toHaveBeenCalledWith(['chunk a', 'chunk b']);
+    // Sin llmProvider override, embedMany recibe undefined como segundo arg.
+    expect(embeddings.embedMany).toHaveBeenCalledWith(
+      ['chunk a', 'chunk b'],
+      undefined,
+    );
+    // El Document.create incluye la metadata de embeddings (ADR-0018) para
+    // que la búsqueda RAG sepa con qué espacio vectorial fue indexado.
     expect(mockTxDocumentCreate).toHaveBeenCalledWith({
       data: {
         name: 'reglamento.pdf',
         content: 'long text here ...',
         demoId: 'rag',
+        tenantId: 'tenant-x',
+        embeddingsProvider: 'private-mac',
+        embeddingsModel: 'nomic-embed-text',
+        embeddingsDim: 768,
       },
     });
 
@@ -121,7 +186,10 @@ describe('IngestService', () => {
     );
 
     await expect(
-      service.ingest({ name: 'x.txt', content: 'algo', demoId: 'rag' }),
+      service.ingest(
+        { name: 'x.txt', content: 'algo', demoId: 'rag' },
+        'tenant-x',
+      ),
     ).rejects.toThrow('pgvector down');
 
     // Ya no hay un .delete() compensatorio manual — Prisma rollbackea la
@@ -137,7 +205,10 @@ describe('IngestService', () => {
     vi.mocked(vectorStore.saveChunks).mockRejectedValue(originalError);
 
     await expect(
-      service.ingest({ name: 'x.txt', content: 'algo', demoId: 'rag' }),
+      service.ingest(
+        { name: 'x.txt', content: 'algo', demoId: 'rag' },
+        'tenant-x',
+      ),
     ).rejects.toBe(originalError);
   });
 });

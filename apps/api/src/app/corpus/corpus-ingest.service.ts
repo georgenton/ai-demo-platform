@@ -27,7 +27,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { prisma } from '@org/db';
-import { chat } from '@org/llm-adapter';
+import { chat, type ChatProvider } from '@org/llm-adapter';
 
 import { IngestService } from '../ingest/ingest.service.js';
 import { PdfTextExtractor } from '../ingest/pdf-text-extractor.js';
@@ -106,15 +106,19 @@ export class CorpusIngestService {
   async ingestBatch(
     files: Express.Multer.File[],
     tenantId: string,
+    llmProvider?: ChatProvider,
   ): Promise<CorpusUploadResponseDto> {
-    this.logger.log(`Batch ingest: ${files.length} files (tenant=${tenantId})`);
+    this.logger.log(
+      `Batch ingest: ${files.length} files (tenant=${tenantId}, ` +
+        `llmProvider=${llmProvider ?? 'env default'})`,
+    );
 
     const items: CorpusUploadItemDto[] = [];
     let failureCount = 0;
 
     for (const file of files) {
       try {
-        const item = await this.ingestOne(file, tenantId);
+        const item = await this.ingestOne(file, tenantId, llmProvider);
         items.push(item);
       } catch (err) {
         failureCount++;
@@ -143,6 +147,7 @@ export class CorpusIngestService {
   private async ingestOne(
     file: Express.Multer.File,
     tenantId: string,
+    llmProvider?: ChatProvider,
   ): Promise<CorpusUploadItemDto> {
     // 1) Extract text del PDF.
     const text = await this.pdfExtractor.extractText(file.buffer);
@@ -152,7 +157,9 @@ export class CorpusIngestService {
 
     // 2) Ingest base — esto crea Document + chunks + embeddings y devuelve
     //    el documentId. demoId='corpus' marca al Document como parte del
-    //    Demo 03 para que las queries de stats lo encuentren.
+    //    Demo 03 para que las queries de stats lo encuentren. Propagamos
+    //    el llmProvider para que el ingest respete el dropdown del header
+    //    (ver ADR-0018).
     const ingestResult = await this.ingestService.ingest(
       {
         name: file.originalname,
@@ -160,13 +167,14 @@ export class CorpusIngestService {
         demoId: 'corpus',
       },
       tenantId,
+      llmProvider,
     );
 
     // 3) Extract metadata con LLM. Usamos solo los primeros chars del paper
     //    porque toda la metadata útil (título, autores, abstract) está al
     //    principio. Eso baja costo y mejora el match.
     const excerpt = text.slice(0, METADATA_EXCERPT_CHARS);
-    const metadata = await this.extractMetadataViaLLM(excerpt);
+    const metadata = await this.extractMetadataViaLLM(excerpt, llmProvider);
 
     // 4) Update Document con year/authors/abstract.
     await prisma.document.update({
@@ -206,15 +214,22 @@ export class CorpusIngestService {
    */
   private async extractMetadataViaLLM(
     excerpt: string,
+    llmProvider?: ChatProvider,
   ): Promise<ExtractedMetadata> {
     // Acumulamos el stream y parseamos. El completeStream actual es la
     // única forma de hablar con el LLM en este código — no requerimos
     // streaming acá, pero ese es el método disponible y funciona bien.
+    //
+    // Pasamos el llmProvider override para que el dropdown del header
+    // también afecte esta llamada (consistencia con el resto del PR).
     let fullText = '';
-    for await (const token of chat.completeStream([
-      { role: 'system', content: CORPUS_METADATA_SYSTEM_PROMPT },
-      { role: 'user', content: excerpt },
-    ])) {
+    for await (const token of chat.completeStream(
+      [
+        { role: 'system', content: CORPUS_METADATA_SYSTEM_PROMPT },
+        { role: 'user', content: excerpt },
+      ],
+      { provider: llmProvider },
+    )) {
       fullText += token;
     }
 

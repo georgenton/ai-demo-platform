@@ -124,8 +124,9 @@ export class CorpusController {
     )
     files: Express.Multer.File[],
     @CurrentTenant() tenantId: string,
+    @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
   ): Promise<CorpusUploadResponseDto> {
-    return this.corpusIngest.ingestBatch(files, tenantId);
+    return this.corpusIngest.ingestBatch(files, tenantId, llmProvider);
   }
 
   /**
