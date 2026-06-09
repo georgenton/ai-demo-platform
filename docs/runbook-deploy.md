@@ -30,11 +30,20 @@ primera vez sin tener que pensar el orden.
 - Cuenta en [Railway](https://railway.app) (web login, trial $5 alcanza
   para el primer mes).
 - Repo en GitHub al que ambas plataformas puedan acceder (push reciente).
-- Las dos API keys reales:
-  - `CHAT_API_KEY` (Anthropic, prefix `sk-ant-`)
-  - `EMBEDDINGS_API_KEY` (OpenAI, prefix `sk-proj-`)
+- **Setup post-ADR-0018 (embeddings on-prem):**
+  - Túnel HTTPS al gateway FastAPI del Mac (Cloudflare Tunnel típicamente)
+    sirviendo `/v1/chat/completions` y `/v1/embeddings`. El gateway
+    orquesta Ollama local con `qwen2.5:7b` para chat y `nomic-embed-text`
+    para embeddings.
+  - Una API key inventada para `PRIVATE_LLM_API_KEY` — el gateway no
+    valida un proveedor cloud, pero el adapter requiere el header
+    `Authorization: Bearer ...` por simetría OpenAI.
+- API key de chat cloud opcional:
+  - `CHAT_API_KEY` (Anthropic, prefix `sk-ant-`) — para el dropdown del
+    header. El demo RAG queda bloqueado cuando Anthropic está activo
+    (no fabrica embeddings), pero los otros 6 demos sí funcionan.
 
-> Si no tenés alguna de las dos cuentas todavía, signup con GitHub (3 min).
+> Si no tienes alguna de las cuentas todavía, signup con GitHub (3 min).
 > No hace falta instalar CLIs — todo se hace por web.
 
 ---
@@ -71,13 +80,29 @@ primera vez sin tener que pensar el orden.
 En el servicio del backend → **Variables** → **+ New variable**, una por una:
 
 ```
-CHAT_PROVIDER=anthropic
-CHAT_API_KEY=sk-ant-<la-tuya>
-CHAT_MODEL=claude-sonnet-4-20250514
+# --- LLM chat (default singleton del env; el dropdown del header puede
+# override por request con X-LLM-Provider). El demo arranca con private-mac
+# por defecto — el message comercial es Nutanix on-prem (ver ADR-0018).
+CHAT_PROVIDER=private-mac
+CHAT_MODEL=claude-sonnet-4-5    # ignorado por private-mac; queda como fallback
+# CHAT_API_KEY=sk-ant-...        # solo necesaria si CHAT_PROVIDER=anthropic
+                                  # o si el dropdown se cambia a Anthropic.
 
-EMBEDDINGS_PROVIDER=openai
-EMBEDDINGS_API_KEY=sk-proj-<la-tuya>
-EMBEDDINGS_MODEL=text-embedding-3-small
+# --- Embeddings on-prem (ADR-0018). Anthropic NO fabrica embeddings; el
+# demo RAG queda bloqueado en backend (400) cuando el dropdown está en
+# Anthropic. NAI on-prem sirve nomic-embed-text (768 dimensiones).
+EMBEDDINGS_PROVIDER=private-mac
+EMBEDDINGS_MODEL=text-embedding-3-small  # ignorado por private-mac, fallback
+# EMBEDDINGS_API_KEY=...                  # opcional bajo private-mac
+
+# --- Conexión al gateway del Mac (sirve chat + embeddings vía API
+# OpenAI-compatible). Estas tres son OBLIGATORIAS cuando provider=private-mac.
+PRIVATE_LLM_BASE_URL=https://private-llm.<tu-tunel>.com
+PRIVATE_LLM_API_KEY=<key-inventada-bearer>
+PRIVATE_LLM_MODEL=qwen2.5:7b
+PRIVATE_EMBEDDING_MODEL=nomic-embed-text
+PRIVATE_LLM_DEMO_NAME=demo-bank          # opcional, default 'demo-bank'
+PRIVATE_LLM_TIMEOUT_MS=120000            # opcional, default 120s
 
 # Genera un secreto random largo (32+ chars). Ejemplo en local:
 #   openssl rand -hex 32
@@ -93,6 +118,13 @@ JWT_EXPIRES_IN=7d                                    # default 7d
 COOKIE_DOMAIN=                                       # solo si frontend+backend comparten dominio
 SUPERADMIN_EMAILS=                                   # ej: jorge@nai.local,edguitar@nai.local
 ```
+
+> **Si el túnel del Mac no está listo todavía** y quieres arrancar el server
+> para verificar el shell, puedes setear `CHAT_PROVIDER=fake` +
+> `EMBEDDINGS_PROVIDER=fake` (sin keys, sin modelos, sin túnel). El adapter
+> fake devuelve respuestas determinísticas y vectores bag-of-words — útil
+> para CI y para validar el shell sin red. Cuando el túnel esté operativo,
+> cambia las dos vars a `private-mac` y redeploy.
 
 > **Post sprint multi-tenant — paso obligatorio extra:** una vez que el
 > backend arranque (Deployment live), corre el seed que crea el
@@ -279,9 +311,12 @@ dentro del contenedor.
 
 ### Si una key se quema
 
-- Anthropic: dashboard → rotate key. Pegá el nuevo valor en Railway →
-  Variables → `CHAT_API_KEY` → save → Railway redeploya automático.
-- OpenAI: idem con `EMBEDDINGS_API_KEY`.
+- Anthropic (solo afecta cuando el dropdown está en Anthropic): dashboard
+  → rotate key. Pega el nuevo valor en Railway → Variables → `CHAT_API_KEY`
+  → save → Railway redeploya automático.
+- NAI on-prem (PRIVATE_LLM): rotar `PRIVATE_LLM_API_KEY` en el gateway
+  del Mac + en Railway. Como es bearer simulado, basta con coordinar el
+  cambio.
 
 ---
 
@@ -329,9 +364,109 @@ contra la DB de Railway y re-deployá.
 
 ---
 
+## 7) Migración a embeddings on-prem (ADR-0018)
+
+Este playbook se aplica **una sola vez** en Railway cuando se mergea el
+tren del sub-PR 1-4 (ADR-0018). Si llegas a Railway con la migración
+`20260608170000_embeddings_onprem_wipe_and_768d` pendiente, sigue estos
+pasos en orden. Si ya está aplicada (Railway corre `prisma migrate deploy`
+al boot), pasa a la sección 7.4 — smoke test.
+
+### 7.1 Pre-flight check (antes de mergear)
+
+```bash
+# Verificar el estado actual de la base en Railway.
+railway run psql -c "SELECT DISTINCT vector_dims(embedding) FROM \"Chunk\" WHERE embedding IS NOT NULL;"
+# Esperado: una sola fila con 1536 (OpenAI text-embedding-3-small).
+# Si hay valores distintos a 1536, AVISA antes de seguir — la migración
+# asume que todo lo viejo es 1536.
+
+railway run psql -c "SELECT COUNT(*) FROM \"Chunk\";"
+# Anota el número. La migración lo va a borrar todo (wipe acordado).
+
+railway run psql -c "SELECT COUNT(*) FROM \"Document\";"
+# Idem.
+```
+
+### 7.2 Configurar las env vars nuevas
+
+Antes de mergear el tren, asegúrate de que Railway tenga las cinco vars
+del bloque private-mac (ver sección 1.4). Sin ellas, el server arranca
+pero el primer ingest/chat con `EMBEDDINGS_PROVIDER=private-mac` falla
+con "PRIVATE_LLM_BASE_URL es obligatoria...".
+
+```bash
+# Verifica:
+railway variables get PRIVATE_LLM_BASE_URL
+railway variables get PRIVATE_LLM_API_KEY
+railway variables get PRIVATE_LLM_MODEL
+railway variables get PRIVATE_EMBEDDING_MODEL
+```
+
+### 7.3 Mergear el tren (sub-PR 1-4)
+
+Mergea los 4 PRs en orden (#93 → #96 → #97 → este). Railway redeploya
+automático cuando el último cae en main:
+
+1. **Migración aplicada**: `prisma migrate deploy` corre en el boot del
+   container y aplica la migración nueva, borrando los 660 chunks +
+   11 documents existentes, recreando la columna `embedding vector(768)`,
+   sumando los 3 campos de metadata a `Document` y los índices HNSW.
+2. **Server arranca**: el adapter de embeddings ahora usa private-mac
+   por default. Los servicios cargan el dropdown del header en cada
+   request.
+
+### 7.4 Smoke test post-deploy
+
+Con la app pública en Vercel y el dropdown del header visible:
+
+| #   | Acción                                                                                                            | Esperado                                                                                                   |
+| --- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 1   | Login con `admin@nai.local`                                                                                       | Dashboard cargado, dropdown del header amarillo "Elige modelo"                                             |
+| 2   | Click en dropdown → elegir "NAI on-prem"                                                                          | Banner amarillo desaparece, label pasa a "NAI on-prem"                                                     |
+| 3   | Visitar `/demo/rag` con NAI activo                                                                                | Sin banner. Botón "Subir documento" habilitado. Composer activo                                            |
+| 4   | Subir un PDF chico (`< 1 MB`)                                                                                     | 201 Created. El doc aparece en el sidebar                                                                  |
+| 5   | Preguntar "¿de qué trata este documento?"                                                                         | Streaming de tokens. Cita el fragmento del PDF                                                             |
+| 6   | Cambiar dropdown a "Anthropic API"                                                                                | Badge "sin RAG" visible en la opción Anthropic. Banner naranja en `/demo/rag`                              |
+| 7   | En `/demo/rag` con Anthropic activo                                                                               | Banner "Este demo necesita NAI on-prem" + botón "Cambiar a NAI on-prem". Composer y "Subir" deshabilitados |
+| 8   | Click "Cambiar a NAI on-prem" del banner                                                                          | Provider cambia, banner desaparece, controles vuelven                                                      |
+| 9   | Visitar `/demo/agent` con Anthropic activo                                                                        | Demo agent funcional (chat puro, sin RAG) — los demos no-RAG funcionan con ambos providers                 |
+| 10  | Misma prueba en `/demo/tutor`, `/demo/comparator`, `/demo/clinical`, `/demo/interview`, `/demo/corpus` (búsqueda) | Los 6 demos no-RAG funcionan con Anthropic; el corpus upload queda bloqueado por banner                    |
+
+### 7.5 Verificación SQL post-deploy
+
+```bash
+railway run psql -c "
+SELECT COUNT(*) FROM \"Chunk\";                                     -- esperado: > 0 (los del paso 4)
+SELECT DISTINCT vector_dims(embedding) FROM \"Chunk\";              -- esperado: 768
+SELECT \"embeddingsProvider\", \"embeddingsModel\", \"embeddingsDim\",
+       COUNT(*) FROM \"Document\" GROUP BY 1,2,3;
+-- esperado: private-mac / nomic-embed-text / 768 / N
+"
+```
+
+### 7.6 Rollback de emergencia
+
+Si el demo falla post-migración y necesitas volver atrás:
+
+1. **No** correr la migración inversa (la data borrada no se recupera).
+2. Restaurar desde el último backup de Railway anterior a 2026-06-09.
+3. Revertir los cuatro PRs en main (sin reabrir): `git revert e9c030a..HEAD`.
+4. Railway redeploya con el código viejo (vector(1536) + sin switch).
+
+Mejor preventivo: tomar un backup manual de Railway justo antes del paso
+7.3 (Railway dashboard → DB → Backups → Create backup).
+
+---
+
 ## Referencias
 
 - Diseño general: [`architecture/`](./architecture/)
-- ADR de la arquitectura del LLMAdapter: [`adr/0004-llm-adapter-pattern.md`](./adr/0004-llm-adapter-pattern.md)
+- ADR del LLMAdapter: [`adr/0004-llm-adapter-pattern.md`](./adr/0004-llm-adapter-pattern.md)
+- ADR del switch dinámico de embeddings: [`adr/0018-embeddings-on-prem.md`](./adr/0018-embeddings-on-prem.md)
+- Handoffs del tren ADR-0018:
+  - [`handoffs/embeddings-onprem-sub-pr-1.md`](./handoffs/embeddings-onprem-sub-pr-1.md) — schema
+  - [`handoffs/embeddings-onprem-sub-pr-2.md`](./handoffs/embeddings-onprem-sub-pr-2.md) — backend
+  - [`handoffs/embeddings-onprem-sub-pr-3.md`](./handoffs/embeddings-onprem-sub-pr-3.md) — frontend
 - Cómo arrancar todo en local: [`runbook-local.md`](./runbook-local.md)
 - Guion de demo: [`demo-script.md`](./demo-script.md)
