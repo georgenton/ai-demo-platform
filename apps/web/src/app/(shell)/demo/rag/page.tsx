@@ -35,6 +35,7 @@ import { useDocuments } from '@/components/demo/rag/use-documents';
 import { useTutorPricing } from '@/components/demo/tutor/use-tutor-pricing';
 import { AudienceLine } from '@/components/shared/AudienceLine';
 import { CostMiniWidget } from '@/components/shared/CostMiniWidget';
+import { LlmProviderWarning } from '@/components/shared/LlmProviderWarning';
 import {
   useEstimatedCost,
   useTextDelta,
@@ -42,6 +43,7 @@ import {
 import { useChatStream } from '@/lib/api';
 import { getDemoAudience } from '@/lib/catalog/demos';
 import { useT } from '@/lib/i18n';
+import { useLlmProvider } from '@/lib/llm';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -52,6 +54,11 @@ const DEMO_ID = 'rag' as const;
 
 export default function DemoRagPage() {
   const { t, lang } = useT();
+  // Provider activo (dropdown del header). Si es `anthropic`, el backend
+  // rechaza ingest y chat con 400 — ADR-0018. La UI muestra el banner y
+  // bloquea las acciones que dispararían ese error.
+  const { provider } = useLlmProvider();
+  const ragBlocked = provider === 'anthropic';
 
   // Documents
   const {
@@ -132,7 +139,9 @@ export default function DemoRagPage() {
 
   function send() {
     const q = input.trim();
-    if (!q || chatStatus === 'streaming') return;
+    // Defensive: el composer ya está disabled en estos casos, pero por si
+    // alguien hace Enter desde la consola o el state se desincroniza.
+    if (!q || chatStatus === 'streaming' || ragBlocked) return;
     cost.addInput(q);
     setInput('');
     setHistory((h) => [...h, { role: 'user', text: q }]);
@@ -167,11 +176,15 @@ export default function DemoRagPage() {
             icon="upload"
             size="lg"
             onClick={() => setUploadOpen(true)}
+            disabled={ragBlocked}
+            title={ragBlocked ? t('rag.upload.disabled') : undefined}
           >
             {t('rag.upload')}
           </Button>
         </div>
       </div>
+
+      {ragBlocked && <LlmProviderWarning />}
 
       <div className="two-col">
         <aside className="two-col-side">
@@ -250,13 +263,14 @@ export default function DemoRagPage() {
                     }
                   }}
                   rows={1}
-                  disabled={isStreaming}
+                  disabled={isStreaming || ragBlocked}
+                  title={ragBlocked ? t('rag.upload.disabled') : undefined}
                 />
                 <button
                   type="button"
                   className="send-btn"
                   onClick={send}
-                  disabled={!input.trim() || isStreaming}
+                  disabled={!input.trim() || isStreaming || ragBlocked}
                   aria-label={t('common.send')}
                 >
                   <Icon
