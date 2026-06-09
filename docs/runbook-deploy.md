@@ -44,7 +44,17 @@ primera vez sin tener que pensar el orden.
     (no fabrica embeddings), pero los otros 6 demos sí funcionan.
 
 > Si no tienes alguna de las cuentas todavía, signup con GitHub (3 min).
-> No hace falta instalar CLIs — todo se hace por web.
+>
+> El setup inicial (provisionar servicios + env vars básicas) se hace por
+> web. **Algunas operaciones puntuales requieren la Railway CLI**:
+> seed inicial (`db:seed:tenants:railway`), verificación SQL post-migración
+> (sección 7.1 / 7.5), re-sembrar después de un wipe. Instalala antes de
+> empezar:
+>
+> ```bash
+> npm i -g @railway/cli
+> railway login
+> ```
 
 ---
 
@@ -96,11 +106,12 @@ EMBEDDINGS_MODEL=text-embedding-3-small  # ignorado por private-mac, fallback
 # EMBEDDINGS_API_KEY=...                  # opcional bajo private-mac
 
 # --- Conexión al gateway del Mac (sirve chat + embeddings vía API
-# OpenAI-compatible). Estas tres son OBLIGATORIAS cuando provider=private-mac.
+# OpenAI-compatible). Las cuatro PRIVATE_* siguientes son OBLIGATORIAS
+# cuando CHAT_PROVIDER o EMBEDDINGS_PROVIDER son private-mac:
 PRIVATE_LLM_BASE_URL=https://private-llm.<tu-tunel>.com
 PRIVATE_LLM_API_KEY=<key-inventada-bearer>
-PRIVATE_LLM_MODEL=qwen2.5:7b
-PRIVATE_EMBEDDING_MODEL=nomic-embed-text
+PRIVATE_LLM_MODEL=qwen2.5:7b             # chat
+PRIVATE_EMBEDDING_MODEL=nomic-embed-text # embeddings
 PRIVATE_LLM_DEMO_NAME=demo-bank          # opcional, default 'demo-bank'
 PRIVATE_LLM_TIMEOUT_MS=120000            # opcional, default 120s
 
@@ -286,21 +297,25 @@ dentro del contenedor.
 
 ### Compartir credenciales
 
-- A **Edguitar** (o cualquier presentador): URL + `BASIC_AUTH_USER` y
-  `BASIC_AUTH_PASSWORD`.
-- A un **cliente puntual** después de la reunión: la misma cosa, pero
-  considerar rotar el password cada N clientes para invalidar accesos
-  viejos.
+Post sprint multi-tenant (PR-MT1+) la app usa login real con email +
+contraseña. Cada presentador o cliente recibe credenciales separadas:
 
-### Rotar el basic auth
+- A **Edguitar** (o cualquier presentador): URL + email de superadmin
+  (`admin@nai.local` por default del seed) + contraseña inicial. **El
+  primer login debe cambiarla** desde el panel de usuario.
+- A un **cliente puntual** después de la reunión: crear un usuario
+  dedicado en el panel admin → asignarlo al tenant de prueba → enviarle
+  email + contraseña temporal. Al terminar el demo, desactivar el
+  usuario desde el panel.
 
-1. Vercel → Project → **Settings** → **Environment Variables** → editá
-   `BASIC_AUTH_PASSWORD`.
-2. **Redeploy** (Vercel → Deployments → ⋯ del último → Redeploy).
-3. Las sesiones cacheadas en browsers que ya estaban autenticadas
-   **siguen funcionando** hasta cerrar el browser — el basic auth lo
-   cachea el cliente, no el server. Para invalidación inmediata, cambiá
-   también `BASIC_AUTH_USER`.
+### Rotar contraseña del superadmin
+
+1. Login con la cuenta actual.
+2. Panel de usuario (avatar arriba a la derecha) → **Cambiar contraseña**.
+3. Las sesiones activas en otros browsers siguen funcionando hasta que
+   expire el JWT (default 7 días, configurable con `JWT_EXPIRES_IN`).
+   Para invalidación inmediata, rotar `JWT_SECRET` en Railway —
+   invalida TODOS los tokens emitidos.
 
 ### Ver logs en vivo
 
@@ -390,17 +405,22 @@ railway run psql -c "SELECT COUNT(*) FROM \"Document\";"
 
 ### 7.2 Configurar las env vars nuevas
 
-Antes de mergear el tren, asegúrate de que Railway tenga las cinco vars
-del bloque private-mac (ver sección 1.4). Sin ellas, el server arranca
-pero el primer ingest/chat con `EMBEDDINGS_PROVIDER=private-mac` falla
-con "PRIVATE_LLM_BASE_URL es obligatoria...".
+Antes de mergear el tren, asegúrate de que Railway tenga los dos switches
+de provider en `private-mac` Y las cuatro `PRIVATE_LLM_*` (ver sección
+1.4). Sin alguna, el server arranca pero el primer ingest/chat con
+`EMBEDDINGS_PROVIDER=private-mac` falla con "PRIVATE_LLM_BASE_URL es
+obligatoria…" o equivalente.
 
 ```bash
-# Verifica:
-railway variables get PRIVATE_LLM_BASE_URL
-railway variables get PRIVATE_LLM_API_KEY
-railway variables get PRIVATE_LLM_MODEL
-railway variables get PRIVATE_EMBEDDING_MODEL
+# Verifica los dos switches de provider:
+railway variables get CHAT_PROVIDER          # esperado: private-mac
+railway variables get EMBEDDINGS_PROVIDER    # esperado: private-mac
+
+# Verifica las cuatro PRIVATE_LLM_*:
+railway variables get PRIVATE_LLM_BASE_URL   # esperado: https://...
+railway variables get PRIVATE_LLM_API_KEY    # esperado: <bearer>
+railway variables get PRIVATE_LLM_MODEL      # esperado: qwen2.5:7b (o el que esté servido)
+railway variables get PRIVATE_EMBEDDING_MODEL # esperado: nomic-embed-text
 ```
 
 ### 7.3 Mergear el tren (sub-PR 1-4)
