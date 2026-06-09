@@ -70,7 +70,7 @@ DATABASE_URL=postgresql://... npx prisma db pull --print | head -40
 # Arranca el server con fake:
 CHAT_PROVIDER=fake EMBEDDINGS_PROVIDER=fake \
   DATABASE_URL=... JWT_SECRET=...32+chars... \
-  npm run nest:api
+  npx nx serve @org/api
 # Esperado: server up en :3000.
 ```
 
