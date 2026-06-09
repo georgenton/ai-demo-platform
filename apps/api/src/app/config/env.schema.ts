@@ -42,12 +42,25 @@ export enum ChatProvider {
   anthropic = 'anthropic',
   openaiCompat = 'openai-compat',
   privateMac = 'private-mac',
+  /**
+   * Adapter determinístico sin LLM real (ver
+   * `packages/llm-adapter/src/lib/providers/fake-chat.ts`). Usado en CI,
+   * tests E2E y smoke tests locales donde no queremos depender de keys
+   * cloud ni del túnel del Mac. No usar en prod.
+   */
+  fake = 'fake',
 }
 
 export enum EmbeddingsProvider {
   openai = 'openai',
   openaiCompat = 'openai-compat',
   privateMac = 'private-mac',
+  /**
+   * Análogo a `ChatProvider.fake`: el adapter genera vectores
+   * determinísticos vía bag-of-words. Útil para arrancar el server en
+   * smoke tests locales sin tener Mac/Cloudflare/OpenAI configurado.
+   */
+  fake = 'fake',
 }
 
 /**
@@ -69,13 +82,24 @@ export class EnvSchema {
   })
   CHAT_PROVIDER!: ChatProvider;
 
+  // `private-mac` y `fake` no exigen CHAT_API_KEY/CHAT_MODEL en el env:
+  //   - `private-mac` los lee de las PRIVATE_LLM_* (ver más abajo).
+  //   - `fake` no llama a ningún LLM real — el adapter tiene defaults.
   @IsString()
-  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER !== ChatProvider.privateMac)
+  @ValidateIf(
+    (o: EnvSchema) =>
+      o.CHAT_PROVIDER !== ChatProvider.privateMac &&
+      o.CHAT_PROVIDER !== ChatProvider.fake,
+  )
   @IsNotEmpty()
   CHAT_API_KEY!: string;
 
   @IsString()
-  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER !== ChatProvider.privateMac)
+  @ValidateIf(
+    (o: EnvSchema) =>
+      o.CHAT_PROVIDER !== ChatProvider.privateMac &&
+      o.CHAT_PROVIDER !== ChatProvider.fake,
+  )
   @IsNotEmpty()
   CHAT_MODEL!: string;
 
@@ -131,16 +155,22 @@ export class EnvSchema {
   })
   EMBEDDINGS_PROVIDER!: EmbeddingsProvider;
 
+  // Mismo razonamiento que CHAT_API_KEY/MODEL: `private-mac` y `fake` no
+  // exigen estas variables porque tienen fuentes alternativas o defaults.
   @IsString()
   @ValidateIf(
-    (o: EnvSchema) => o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateMac,
+    (o: EnvSchema) =>
+      o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateMac &&
+      o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.fake,
   )
   @IsNotEmpty()
   EMBEDDINGS_API_KEY!: string;
 
   @IsString()
   @ValidateIf(
-    (o: EnvSchema) => o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateMac,
+    (o: EnvSchema) =>
+      o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateMac &&
+      o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.fake,
   )
   @IsNotEmpty()
   EMBEDDINGS_MODEL!: string;

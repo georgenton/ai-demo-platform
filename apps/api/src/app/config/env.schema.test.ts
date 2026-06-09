@@ -68,8 +68,34 @@ describe('validateEnv', () => {
 
   it('rechaza CHAT_PROVIDER fuera del enum con mensaje útil', () => {
     expect(() => validateEnv({ ...VALID, CHAT_PROVIDER: 'cohere' })).toThrow(
-      /CHAT_PROVIDER.*anthropic.*openai-compat.*private-mac/,
+      /CHAT_PROVIDER.*anthropic.*openai-compat.*private-mac.*fake/,
     );
+  });
+
+  it('acepta fake sin CHAT_API_KEY/CHAT_MODEL ni EMBEDDINGS_*', () => {
+    // Smoke local / CI: el adapter fake no necesita keys ni modelos reales.
+    // El env.schema debe permitir arrancar el server con todo en fake.
+    expect(() =>
+      validateEnv({
+        DATABASE_URL: VALID.DATABASE_URL,
+        JWT_SECRET: VALID.JWT_SECRET,
+        CHAT_PROVIDER: 'fake',
+        EMBEDDINGS_PROVIDER: 'fake',
+        // sin CHAT_API_KEY, CHAT_MODEL, EMBEDDINGS_API_KEY, EMBEDDINGS_MODEL
+      }),
+    ).not.toThrow();
+  });
+
+  it('acepta combinaciones mixtas: chat fake + embeddings openai', () => {
+    expect(() =>
+      validateEnv({
+        ...VALID,
+        CHAT_PROVIDER: 'fake',
+        CHAT_API_KEY: undefined,
+        CHAT_MODEL: undefined,
+        // EMBEDDINGS_* siguen siendo openai del baseline.
+      }),
+    ).not.toThrow();
   });
 
   it('rechaza si falta CHAT_API_KEY mencionando el campo', () => {

@@ -9,14 +9,22 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockChatStream } = vi.hoisted(() => ({
-  mockChatStream: vi.fn(),
-}));
+// vi.hoisted permite que las refs vivan FUERA del vi.mock() para poder
+// controlar los mocks por test. El mock incluye chat + helpers de
+// embeddings que el service ahora usa (ver ADR-0018 + sub-PR 2).
+const { mockChatStream, mockResolveEmbeddingsProvider, mockEmbeddingsInfoFor } =
+  vi.hoisted(() => ({
+    mockChatStream: vi.fn(),
+    mockResolveEmbeddingsProvider: vi.fn(),
+    mockEmbeddingsInfoFor: vi.fn(),
+  }));
 
 vi.mock('@org/llm-adapter', () => ({
   chat: {
     completeStream: mockChatStream,
   },
+  resolveEmbeddingsProvider: mockResolveEmbeddingsProvider,
+  embeddingsInfoFor: mockEmbeddingsInfoFor,
 }));
 
 import { ChatService } from './chat.service.js';
@@ -35,6 +43,17 @@ describe('ChatService.streamChat()', () => {
 
   beforeEach(() => {
     mockChatStream.mockReset();
+    mockResolveEmbeddingsProvider.mockReset();
+    mockEmbeddingsInfoFor.mockReset();
+
+    // Defaults: sin llmProvider override, el service lee el env. En el
+    // test mockeamos el helper para que devuelva los valores típicos del
+    // private-mac / nomic-embed-text de producción (ADR-0018).
+    mockEmbeddingsInfoFor.mockReturnValue({
+      provider: 'private-mac',
+      model: 'nomic-embed-text',
+      dim: 768,
+    });
 
     embeddings = { embed: vi.fn() } as unknown as EmbeddingService;
     vectorStore = { searchTopK: vi.fn() } as unknown as VectorStore;
@@ -82,9 +101,19 @@ describe('ChatService.streamChat()', () => {
     expect(tokens).toEqual(['Hola', ' ', 'mundo']);
 
     // Pipeline: cada paso recibe el output del anterior.
-    expect(embeddings.embed).toHaveBeenCalledWith('¿Cuál es el horario?');
+    // Sin llmProvider override, embed recibe undefined como segundo arg.
+    expect(embeddings.embed).toHaveBeenCalledWith(
+      '¿Cuál es el horario?',
+      undefined,
+    );
+    // searchTopK ahora filtra por (tenantId, demoId, embeddingsProvider,
+    // embeddingsModel) — el último par viene del helper embeddingsInfoFor
+    // mockeado arriba con private-mac / nomic-embed-text.
     expect(vectorStore.searchTopK).toHaveBeenCalledWith([0.1, 0.2], 5, {
+      tenantId: undefined,
       demoId: 'rag',
+      embeddingsProvider: 'private-mac',
+      embeddingsModel: 'nomic-embed-text',
     });
     expect(promptBuilder.build).toHaveBeenCalledWith({
       question: '¿Cuál es el horario?',
@@ -102,6 +131,22 @@ describe('ChatService.streamChat()', () => {
       // override, undefined → singleton del env (path legacy).
       { provider: undefined },
     );
+  });
+
+  it('rechaza con 400 cuando llmProvider=anthropic (no tiene embeddings)', async () => {
+    // ADR-0018: Anthropic no fabrica embeddings → no podemos hacer retrieval.
+    // El service debe rechazar antes de tocar la DB.
+    mockResolveEmbeddingsProvider.mockReturnValue(null);
+
+    const iter = service.streamChat(
+      { q: 'algo', demoId: 'rag' },
+      'tenant-x',
+      'anthropic',
+    );
+    await expect(iter.next()).rejects.toThrow(/Anthropic/);
+    expect(mockResolveEmbeddingsProvider).toHaveBeenCalledWith('anthropic');
+    expect(embeddings.embed).not.toHaveBeenCalled();
+    expect(vectorStore.searchTopK).not.toHaveBeenCalled();
   });
 
   it('usa topK del query cuando se provee', async () => {
@@ -127,7 +172,11 @@ describe('ChatService.streamChat()', () => {
     expect(vectorStore.searchTopK).toHaveBeenCalledWith(
       expect.anything(),
       10,
-      expect.anything(),
+      expect.objectContaining({
+        demoId: 'rag',
+        embeddingsProvider: 'private-mac',
+        embeddingsModel: 'nomic-embed-text',
+      }),
     );
   });
 

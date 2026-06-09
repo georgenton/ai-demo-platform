@@ -8,7 +8,16 @@ export {
   isValidChatProvider,
   type ChatCallOptions,
 } from './lib/chat.js';
-export { embeddings, createEmbeddingsAdapter } from './lib/embeddings.js';
+export {
+  embeddings,
+  embeddingsFor,
+  embeddingsInfoFor,
+  createEmbeddingsAdapter,
+  isValidEmbeddingsProvider,
+  resolveEmbeddingsProvider,
+  type EmbeddingsCallOptions,
+  type EmbeddingsInfo,
+} from './lib/embeddings.js';
 
 export type {
   AssistantStreamEvent,
