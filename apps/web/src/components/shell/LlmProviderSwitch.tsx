@@ -30,10 +30,26 @@ interface ProviderOption {
   icon: string;
   /** Clave i18n del label visible. */
   labelKey: 'llm.provider.anthropic' | 'llm.provider.privateMac';
+  /**
+   * Badge opcional al lado del label (ej. "sin RAG" cuando un provider no
+   * tiene embeddings — ADR-0018). Aparece en el menú y en el tooltip.
+   */
+  badgeKey?: 'llm.provider.anthropicNoRag';
+  /** Tooltip del badge para explicar el porqué. */
+  badgeHintKey?: 'llm.provider.anthropicNoRagHint';
 }
 
 const OPTIONS: ProviderOption[] = [
-  { id: 'anthropic', icon: 'cloud', labelKey: 'llm.provider.anthropic' },
+  {
+    id: 'anthropic',
+    icon: 'cloud',
+    labelKey: 'llm.provider.anthropic',
+    // Anthropic no fabrica embeddings; los demos que indexan/buscan
+    // documentos (RAG, corpus) quedan bloqueados con este provider. El
+    // badge avisa al user antes de que elija.
+    badgeKey: 'llm.provider.anthropicNoRag',
+    badgeHintKey: 'llm.provider.anthropicNoRagHint',
+  },
   { id: 'private-mac', icon: 'server', labelKey: 'llm.provider.privateMac' },
 ];
 
@@ -95,9 +111,13 @@ export function LlmProviderSwitch() {
                   setProvider(opt.id);
                   setOpen(false);
                 }}
+                title={opt.badgeHintKey ? t(opt.badgeHintKey) : undefined}
               >
                 <Icon name={opt.icon} size={14} />
                 <span>{t(opt.labelKey)}</span>
+                {opt.badgeKey && (
+                  <span className="llm-switch-badge">{t(opt.badgeKey)}</span>
+                )}
                 {selected && <Icon name="check" size={13} strokeWidth={2.5} />}
               </button>
             );
