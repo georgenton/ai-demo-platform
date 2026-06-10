@@ -117,6 +117,24 @@ export class DemoRegistryService {
       status: 'available',
       route: '/demo/interview',
     },
+    {
+      // Demo 08 — Notarización cooperativa con IA (ADR-0019). Suba el PDF
+      // de un acta, contrato de préstamo o aporte de capital; el sistema
+      // calcula su huella digital, la sella (mini-ledger interno y/o
+      // Polygon Amoy on-chain) y la analiza con IA según el tipo.
+      id: 'notarize',
+      title: 'Notarización cooperativa',
+      tagline: 'Sello inmutable + análisis IA del documento',
+      description:
+        'Sube el PDF del acta de asamblea, contrato de préstamo entre socios o aporte de capital. El sistema calcula su huella digital (SHA-256), la sella en un mini-ledger interno firmado y/o en Polygon Amoy según el modo elegido, y la analiza con IA para extraer plazos, riesgos, términos y mayorías según el tipo de documento. Diseñado para cooperativas reguladas por la SEPS en Ecuador.',
+      audience: [
+        'Gerentes cooperativas',
+        'Cumplimiento SEPS',
+        'Auditores internos',
+      ],
+      status: 'available',
+      route: '/demo/notarize',
+    },
   ];
 
   /** Devuelve todos los demos en el orden definido. */
