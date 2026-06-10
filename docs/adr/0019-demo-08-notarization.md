@@ -40,10 +40,11 @@ análogo al `LLMAdapter` que ya usamos:
     privada honesta de demo": tiene las propiedades de inmutabilidad
     verificables, sin el costo operacional de Hyperledger Fabric.
   - **`PolygonNotaryAdapter`** — sube el hash del documento a Polygon
-    Mumbai (testnet, gratis) durante el demo. Para producción real basta
-    cambiar la red a Polygon mainnet (~$0.001/anchor). Da
-    verificabilidad pública externa: cualquiera con un browser y el tx
-    hash puede confirmar que el documento existió en una fecha exacta.
+    Amoy (testnet oficial actual, Chain ID 80002, gratis) durante el
+    demo. Para producción real basta cambiar la red a Polygon mainnet
+    (~$0.001/anchor). Da verificabilidad pública externa: cualquiera
+    con un browser y el tx hash puede confirmar que el documento
+    existió en una fecha exacta.
 - Un tercer adapter `FakeNotaryAdapter` para CI y tests E2E
   determinísticos.
 - El user del demo elige por documento si quiere **solo interno, solo
@@ -71,16 +72,22 @@ esfuerzo de implementación. Cuando un cliente firme y pida Fabric real,
 basta agregar `FabricNotaryAdapter` como otro provider sin tocar nada
 más del sistema.
 
-### Por qué Polygon Mumbai testnet para el demo
+### Por qué Polygon Amoy testnet para el demo
 
-- **Gratis**: no necesitamos comprar MATIC con dinero real.
+> **Nota histórica:** la versión inicial de este ADR mencionaba "Polygon
+> Mumbai". Mumbai fue **deprecada por Polygon en abril 2024**; la
+> testnet oficial activa hoy es **Amoy** (Chain ID 80002). Cambiamos a
+> Amoy antes de empezar la implementación.
+
+- **Gratis**: no necesitamos comprar POL/MATIC con dinero real (faucet
+  oficial en https://faucet.polygon.technology).
 - **Mismo flujo que mainnet**: el código del adapter no cambia entre
   testnet y mainnet — solo la URL del RPC y el chainId. Migrar a
   mainnet en producción es cambiar dos env vars.
-- **Tiempo de confirmación bajo (~5s)**: suficiente para mostrar el
+- **Tiempo de confirmación bajo (~2-5s)**: suficiente para mostrar el
   sello "Notarizado ✓" en el demo en vivo.
-- **Explorer público**: `mumbai.polygonscan.com/tx/<hash>` permite
-  mostrar la verificación en pantalla durante la demo comercial.
+- **Explorer público**: `amoy.polygonscan.com/tx/<hash>` permite mostrar
+  la verificación en pantalla durante la demo comercial.
 
 ### Por qué adapter pattern desde el día 1
 
@@ -127,7 +134,7 @@ sumar más providers sin rediseño.
 ### Positivas
 
 - **Tres narrativas comerciales** desde una sola arquitectura.
-- **Cero costo cripto en el demo** (Mumbai testnet).
+- **Cero costo cripto en el demo** (Amoy testnet).
 - **Verificabilidad real** del notarizado local (cadena de firmas
   encadenadas) y del público (explorer público).
 - **Escala a Fabric en producción** sin rediseño — solo agregar un
@@ -144,7 +151,7 @@ sumar más providers sin rediseño.
   como follow-up).
 - **Dependencia del adapter Polygon de `ethers`** — librería nueva en
   el monorepo (~150 KB minified). Justificada por el caso.
-- **Mumbai testnet a veces tiene downtime** — un fallback razonable en
+- **Amoy testnet a veces tiene downtime** — un fallback razonable en
   el demo es ofrecer "solo interno" si el adapter Polygon falla
   (manejado en el frontend con un toggle).
 - **El user puede pensar que el PDF entero va a blockchain** — la UI
@@ -171,7 +178,7 @@ sumar más providers sin rediseño.
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | 1 (este) | ADR + schema Prisma + migración + package `@org/notary-adapter` con types + factory + stubs Local/Polygon + Fake implementado + tests. |
 | 2        | `LocalNotaryAdapter` real: generación de keypair RSA por tenant, encadenado, firmado, verificación.                                    |
-| 3        | `PolygonNotaryAdapter` real: ethers.js, wallet de demo, anchor a Mumbai, link al explorer, manejo de estados.                          |
+| 3        | `PolygonNotaryAdapter` real: ethers.js, wallet de demo, anchor a Amoy, link al explorer, manejo de estados.                            |
 | 4        | `NotarizationModule` en `apps/api`: orquesta upload → hash → notary(ies) → análisis LLM con tool-use por tipo.                         |
 | 5        | Frontend `/demo/notarize`: selector tipo + upload + modal modo + página resultado con sellos.                                          |
 
@@ -179,8 +186,9 @@ sumar más providers sin rediseño.
 
 - Si un cliente real firma y exige Fabric, abrir ADR-0020 con el
   análisis Lite-vs-Fabric a la luz del caso concreto.
-- Si Polygon Mumbai deprecara (a veces pasa con testnets), migrar a
-  Polygon Amoy o Polygon mainnet — un sub-PR de cambio de RPC.
+- Si Polygon Amoy deprecara (a veces pasa con testnets), migrar a la
+  siguiente testnet oficial o a Polygon mainnet — un sub-PR de cambio
+  de RPC + Chain ID.
 - Si la SEPS publica una guía formal de notarización con IA, alinear los
   analyzers a esa guía.
 
@@ -190,7 +198,7 @@ sumar más providers sin rediseño.
   este ADR es la segunda aplicación.
 - [`ADR-0018`](./0018-embeddings-on-prem.md) — discurso on-prem que
   este demo respeta vía el `LocalNotaryAdapter`.
-- [Polygon Mumbai docs](https://docs.polygon.technology/pos/reference/rpc-endpoints/)
+- [Polygon Amoy docs](https://docs.polygon.technology/pos/reference/rpc-endpoints/)
 - [ethers.js v6](https://docs.ethers.org/v6/)
 - [`docs/handoffs/demo-08-notarize-sub-pr-1.md`](../handoffs/demo-08-notarize-sub-pr-1.md)
   (handoff para Codex).
