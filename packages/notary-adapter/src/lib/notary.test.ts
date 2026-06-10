@@ -51,7 +51,7 @@ describe('createNotaryAdapter', () => {
 
   it('crea LocalNotaryAdapter cuando llegan deps.local', () => {
     const a = createNotaryAdapter('local', {
-      local: { db: {}, masterKey: 'k'.repeat(32) },
+      local: { db: {}, masterKey: 'a'.repeat(64) },
     });
     expect(a).toBeInstanceOf(LocalNotaryAdapter);
   });
@@ -82,7 +82,7 @@ describe('notaryFor (cache)', () => {
   it('devuelve instancias DISTINTAS para providers distintos', () => {
     const fake = notaryFor('fake');
     const local = notaryFor('local', {
-      local: { db: {}, masterKey: 'k'.repeat(32) },
+      local: { db: {}, masterKey: 'a'.repeat(64) },
     });
     expect(fake).not.toBe(local);
   });
@@ -95,20 +95,9 @@ describe('notaryFor (cache)', () => {
   });
 });
 
-describe('Stubs LocalNotaryAdapter / PolygonNotaryAdapter (sub-PR 1)', () => {
-  it('LocalNotaryAdapter.anchor() lanza "no implementado"', async () => {
-    const a = createNotaryAdapter('local', {
-      local: { db: {}, masterKey: 'k'.repeat(32) },
-    });
-    await expect(
-      a.anchor({
-        contentHash: 'a'.repeat(64),
-        tenantId: 't',
-        documentId: 'd',
-      }),
-    ).rejects.toThrow(/sub-PR 2/);
-  });
-
+// PolygonNotaryAdapter sigue siendo stub hasta sub-PR 3. LocalNotaryAdapter
+// ya está implementado — sus tests viven en `providers/local-notary.test.ts`.
+describe('Stub PolygonNotaryAdapter (sub-PR 1)', () => {
   it('PolygonNotaryAdapter.anchor() lanza "no implementado"', async () => {
     const a = createNotaryAdapter('polygon', {
       polygon: { signer: {}, network: 'polygon-mumbai' },

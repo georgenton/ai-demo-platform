@@ -26,6 +26,9 @@ export { FakeNotaryAdapter } from './lib/providers/fake-notary.js';
 export {
   LocalNotaryAdapter,
   type LocalNotaryDeps,
+  type LocalNotaryDb,
+  type LocalAnchorRecord,
+  type TenantNotaryKeyRecord,
 } from './lib/providers/local-notary.js';
 export {
   PolygonNotaryAdapter,
