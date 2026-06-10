@@ -16,13 +16,35 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { FakeNotaryAdapter } from './providers/fake-notary.js';
 import { LocalNotaryAdapter } from './providers/local-notary.js';
-import { PolygonNotaryAdapter } from './providers/polygon-notary.js';
+import {
+  PolygonNotaryAdapter,
+  type PolygonSigner,
+} from './providers/polygon-notary.js';
 import {
   createNotaryAdapter,
   isValidNotaryProvider,
   notaryFor,
   resetNotaryCache,
 } from './notary.js';
+
+/**
+ * Signer mínimo que satisface el shape estructural. NO se invocan métodos
+ * en este test — solo nos importa que el factory acepte la dep y devuelva
+ * una instancia.
+ */
+const FAKE_SIGNER: PolygonSigner = {
+  async getAddress() {
+    return '0x0';
+  },
+  async sendTransaction() {
+    throw new Error('no usado en tests del factory');
+  },
+  provider: {
+    async getTransaction() {
+      return null;
+    },
+  },
+};
 
 afterEach(() => {
   // Limpia el cache entre tests para no contaminar.
@@ -62,7 +84,7 @@ describe('createNotaryAdapter', () => {
 
   it('crea PolygonNotaryAdapter cuando llegan deps.polygon', () => {
     const a = createNotaryAdapter('polygon', {
-      polygon: { signer: {}, network: 'polygon-mumbai' },
+      polygon: { signer: FAKE_SIGNER, network: 'polygon-amoy' },
     });
     expect(a).toBeInstanceOf(PolygonNotaryAdapter);
   });
@@ -95,19 +117,6 @@ describe('notaryFor (cache)', () => {
   });
 });
 
-// PolygonNotaryAdapter sigue siendo stub hasta sub-PR 3. LocalNotaryAdapter
-// ya está implementado — sus tests viven en `providers/local-notary.test.ts`.
-describe('Stub PolygonNotaryAdapter (sub-PR 1)', () => {
-  it('PolygonNotaryAdapter.anchor() lanza "no implementado"', async () => {
-    const a = createNotaryAdapter('polygon', {
-      polygon: { signer: {}, network: 'polygon-mumbai' },
-    });
-    await expect(
-      a.anchor({
-        contentHash: 'a'.repeat(64),
-        tenantId: 't',
-        documentId: 'd',
-      }),
-    ).rejects.toThrow(/sub-PR 3/);
-  });
-});
+// Polygon y Local ya están implementados — sus tests viven en
+// `providers/polygon-notary.test.ts` y `providers/local-notary.test.ts`.
+// Este archivo solo cubre el factory + cache.

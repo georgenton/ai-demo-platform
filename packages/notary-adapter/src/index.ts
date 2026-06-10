@@ -33,4 +33,11 @@ export {
 export {
   PolygonNotaryAdapter,
   type PolygonNotaryDeps,
+  type PolygonNetwork,
+  type PolygonSigner,
+  type PolygonProvider,
+  type PolygonOnchainTx,
+  type PolygonTxRequest,
+  type PolygonTxResponse,
+  type PolygonTxReceipt,
 } from './lib/providers/polygon-notary.js';
