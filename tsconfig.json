@@ -13,6 +13,9 @@
       "path": "./packages/llm-adapter"
     },
     {
+      "path": "./packages/notary-adapter"
+    },
+    {
       "path": "./packages/rag-core"
     },
     {
