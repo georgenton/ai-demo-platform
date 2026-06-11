@@ -53,6 +53,9 @@ import type {
   VerificationResult,
 } from '../types.js';
 
+/** SHA-256 en hex = exactamente 64 chars `[0-9a-f]`. */
+const HEX_64_REGEX = /^[0-9a-f]{64}$/i;
+
 // ---------------------------------------------------------------------------
 // Tipos estructurales del cliente Prisma.
 //
@@ -148,7 +151,7 @@ export class LocalNotaryAdapter implements NotaryAdapter {
   // -------------------------------------------------------------------------
 
   async anchor(req: AnchorRequest): Promise<AnchorResult> {
-    if (!req.contentHash || req.contentHash.length !== 64) {
+    if (!req.contentHash || !HEX_64_REGEX.test(req.contentHash)) {
       throw new Error(
         'LocalNotaryAdapter.anchor: contentHash debe ser hex de 64 chars (SHA-256).',
       );
@@ -237,7 +240,7 @@ export class LocalNotaryAdapter implements NotaryAdapter {
         details: {},
       };
     }
-    if (!contentHash || contentHash.length !== 64) {
+    if (!contentHash || !HEX_64_REGEX.test(contentHash)) {
       return {
         valid: false,
         provider: 'local',
@@ -290,6 +293,23 @@ export class LocalNotaryAdapter implements NotaryAdapter {
         provider: 'local',
         reason: 'tenant no tiene keypair registrada (estado inconsistente)',
         details: { sequence: anchor.sequence },
+      };
+    }
+    // Asegurar que el anchor.signerKeyId apunta a la key activa del tenant.
+    // Si alguien altera el signerKeyId sin re-firmar, la verify de la firma
+    // matcheante igual lo detecta — pero acá rechazamos antes para que el
+    // detalle de auditoría no quede inconsistente con la realidad on-record.
+    if (anchor.signerKeyId !== key.fingerprint) {
+      return {
+        valid: false,
+        provider: 'local',
+        reason:
+          'signer_key_mismatch (signerKeyId no coincide con la key activa del tenant)',
+        details: {
+          sequence: anchor.sequence,
+          signerKeyId: anchor.signerKeyId,
+          activeKeyFingerprint: key.fingerprint,
+        },
       };
     }
     const sigOk = verifySignature(
