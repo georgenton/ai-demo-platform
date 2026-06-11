@@ -102,6 +102,7 @@ function makeDeps(
     network: overrides.network ?? 'polygon-amoy',
     confirmations: overrides.confirmations,
     waitTimeoutMs: overrides.waitTimeoutMs,
+    secrets: overrides.secrets,
   };
 }
 
@@ -268,6 +269,127 @@ describe('PolygonNotaryAdapter.anchor() golden path', () => {
       expect(msg.length).toBeLessThan(300);
     }
   });
+
+  it('sanitizeError redacta URLs al inicio del mensaje (no solo al final)', async () => {
+    // Hallazgo Codex: si la URL aparecía al inicio, el truncate a 200 chars
+    // no la cubría. Ahora el regex la redacta sí o sí.
+    const signer = makeFakeSigner({
+      sendImpl: async () => {
+        throw new Error(
+          'http://internal-rpc:8545/v1?key=abc123 connection refused',
+        );
+      },
+    });
+    const adapter = new PolygonNotaryAdapter(makeDeps({ signer }));
+    try {
+      await adapter.anchor({
+        contentHash: VALID_HASH,
+        tenantId: 't',
+        documentId: 'd',
+      });
+      throw new Error('debería haber lanzado');
+    } catch (err) {
+      const msg = (err as Error).message;
+      expect(msg).toContain('[REDACTED]');
+      expect(msg).not.toContain('internal-rpc');
+      expect(msg).not.toContain('abc123');
+    }
+  });
+
+  it('sanitizeError redacta wallet private keys (0x + 64 hex)', async () => {
+    const signer = makeFakeSigner({
+      sendImpl: async () => {
+        throw new Error(
+          'failed signing with 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        );
+      },
+    });
+    const adapter = new PolygonNotaryAdapter(makeDeps({ signer }));
+    try {
+      await adapter.anchor({
+        contentHash: VALID_HASH,
+        tenantId: 't',
+        documentId: 'd',
+      });
+      throw new Error('debería haber lanzado');
+    } catch (err) {
+      const msg = (err as Error).message;
+      expect(msg).toContain('[REDACTED]');
+      expect(msg).not.toContain('1234567890abcdef');
+    }
+  });
+
+  it('sanitizeError redacta los secrets explícitos del config (RPC URL, etc)', async () => {
+    const RPC = 'https://rpc.example.com/secret-token-xyz';
+    const signer = makeFakeSigner({
+      sendImpl: async () => {
+        // El error viene como string libre — la URL exacta aparece tal cual.
+        throw new Error(`got 500 from upstream while calling foo`);
+      },
+    });
+    const adapter = new PolygonNotaryAdapter(
+      makeDeps({ signer, secrets: [RPC] }),
+    );
+    try {
+      await adapter.anchor({
+        contentHash: VALID_HASH,
+        tenantId: 't',
+        documentId: 'd',
+      });
+      throw new Error('debería haber lanzado');
+    } catch (err) {
+      const msg = (err as Error).message;
+      // Caso degenerado: secrets vacíos (env not set). Acá no aparece, pero
+      // el otro test cubre que cuando aparece, se redacta.
+      expect(msg).toContain('500 from upstream');
+      expect(msg).not.toContain(RPC);
+    }
+
+    // Caso real: la URL aparece literalmente en el mensaje.
+    const signer2 = makeFakeSigner({
+      sendImpl: async () => {
+        throw new Error(`request to ${RPC} failed`);
+      },
+    });
+    const adapter2 = new PolygonNotaryAdapter(
+      makeDeps({ signer: signer2, secrets: [RPC] }),
+    );
+    try {
+      await adapter2.anchor({
+        contentHash: VALID_HASH,
+        tenantId: 't',
+        documentId: 'd',
+      });
+    } catch (err) {
+      const msg = (err as Error).message;
+      expect(msg).not.toContain(RPC);
+      expect(msg).not.toContain('secret-token-xyz');
+      expect(msg).toContain('[REDACTED]');
+    }
+  });
+
+  it('sanitizeError ignora secrets vacíos (sin redact entero del mensaje)', async () => {
+    // Defensa contra env vars no seteadas: deps.secrets puede traer ''.
+    const signer = makeFakeSigner({
+      sendImpl: async () => {
+        throw new Error('connection refused');
+      },
+    });
+    const adapter = new PolygonNotaryAdapter(
+      makeDeps({ signer, secrets: ['', ''] }),
+    );
+    try {
+      await adapter.anchor({
+        contentHash: VALID_HASH,
+        tenantId: 't',
+        documentId: 'd',
+      });
+    } catch (err) {
+      const msg = (err as Error).message;
+      expect(msg).toContain('connection refused');
+      expect(msg).not.toContain('[REDACTED]');
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -378,6 +500,26 @@ describe('PolygonNotaryAdapter.verify()', () => {
   it('contentHash mal formado → valid=false', async () => {
     const adapter = makeAdapterWithTxs([]);
     const v = await adapter.verify(TX_HASH, 'corto');
+    expect(v.valid).toBe(false);
+    expect(v.reason).toMatch(/contentHash inválido/);
+  });
+
+  it('verify tolera prefijo 0x opcional en el contentHash recibido', async () => {
+    const adapter = makeAdapterWithTxs([
+      {
+        hash: TX_HASH,
+        data: '0x' + VALID_HASH,
+        blockNumber: 100,
+      },
+    ]);
+    const withPrefix = '0x' + VALID_HASH;
+    const v = await adapter.verify(TX_HASH, withPrefix);
+    expect(v.valid).toBe(true);
+  });
+
+  it('verify rechaza contentHash con longitud 64 pero no-hex', async () => {
+    const adapter = makeAdapterWithTxs([]);
+    const v = await adapter.verify(TX_HASH, 'g'.repeat(64));
     expect(v.valid).toBe(false);
     expect(v.reason).toMatch(/contentHash inválido/);
   });
