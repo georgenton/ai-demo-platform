@@ -78,6 +78,8 @@ const STRINGS_ES = {
   'demos.agent.tagline': 'Pregunta en español, genera SQL',
   'demos.tutor.title': 'Tutor de inglés',
   'demos.tutor.tagline': 'Practica inglés y mira el costo a escala',
+  'demos.notarize.title': 'Notarización cooperativa',
+  'demos.notarize.tagline': 'Sello inmutable + análisis IA del documento',
 
   // --- Header
   'header.demo': 'Demo',
@@ -305,6 +307,10 @@ const STRINGS_ES = {
   'audience.interview.hr': 'Directores de RRHH',
   'audience.interview.selection': 'Jefes de selección',
   'audience.interview.admissions': 'Admisiones universitarias',
+  // Demo 08 — Notarización cooperativa.
+  'audience.notarize.gerentes': 'Gerentes cooperativas',
+  'audience.notarize.compliance': 'Cumplimiento SEPS',
+  'audience.notarize.auditores': 'Auditores internos',
 
   // --- CostMiniWidget (sidebar de cada demo)
   'costMini.tokens': 'Tokens estimados',
@@ -323,6 +329,71 @@ const STRINGS_ES = {
   'costMini.uses.agent': 'queries/mes',
   'costMini.uses.clinical': 'análisis/mes',
   'costMini.uses.interview': 'entrevistas/mes',
+  'costMini.uses.notarize': 'documentos/mes',
+
+  // --- Demo 08 (Notarización cooperativa con IA) — ADR-0019
+  'notarize.eyebrow': 'Demo 08 · Notarización',
+  'notarize.title': 'Notariza y analiza documentos cooperativos',
+  'notarize.subtitle':
+    'Sube el PDF del acta, contrato de préstamo o aporte de capital. El sistema calcula su huella digital, la sella (mini-ledger interno y/o Polygon Amoy) y la analiza con IA según el tipo.',
+  'notarize.step1.title': 'Tipo de documento',
+  'notarize.step1.hint': 'Define qué dimensiones extrae la IA.',
+  'notarize.docType.assembly_minutes.title': 'Acta de asamblea',
+  'notarize.docType.assembly_minutes.subtitle':
+    'Quórum, decisiones y plazos de impugnación.',
+  'notarize.docType.loan.title': 'Préstamo entre socios',
+  'notarize.docType.loan.subtitle': 'Monto, plazo, tasa, garantías y mora.',
+  'notarize.docType.capital_contribution.title': 'Aporte de capital',
+  'notarize.docType.capital_contribution.subtitle':
+    'Derechos del socio, plazo de devolución y condiciones de retiro.',
+  'notarize.step2.title': 'Sube el PDF',
+  'notarize.step2.hint': 'Máx 10 MB · solo PDF.',
+  'notarize.dropzone.idle': 'Arrastra el PDF o haz clic para elegir',
+  'notarize.dropzone.dragging': 'Suelta el PDF para subirlo',
+  'notarize.dropzone.replace': 'Sustituir archivo',
+  'notarize.dropzone.fileLabel': '{name} · {size}',
+  'notarize.step3.title': 'Modo de notarización',
+  'notarize.step3.hint': 'Elige dónde queda la huella digital.',
+  'notarize.mode.local.title': 'Solo interno',
+  'notarize.mode.local.subtitle':
+    'Mini-ledger firmado dentro de tu Nutanix. Sin internet, sin costo.',
+  'notarize.mode.public.title': 'Solo público',
+  'notarize.mode.public.subtitle':
+    'Anclar el hash en Polygon Amoy. Verificable por terceros con link al explorer.',
+  'notarize.mode.both.title': 'Ambos (recomendado)',
+  'notarize.mode.both.subtitle':
+    'Lo mejor de los dos mundos: rapidez interna + evidencia pública.',
+  'notarize.submit': 'Notarizar y analizar',
+  'notarize.submitting': 'Procesando…',
+  'notarize.errorTitle': 'No se pudo notarizar',
+  'notarize.errorRetry': 'Intentar de nuevo',
+  'notarize.result.title': 'Documento notarizado',
+  'notarize.result.subtitle':
+    'La huella digital ({hash}) quedó registrada. Cualquier alteración futura del PDF se detecta al re-calcular.',
+  'notarize.result.newOne': 'Notarizar otro documento',
+  'notarize.result.contentHash': 'Huella digital (SHA-256)',
+  'notarize.result.fileSize': 'Tamaño',
+  'notarize.result.createdAt': 'Notarizado el',
+  'notarize.anchors.title': 'Sellos generados',
+  'notarize.anchors.local.title': 'Sello interno',
+  'notarize.anchors.local.subtitle': 'Mini-ledger firmado en tu Nutanix',
+  'notarize.anchors.polygon.title': 'Sello público',
+  'notarize.anchors.polygon.subtitle': 'Polygon Amoy testnet',
+  'notarize.anchors.status.confirmed': 'Confirmado',
+  'notarize.anchors.status.pending': 'En confirmación',
+  'notarize.anchors.status.failed': 'Falló',
+  'notarize.anchors.explorerLink': 'Ver en el explorer',
+  'notarize.analysis.title': 'Análisis con IA',
+  'notarize.analysis.empty':
+    'El análisis IA no se pudo generar. Puedes reintentar más tarde sin perder el sello.',
+  'notarize.analysis.dimensions': 'Dimensiones extraídas',
+  'notarize.analysis.risks': 'Riesgos detectados',
+  'notarize.analysis.noRisks': 'No se detectaron riesgos en el análisis.',
+  'notarize.analysis.recommendations': 'Recomendaciones',
+  'notarize.risk.high': 'Alto',
+  'notarize.risk.medium': 'Medio',
+  'notarize.risk.low': 'Bajo',
+  'notarize.risk.info': 'Info',
 
   // --- Auth / login (PR-MT4)
   'auth.login.title': 'Iniciar sesión',
@@ -624,6 +695,8 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'demos.agent.tagline': 'Ask in plain English, get SQL',
   'demos.tutor.title': 'English tutor',
   'demos.tutor.tagline': 'Practice English and see the cost at scale',
+  'demos.notarize.title': 'Cooperative notarization',
+  'demos.notarize.tagline': 'Immutable seal + AI analysis of the document',
 
   'header.demo': 'Demo',
 
@@ -843,6 +916,10 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'audience.interview.hr': 'HR directors',
   'audience.interview.selection': 'Heads of recruiting',
   'audience.interview.admissions': 'University admissions',
+  // Demo 08 — Cooperative notarization.
+  'audience.notarize.gerentes': 'Co-op managers',
+  'audience.notarize.compliance': 'Compliance officers',
+  'audience.notarize.auditores': 'Internal auditors',
 
   // --- CostMiniWidget (each demo header)
   'costMini.tokens': 'Estimated tokens',
@@ -861,6 +938,72 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'costMini.uses.agent': 'queries/month',
   'costMini.uses.clinical': 'analyses/month',
   'costMini.uses.interview': 'interviews/month',
+  'costMini.uses.notarize': 'documents/month',
+
+  // --- Demo 08 (Cooperative notarization) — ADR-0019
+  'notarize.eyebrow': 'Demo 08 · Notarization',
+  'notarize.title': 'Notarize and analyze cooperative documents',
+  'notarize.subtitle':
+    'Upload the PDF for an assembly minutes, member loan or capital contribution. The system computes its digital fingerprint, anchors it (internal mini-ledger and/or Polygon Amoy) and analyzes it with AI by document type.',
+  'notarize.step1.title': 'Document type',
+  'notarize.step1.hint': 'Defines which dimensions the AI extracts.',
+  'notarize.docType.assembly_minutes.title': 'Assembly minutes',
+  'notarize.docType.assembly_minutes.subtitle':
+    'Quorum, decisions and challenge deadlines.',
+  'notarize.docType.loan.title': 'Member loan',
+  'notarize.docType.loan.subtitle':
+    'Amount, term, rate, collateral and default clauses.',
+  'notarize.docType.capital_contribution.title': 'Capital contribution',
+  'notarize.docType.capital_contribution.subtitle':
+    'Member rights, withdrawal term and conditions.',
+  'notarize.step2.title': 'Upload the PDF',
+  'notarize.step2.hint': 'Max 10 MB · PDF only.',
+  'notarize.dropzone.idle': 'Drag the PDF or click to choose',
+  'notarize.dropzone.dragging': 'Drop the PDF to upload it',
+  'notarize.dropzone.replace': 'Replace file',
+  'notarize.dropzone.fileLabel': '{name} · {size}',
+  'notarize.step3.title': 'Notarization mode',
+  'notarize.step3.hint': 'Choose where the digital fingerprint lives.',
+  'notarize.mode.local.title': 'Internal only',
+  'notarize.mode.local.subtitle':
+    'Signed mini-ledger inside your Nutanix. Offline, no cost.',
+  'notarize.mode.public.title': 'Public only',
+  'notarize.mode.public.subtitle':
+    'Anchor the hash on Polygon Amoy. Verifiable by third parties via explorer.',
+  'notarize.mode.both.title': 'Both (recommended)',
+  'notarize.mode.both.subtitle':
+    'Best of both worlds: internal speed + public evidence.',
+  'notarize.submit': 'Notarize and analyze',
+  'notarize.submitting': 'Processing…',
+  'notarize.errorTitle': 'Could not notarize',
+  'notarize.errorRetry': 'Try again',
+  'notarize.result.title': 'Document notarized',
+  'notarize.result.subtitle':
+    'The digital fingerprint ({hash}) is now on the record. Any later alteration of the PDF is detected by re-computing it.',
+  'notarize.result.newOne': 'Notarize another document',
+  'notarize.result.contentHash': 'Digital fingerprint (SHA-256)',
+  'notarize.result.fileSize': 'Size',
+  'notarize.result.createdAt': 'Notarized on',
+  'notarize.anchors.title': 'Generated seals',
+  'notarize.anchors.local.title': 'Internal seal',
+  'notarize.anchors.local.subtitle': 'Signed mini-ledger in your Nutanix',
+  'notarize.anchors.polygon.title': 'Public seal',
+  'notarize.anchors.polygon.subtitle': 'Polygon Amoy testnet',
+  'notarize.anchors.status.confirmed': 'Confirmed',
+  'notarize.anchors.status.pending': 'Confirming',
+  'notarize.anchors.status.failed': 'Failed',
+  'notarize.anchors.explorerLink': 'View on explorer',
+  'notarize.analysis.title': 'AI analysis',
+  'notarize.analysis.empty':
+    'The AI analysis could not be generated. You can retry later without losing the seal.',
+  'notarize.analysis.dimensions': 'Extracted dimensions',
+  'notarize.analysis.risks': 'Risks detected',
+  'notarize.analysis.noRisks': 'No risks detected in the analysis.',
+  'notarize.analysis.recommendations': 'Recommendations',
+  'notarize.risk.high': 'High',
+  'notarize.risk.medium': 'Medium',
+  'notarize.risk.low': 'Low',
+  'notarize.risk.info': 'Info',
 
   // --- Auth / login (PR-MT4)
   'auth.login.title': 'Sign in',
