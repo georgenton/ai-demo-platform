@@ -31,6 +31,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -261,6 +262,10 @@ export class EnvSchema {
   @IsOptional()
   @IsString()
   @MinLength(64, { message: 'NOTARY_MASTER_KEY debe ser hex de 64 chars.' })
+  @Matches(/^[0-9a-fA-F]{64}$/, {
+    message:
+      'NOTARY_MASTER_KEY debe ser hex (0-9, a-f) de exactamente 64 chars.',
+  })
   NOTARY_MASTER_KEY?: string;
 
   /**

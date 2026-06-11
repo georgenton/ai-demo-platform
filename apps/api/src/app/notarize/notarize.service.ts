@@ -23,6 +23,7 @@
 import { createHash } from 'node:crypto';
 
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { prisma } from '@org/db';
 import type { ChatProvider } from '@org/llm-adapter';
@@ -55,11 +56,38 @@ export const POLYGON_NOTARY = Symbol('PolygonNotaryAdapter');
 export class NotarizeService {
   private readonly logger = new Logger(NotarizeService.name);
 
+  /**
+   * Network slug que se persiste en `PublicAnchor.network`. Cuando el
+   * anchor falla (no llegamos a calcular details on-chain), igual lo
+   * grabamos para auditoría con este slug — leyendo del config en vez
+   * de hardcodear 'polygon-amoy' (hallazgo Codex sub-PR 4).
+   */
+  private readonly polygonNetwork: string;
+
+  /**
+   * Lista de secretos que el servicio NUNCA debe propagar en
+   * `errorMessage` al frontend. Defense in depth contra cualquier
+   * mensaje que el adapter por algún motivo no haya sanitizado.
+   */
+  private readonly secrets: ReadonlyArray<string>;
+
   constructor(
     private readonly pdfExtractor: PdfTextExtractor,
     @Inject(LOCAL_NOTARY) private readonly localNotary: NotaryAdapter,
     @Inject(POLYGON_NOTARY) private readonly polygonNotary: NotaryAdapter,
-  ) {}
+    private readonly config: ConfigService,
+  ) {
+    this.polygonNetwork =
+      this.config.get<string>('POLYGON_NETWORK') ?? 'polygon-amoy';
+    const secrets: string[] = [];
+    const rpcUrl = this.config.get<string>('POLYGON_RPC_URL');
+    const walletKey = this.config.get<string>('POLYGON_WALLET_KEY');
+    const masterKey = this.config.get<string>('NOTARY_MASTER_KEY');
+    if (rpcUrl) secrets.push(rpcUrl);
+    if (walletKey) secrets.push(walletKey);
+    if (masterKey) secrets.push(masterKey);
+    this.secrets = secrets;
+  }
 
   // -------------------------------------------------------------------------
   // notarize() — pipeline principal.
@@ -191,7 +219,7 @@ export class NotarizeService {
         anchorId: '',
         status: 'failed',
         anchoredAt: new Date().toISOString(),
-        errorMessage: (err as Error).message.slice(0, 200),
+        errorMessage: sanitizeErrorMessage(err, this.secrets),
       };
     }
   }
@@ -237,14 +265,16 @@ export class NotarizeService {
       };
     } catch (err) {
       // Persistimos la falla para auditoría — un PublicAnchor con
-      // status='failed' es útil para reintentos posteriores.
-      const errMsg = (err as Error).message.slice(0, 500);
+      // status='failed' es útil para reintentos posteriores. Sanitizamos
+      // el mensaje antes de persistir Y antes de devolverlo al frontend
+      // (defense in depth contra leaks).
+      const errMsg = sanitizeErrorMessage(err, this.secrets, 500);
       try {
         await prisma.publicAnchor.create({
           data: {
             documentId,
             tenantId,
-            network: 'polygon-amoy',
+            network: this.polygonNetwork,
             anchoredHash: contentHash,
             status: 'failed',
             errorMessage: errMsg,
@@ -426,4 +456,48 @@ function explorerUrlFor(network: string, txHash: string | null): string {
   if (network === 'polygon-mainnet')
     return `https://polygonscan.com/tx/${txHash}`;
   return '';
+}
+
+/**
+ * Sanitiza un mensaje de error antes de propagarlo al frontend en
+ * `AnchorSummary.errorMessage`. Defense in depth — el PolygonNotaryAdapter
+ * ya redacta secretos, pero los errores del LocalNotaryAdapter pasan
+ * derecho, y siempre puede aparecer un error de capa intermedia (ethers,
+ * prisma) que no sanitizó nadie.
+ *
+ * Estrategia (espejo de sanitizeError en polygon-notary):
+ *   1. Reemplaza los `secrets` literales por [REDACTED].
+ *   2. Redacta patrones genéricos: URLs http(s)/wss, wallet keys hex de
+ *      64 chars, addresses 0x... de 40 chars.
+ *   3. Trunca a `maxChars` (default 200).
+ */
+export function sanitizeErrorMessage(
+  err: unknown,
+  secrets: ReadonlyArray<string>,
+  maxChars = 200,
+): string {
+  let msg: string;
+  if (typeof err === 'string') msg = err;
+  else if (err instanceof Error) msg = err.message;
+  else return 'error desconocido';
+
+  for (const s of secrets) {
+    if (!s) continue;
+    msg = msg.split(s).join('[REDACTED]');
+  }
+
+  const patterns: RegExp[] = [
+    /0x[0-9a-fA-F]{64}/g, // wallet private keys con prefix
+    /\b[0-9a-fA-F]{64}\b/g, // wallet keys sin prefix
+    /https?:\/\/[^\s"'<>)]+/gi, // URLs http(s)
+    /wss?:\/\/[^\s"'<>)]+/gi, // URLs ws(s)
+    /0x[0-9a-fA-F]{40}\b/g, // ethereum addresses
+  ];
+  for (const p of patterns) {
+    msg = msg.replace(p, '[REDACTED]');
+  }
+
+  msg = msg.slice(0, maxChars).trim();
+  if (!msg || /^(\[REDACTED\]\s*)+$/.test(msg)) return 'error sanitizado';
+  return msg;
 }

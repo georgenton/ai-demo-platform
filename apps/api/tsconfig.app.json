@@ -20,6 +20,9 @@
     },
     {
       "path": "../../packages/db/tsconfig.lib.json"
+    },
+    {
+      "path": "../../packages/notary-adapter/tsconfig.lib.json"
     }
   ]
 }
