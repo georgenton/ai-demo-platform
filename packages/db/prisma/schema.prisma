@@ -95,6 +95,12 @@ model Tenant {
   // interviews también son del tenant del reclutador.
   jobs              Job[]
   interviews        Interview[]
+  // Demo 08 — Notarización cooperativa (ADR-0019). Cada cooperativa tiene
+  // su propio ledger interno (LocalAnchor) y sus anchors públicos.
+  notarizedDocs     NotarizedDocument[]
+  localAnchors      LocalAnchor[]
+  publicAnchors     PublicAnchor[]
+  notaryKey         TenantNotaryKey?
 
   @@index([industryId])
 }
@@ -609,4 +615,208 @@ model InterviewAnswer {
   // el upsert pisa el transcript, pero después de confirmar queda registro.
   @@unique([interviewId, questionId])
   @@index([interviewId])
+}
+
+// =============================================================================
+// Demo 08 — Notarización cooperativa con IA (ADR-0019)
+// =============================================================================
+//
+// Tres conceptos:
+//
+//   - NotarizedDocument: el PDF en sí + su contentHash + el análisis IA
+//     (rellenado por el LLM en el sub-PR 4).
+//   - LocalAnchor: mini-ledger interno. Una entrada por documento del tenant,
+//     encadenada con prevAnchorHash al anchor anterior del MISMO tenant.
+//     Firmada con la clave RSA del tenant (TenantNotaryKey).
+//   - PublicAnchor: registro de una transacción on-chain (Polygon Mumbai/
+//     mainnet, etc). Un documento puede tener varios PublicAnchor (re-anchor
+//     si falla, o anchor en distintas redes).
+//
+// El user del demo elige por documento si quiere SOLO LocalAnchor, SOLO
+// PublicAnchor, o AMBOS. Por eso son tablas separadas, no campos en
+// NotarizedDocument.
+//
+// Multi-tenant (ADR-0013): cada cooperativa tiene su propio ledger y su
+// propia keypair. Documents de distintos tenants nunca se mezclan ni en
+// la cadena de hashes ni en las firmas.
+
+/// PDF cooperativo notarizado + analizado. Reusamos la convención del
+/// resto del schema: tenantId NOT NULL, cascade al borrar el tenant.
+model NotarizedDocument {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Nombre original del archivo subido por el usuario.
+  name        String
+  /// Tipo del documento — define qué analyzer LLM se aplica (sub-PR 4).
+  docType     NotarizedDocType
+
+  /// Texto completo extraído del PDF (mismo patrón que Document.content).
+  /// Útil para el análisis posterior y para auditoría.
+  content     String
+  /// SHA-256 hex del BINARIO original del PDF (lo que se sella en la chain).
+  /// Calculado por el backend al recibir el upload. Indexado para
+  /// deduplicación y para verificación rápida.
+  contentHash String
+  /// Tamaño en bytes del PDF subido (para mostrar en la UI).
+  contentSize Int
+
+  /// Análisis IA del documento (poblado en sub-PR 4). JSON con dimensions
+  /// extraídas + risks + recommendations. Shape estabilizado por tipo de
+  /// documento (ver analyzers en el sub-PR 4). Null hasta que se completa.
+  analysis    Json?
+
+  /// Relaciones inversas a los anchors (uno-a-cero-o-uno con LocalAnchor;
+  /// uno-a-muchos con PublicAnchor por si hay re-anchors).
+  localAnchor   LocalAnchor?
+  publicAnchors PublicAnchor[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, docType])
+  @@index([tenantId, createdAt(sort: Desc)])
+  /// Para verificar 'ya notarizamos este PDF?' y para deduplicación.
+  @@index([contentHash])
+}
+
+/// Tipo de documento cooperativo. Define el analyzer LLM aplicado en el
+/// sub-PR 4. Si llega un cuarto tipo en el futuro, sumarlo acá y agregar
+/// el analyzer correspondiente — el adapter y el frontend se enteran solos.
+enum NotarizedDocType {
+  /// Acta de asamblea de socios.
+  assembly_minutes      @map("assembly-minutes")
+  /// Contrato de préstamo entre socios.
+  loan
+  /// Contrato de aporte de capital.
+  capital_contribution  @map("capital-contribution")
+}
+
+/// Mini-ledger interno (notarizer 'Lite' de ADR-0019). Una entrada por
+/// documento del tenant. Cada entrada referencia el anchor anterior del
+/// mismo tenant vía prevAnchorHash, formando una cadena append-only.
+/// Cualquier alteración o borrado posterior rompe la cadena, detectable
+/// por verificación matemática (sub-PR 2).
+model LocalAnchor {
+  id              String   @id @default(cuid())
+  /// 1:1 con NotarizedDocument. Si se borra el documento, se borra el
+  /// anchor en cascada — pero al borrar un anchor del medio queda hueco
+  /// en la cadena (los posteriores ya no verifican). Por diseño: borrar
+  /// un anchor es un evento auditable.
+  documentId      String   @unique
+  document        NotarizedDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  /// Tenant duplicado por performance (evita join al Document para queries
+  /// del ledger por tenant).
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Posición en el ledger del tenant: 0, 1, 2, ... Unique por tenant.
+  sequence        Int
+  /// Hash del anchor anterior del MISMO tenant. Para el primer anchor de
+  /// cada tenant es un valor GENESIS conocido (definido en el adapter).
+  prevAnchorHash  String
+  /// Hash del propio anchor: SHA-256( contentHash || prevAnchorHash ||
+  /// sequence || createdAtTimestamp || tenantId ). Definido en sub-PR 2.
+  anchorHash      String
+
+  /// Firma del anchorHash con la clave privada del tenant. Permite a un
+  /// verificador externo confirmar la autenticidad sin acceso a la BD.
+  signature       String
+  /// Fingerprint de la clave usada (TenantNotaryKey.fingerprint). Útil
+  /// cuando rotamos claves: anchors viejos siguen verificables con la
+  /// clave vieja.
+  signerKeyId     String
+
+  createdAt       DateTime @default(now())
+
+  /// sequence es único por tenant — no global. Distintos tenants tienen
+  /// sus propios ledgers paralelos.
+  @@unique([tenantId, sequence])
+  @@index([tenantId, createdAt(sort: Desc)])
+  /// Para verificación 'dame el anchor con este anchorHash'.
+  @@index([anchorHash])
+}
+
+/// Anchor en blockchain pública (Polygon Mumbai/mainnet, etc).
+/// Un documento puede tener varios PublicAnchor por re-intento o por
+/// anchor en distintas redes.
+model PublicAnchor {
+  id              String   @id @default(cuid())
+  documentId      String
+  document        NotarizedDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Identificador de la red — 'polygon-mumbai' por default en el demo.
+  /// Permite migrar a 'polygon-mainnet' (o agregar otras chains) sin
+  /// tocar el schema.
+  network         String
+  /// Hash de la transacción on-chain. Null mientras está pending.
+  txHash          String?
+  /// Número del bloque en el que se incluyó la tx. Null hasta confirmar.
+  blockNumber     BigInt?
+  /// Dirección del contrato si usamos uno (en el sub-PR 3 vamos por una
+  /// tx simple con data = anchoredHash, sin contrato — esto queda null).
+  contractAddress String?
+
+  /// Lo que efectivamente quedó on-chain. Para una tx simple es el mismo
+  /// contentHash del documento. Si en el futuro agregamos un contrato
+  /// con metadata adicional, este campo refleja el hash final que viaja.
+  anchoredHash    String
+
+  status          PublicAnchorStatus @default(pending)
+  /// Cuando status=failed, mensaje humano (sin stack trace) del fallo.
+  /// Sub-PR 3 limita a 500 chars y filtra info sensible (keys, URLs
+  /// internas).
+  errorMessage    String?
+
+  requestedAt     DateTime @default(now())
+  confirmedAt     DateTime?
+
+  @@index([documentId])
+  @@index([tenantId, status])
+  /// Para resolver 'a qué documento pertenece este tx hash'.
+  @@index([txHash])
+}
+
+enum PublicAnchorStatus {
+  /// Tx broadcast pero esperando confirmación.
+  pending
+  /// Tx confirmada con suficientes bloques (típicamente 5 en Polygon).
+  confirmed
+  /// Tx fallida en broadcast o no incluida tras timeout.
+  failed
+}
+
+/// Keypair RSA del tenant para firmar LocalAnchor. Generada al onboarding
+/// (sub-PR 2). Una sola activa por tenant; al rotar guardamos las viejas
+/// con activatedAt/deactivatedAt para que anchors viejos sigan
+/// verificables.
+///
+/// Almacenamiento: privateKey va cifrada en BD con una key maestra del
+/// env (NOTARY_MASTER_KEY). Para el demo bastan 32 chars random.
+/// Production-grade requiere KMS — anotado como follow-up en ADR-0019.
+model TenantNotaryKey {
+  id             String   @id @default(cuid())
+  tenantId       String   @unique
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Algoritmo: 'RSA-PSS-SHA256-2048' en el sub-PR 2. Tipo string para
+  /// admitir Ed25519 más adelante.
+  algorithm      String
+  /// PEM de la clave pública (sin cifrar, para verificar firmas).
+  publicKeyPem   String
+  /// PEM de la clave privada CIFRADA con NOTARY_MASTER_KEY. Nunca expuesto
+  /// al frontend ni logueado.
+  privateKeyEncrypted String
+  /// Fingerprint corto de la pública (primeros 16 hex chars del SHA-256
+  /// del PEM). Usado como signerKeyId en LocalAnchor.
+  fingerprint    String
+
+  activatedAt    DateTime @default(now())
+  /// Null mientras la key está activa. Se llena al rotar.
+  deactivatedAt  DateTime?
+
+  @@index([fingerprint])
 }
