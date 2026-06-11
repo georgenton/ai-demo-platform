@@ -110,4 +110,14 @@ export const DEMO_COST_DEFAULTS: Record<DemoId, DemoCostDefaults> = {
     referenceTokensPerUse: { inputTokens: 6_000, outputTokens: 1_500 },
     usesLabelKey: 'costMini.uses.interview',
   },
+  notarize: {
+    // Demo 08 — notarización cooperativa. Una cooperativa mediana procesa
+    // ~20 documentos al día entre actas, préstamos y aportes ≈ 600/mes.
+    // Cada análisis es un solo turn del LLM con tool calling
+    // (~3K input + ~1K output por documento).
+    defaultUsers: 1,
+    defaultUsesPerUserPerMonth: 600,
+    referenceTokensPerUse: { inputTokens: 3_000, outputTokens: 1_000 },
+    usesLabelKey: 'costMini.uses.notarize',
+  },
 };

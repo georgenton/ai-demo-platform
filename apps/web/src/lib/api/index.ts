@@ -33,6 +33,12 @@ export {
 export { listDemos, getDemo } from './demos';
 export { subscribeToTutorChat, getTutorPricing } from './tutor';
 export {
+  uploadNotarize,
+  listNotarized,
+  getNotarized,
+  verifyNotarized,
+} from './notarize';
+export {
   deleteDocument,
   getDocument,
   listDocumentChunks,
@@ -182,6 +188,21 @@ export type {
   TutorSubscription,
   TutorUsage,
 } from './types-tutor';
+export type {
+  AnalysisDimension,
+  AnalysisRisk,
+  AnchorProvider,
+  AnchorStatus,
+  AnchorSummary,
+  DocumentAnalysis,
+  NotarizedDocType,
+  NotarizedDocument,
+  NotarizeMode,
+  NotarizeUploadInput,
+  RiskSeverity,
+  VerificationAnchor,
+  VerificationResponse,
+} from './types-notarize';
 export type {
   ChunkSummary,
   DocumentDetail,
