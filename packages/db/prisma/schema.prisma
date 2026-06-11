@@ -628,7 +628,7 @@ model InterviewAnswer {
 //   - LocalAnchor: mini-ledger interno. Una entrada por documento del tenant,
 //     encadenada con prevAnchorHash al anchor anterior del MISMO tenant.
 //     Firmada con la clave RSA del tenant (TenantNotaryKey).
-//   - PublicAnchor: registro de una transacción on-chain (Polygon Mumbai/
+//   - PublicAnchor: registro de una transacción on-chain (Polygon Amoy/
 //     mainnet, etc). Un documento puede tener varios PublicAnchor (re-anchor
 //     si falla, o anchor en distintas redes).
 //
@@ -738,7 +738,7 @@ model LocalAnchor {
   @@index([anchorHash])
 }
 
-/// Anchor en blockchain pública (Polygon Mumbai/mainnet, etc).
+/// Anchor en blockchain pública (Polygon Amoy/mainnet, etc).
 /// Un documento puede tener varios PublicAnchor por re-intento o por
 /// anchor en distintas redes.
 model PublicAnchor {
@@ -748,7 +748,7 @@ model PublicAnchor {
   tenantId        String
   tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  /// Identificador de la red — 'polygon-mumbai' por default en el demo.
+  /// Identificador de la red — 'polygon-amoy' por default en el demo.
   /// Permite migrar a 'polygon-mainnet' (o agregar otras chains) sin
   /// tocar el schema.
   network         String

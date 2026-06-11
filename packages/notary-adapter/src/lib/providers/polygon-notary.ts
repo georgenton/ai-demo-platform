@@ -140,6 +140,17 @@ export interface PolygonNotaryDeps {
    * decide si reintentar consulta o esperar.
    */
   waitTimeoutMs?: number;
+  /**
+   * Strings literales que deben quedar REDACTED en cualquier mensaje de
+   * error que esta clase propague (RPC URL completa, wallet private key,
+   * etc). Si una de estas substrings aparece en `err.message`, se reemplaza
+   * por `[REDACTED]` antes de exponerlo.
+   *
+   * Los patrones genéricos (URLs, hex largos, basic auth) se cubren
+   * SIEMPRE en `sanitizeError`. Esta lista es para casos donde el secreto
+   * concreto vive en el ConfigService y queremos garantía explícita.
+   */
+  secrets?: ReadonlyArray<string>;
 }
 
 export class PolygonNotaryAdapter implements NotaryAdapter {
@@ -147,12 +158,16 @@ export class PolygonNotaryAdapter implements NotaryAdapter {
   private readonly network: PolygonNetwork;
   private readonly confirmations: number;
   private readonly waitTimeoutMs: number;
+  private readonly secrets: ReadonlyArray<string>;
 
   constructor(deps: PolygonNotaryDeps) {
     this.signer = deps.signer;
     this.network = deps.network;
     this.confirmations = deps.confirmations ?? DEFAULT_CONFIRMATIONS;
     this.waitTimeoutMs = deps.waitTimeoutMs ?? DEFAULT_WAIT_TIMEOUT_MS;
+    // Filtrar vacíos (env vars no seteadas en dev). Sin esto, un secret =
+    // '' haría que replaceAll redactara el string entero.
+    this.secrets = (deps.secrets ?? []).filter((s) => s.length > 0);
   }
 
   // -------------------------------------------------------------------------
@@ -194,7 +209,7 @@ export class PolygonNotaryAdapter implements NotaryAdapter {
       });
     } catch (err) {
       throw new Error(
-        `PolygonNotaryAdapter.anchor: broadcast falló — ${sanitizeError(err)}`,
+        `PolygonNotaryAdapter.anchor: broadcast falló — ${sanitizeError(err, this.secrets)}`,
       );
     }
 
@@ -253,7 +268,13 @@ export class PolygonNotaryAdapter implements NotaryAdapter {
         details: {},
       };
     }
-    if (!contentHash || contentHash.length !== 64) {
+    // Tolerar prefijo 0x opcional en el contentHash recibido — algunos
+    // callers ya lo traen normalizado a hex con prefix. La forma canónica
+    // que firmamos es SIN prefix, así que stripeamos antes de validar.
+    const normalizedHash = contentHash
+      ? contentHash.toLowerCase().replace(/^0x/, '')
+      : '';
+    if (!normalizedHash || !HEX_64_REGEX.test(normalizedHash)) {
       return {
         valid: false,
         provider: 'polygon',
@@ -269,7 +290,7 @@ export class PolygonNotaryAdapter implements NotaryAdapter {
       return {
         valid: false,
         provider: 'polygon',
-        reason: `fallo al consultar la chain: ${sanitizeError(err)}`,
+        reason: `fallo al consultar la chain: ${sanitizeError(err, this.secrets)}`,
         details: {},
       };
     }
@@ -286,7 +307,7 @@ export class PolygonNotaryAdapter implements NotaryAdapter {
     // case-insensitive — `tx.data` puede llegar en upper o lower hex
     // según el cliente RPC.
     const onchainHash = onchain.data.toLowerCase().replace(/^0x/, '');
-    if (onchainHash !== contentHash.toLowerCase()) {
+    if (onchainHash !== normalizedHash) {
       return {
         valid: false,
         provider: 'polygon',
@@ -295,7 +316,7 @@ export class PolygonNotaryAdapter implements NotaryAdapter {
           network: this.network,
           txHash: onchain.hash,
           expected: onchainHash,
-          received: contentHash.toLowerCase(),
+          received: normalizedHash,
         },
       };
     }
@@ -343,19 +364,76 @@ export class PolygonNotaryAdapter implements NotaryAdapter {
 // Helpers internos.
 // ---------------------------------------------------------------------------
 
+/** Regex hex de 64 chars (SHA-256). Compartido con anchor() y verify(). */
+const HEX_64_REGEX = /^[0-9a-f]{64}$/i;
+
 /**
- * Convierte un error desconocido en un mensaje corto y seguro. Los
- * errores de ethers / RPCs traen URLs, IPs y stack traces que NO
- * queremos en respuestas HTTP públicas.
+ * Patrones de secretos que SIEMPRE redactamos antes de exponer un mensaje
+ * de error al caller del adapter. Estos errores eventualmente llegan al
+ * frontend (vía NotarizeService → AnchorSummary.errorMessage) y no podemos
+ * arriesgar filtrar RPC URLs internas ni wallet keys.
+ *
+ * Orden: el más específico primero — el replace es greedy y la primera
+ * regex que matchea consume el substring.
+ */
+const REDACTION_PATTERNS: ReadonlyArray<RegExp> = [
+  // Wallet private key con prefix 0x — 64 hex chars de claves.
+  /0x[0-9a-fA-F]{64}/g,
+  // Wallet private key sin prefix — solo si está entera, suelta.
+  /\b[0-9a-fA-F]{64}\b/g,
+  // URLs http(s)://... — pueden traer basic auth (user:pass@host) o
+  // hostnames internos que no queremos exponer.
+  /https?:\/\/[^\s"'<>)]+/gi,
+  // WebSocket URLs.
+  /wss?:\/\/[^\s"'<>)]+/gi,
+  // Ethereum addresses (no son secretos per se pero a veces revelan
+  // wallets internas — se redactan también por consistencia).
+  /0x[0-9a-fA-F]{40}\b/g,
+];
+
+const REDACTED_LABEL = '[REDACTED]';
+
+/**
+ * Convierte un error desconocido en un mensaje corto y seguro. Defense in
+ * depth contra leaks de:
+ *
+ *   1. Strings explícitos pasados en `deps.secrets` (RPC URL exacta,
+ *      wallet private key del config, etc).
+ *   2. Patrones genéricos (URLs http(s)://, wss://, wallet keys hex de 64
+ *      chars, addresses 0x... de 40 chars).
  *
  * Estrategia:
- *   - Strings → primeros 200 chars.
- *   - Error → `message` (primeros 200 chars) sin stack.
- *   - Otro → 'error desconocido'.
+ *   - Stack traces NUNCA se incluyen — solo `err.message`.
+ *   - Mensaje final truncado a 200 chars (después de redactar, para que
+ *     un secreto largo no se corte y revele una parte).
+ *   - Si tras redactar quedan solo `[REDACTED]` y espacios → devuelve
+ *     'error sanitizado'.
  */
-function sanitizeError(err: unknown): string {
+function sanitizeError(
+  err: unknown,
+  secrets: ReadonlyArray<string> = [],
+): string {
   const MAX = 200;
-  if (typeof err === 'string') return err.slice(0, MAX);
-  if (err instanceof Error) return err.message.slice(0, MAX);
-  return 'error desconocido';
+  let msg: string;
+  if (typeof err === 'string') msg = err;
+  else if (err instanceof Error) msg = err.message;
+  else return 'error desconocido';
+
+  // 1. Redactar secretos literales primero (más específico que regex).
+  for (const secret of secrets) {
+    if (!secret) continue;
+    // split + join para no depender de RegExp ni de String.prototype.replaceAll
+    // y para evitar problemas de escape de chars regex en el secreto.
+    msg = msg.split(secret).join(REDACTED_LABEL);
+  }
+
+  // 2. Redactar patrones genéricos.
+  for (const pattern of REDACTION_PATTERNS) {
+    msg = msg.replace(pattern, REDACTED_LABEL);
+  }
+
+  // 3. Trunc + check de mensaje vacío.
+  msg = msg.slice(0, MAX).trim();
+  if (!msg || /^(\[REDACTED\]\s*)+$/.test(msg)) return 'error sanitizado';
+  return msg;
 }

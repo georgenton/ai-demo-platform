@@ -3,7 +3,7 @@
 //
 // Dos roles, una sola interfaz:
 //   - "Notarizer local" (mini-ledger en Postgres firmado con clave RSA).
-//   - "Notarizer público" (anchor on-chain en Polygon Mumbai/mainnet).
+//   - "Notarizer público" (anchor on-chain en Polygon Amoy/mainnet).
 //
 // Ambos implementan la misma interfaz `NotaryAdapter` para que el caller
 // (NotarizationService en sub-PR 4) pueda invocar a uno, al otro, o a los
@@ -14,7 +14,7 @@
  * Proveedores soportados de notarización.
  *
  *   - `local`: mini-ledger interno firmado (LocalNotaryAdapter).
- *   - `polygon`: anchor on-chain en Polygon Mumbai o mainnet
+ *   - `polygon`: anchor on-chain en Polygon Amoy o mainnet
  *     (PolygonNotaryAdapter).
  *   - `fake`: implementación determinística para CI y tests sin red ni keys.
  *
