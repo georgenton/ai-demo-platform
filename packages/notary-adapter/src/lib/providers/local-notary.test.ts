@@ -379,6 +379,39 @@ describe('LocalNotaryAdapter', () => {
     expect(v.reason).toMatch(/firma inválida/);
   });
 
+  it('verify rechaza contentHash no-hex de 64 chars (defensa contra strings no-hex)', async () => {
+    const adapter = new LocalNotaryAdapter({
+      db: makeFakeDb(),
+      masterKey: MASTER_KEY,
+    });
+    // 64 chars exactos pero no hex válido.
+    const notHex = 'g'.repeat(64);
+    const v = await adapter.verify('id-1', notHex);
+    expect(v.valid).toBe(false);
+    expect(v.reason).toMatch(/contentHash inválido/);
+  });
+
+  it('verify con signerKeyId alterado → signer_key_mismatch', async () => {
+    const db = makeFakeDb();
+    const adapter = new LocalNotaryAdapter({
+      db,
+      masterKey: MASTER_KEY,
+      now: makeClock(),
+    });
+
+    const a = await adapter.anchor({
+      contentHash: VALID_HASH,
+      tenantId: 't',
+      documentId: 'd',
+    });
+    const stored = db.anchors.find((x) => x.id === a.anchorId)!;
+    stored.signerKeyId = 'fingerprint-falso';
+
+    const v = await adapter.verify(a.anchorId, VALID_HASH);
+    expect(v.valid).toBe(false);
+    expect(v.reason).toMatch(/signer_key_mismatch/);
+  });
+
   it('verify de anchor inexistente → valid=false', async () => {
     const adapter = new LocalNotaryAdapter({
       db: makeFakeDb(),
