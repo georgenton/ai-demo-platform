@@ -18,6 +18,7 @@ import { HrModule } from './hr/hr.module.js';
 import { IndustryModule } from './industries/industry.module.js';
 import { IngestModule } from './ingest/ingest.module.js';
 import { MeModule } from './me/me.module.js';
+import { NotarizeModule } from './notarize/notarize.module.js';
 import { PrivateLlmModule } from './private-llm/private-llm.module.js';
 import { TutorModule } from './tutor/tutor.module.js';
 
@@ -49,6 +50,7 @@ import { TutorModule } from './tutor/tutor.module.js';
     IndustryModule,
     IngestModule,
     MeModule,
+    NotarizeModule,
     PrivateLlmModule,
     TutorModule,
   ],

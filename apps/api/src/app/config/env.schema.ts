@@ -31,6 +31,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -244,6 +245,58 @@ export class EnvSchema {
   @IsOptional()
   @IsString()
   SUPERADMIN_EMAILS?: string;
+
+  // ---------------------------------------------------------------------------
+  // Notarización (Demo 08, ADR-0019)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Master key para cifrar las claves privadas RSA de los tenants en
+   * reposo. AES-256-GCM. Debe ser hex de 64 chars (= 32 bytes = 256 bits).
+   * Generar con `openssl rand -hex 32`.
+   *
+   * Si no está, el server arranca pero el demo 08 falla al primer anchor
+   * local con mensaje claro. Para que el demo funcione en producción es
+   * obligatoria.
+   */
+  @IsOptional()
+  @IsString()
+  @MinLength(64, { message: 'NOTARY_MASTER_KEY debe ser hex de 64 chars.' })
+  @Matches(/^[0-9a-fA-F]{64}$/, {
+    message:
+      'NOTARY_MASTER_KEY debe ser hex (0-9, a-f) de exactamente 64 chars.',
+  })
+  NOTARY_MASTER_KEY?: string;
+
+  /**
+   * RPC endpoint de Polygon. Default Amoy testnet. Para producción real
+   * apuntar a un RPC de mainnet (Alchemy, Infura, o el público de
+   * Polygon).
+   */
+  @IsOptional()
+  @IsString()
+  POLYGON_RPC_URL?: string;
+
+  /**
+   * Private key de la wallet de demo para firmar las txs en Polygon. Debe
+   * tener saldo POL (faucet en https://faucet.polygon.technology para
+   * testnet). Si no está, el modo 'public' / 'both' falla al anchor con
+   * mensaje claro — el modo 'local' sigue funcionando.
+   *
+   * NUNCA loguear este valor. NUNCA exponerlo al frontend.
+   */
+  @IsOptional()
+  @IsString()
+  POLYGON_WALLET_KEY?: string;
+
+  /**
+   * Slug de la red Polygon — 'polygon-amoy' (default) o 'polygon-mainnet'.
+   * Se persiste en PublicAnchor.network para que el frontend arme el
+   * link al explorer correcto.
+   */
+  @IsOptional()
+  @IsString()
+  POLYGON_NETWORK?: string;
 }
 
 /**
