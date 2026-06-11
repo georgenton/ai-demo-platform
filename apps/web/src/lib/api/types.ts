@@ -29,7 +29,8 @@ export type DemoId =
   | 'agent'
   | 'tutor'
   | 'clinical'
-  | 'interview';
+  | 'interview'
+  | 'notarize';
 
 // ---------------------------------------------------------------------------
 // Ingest — POST /api/v1/ingest  (text/JSON)

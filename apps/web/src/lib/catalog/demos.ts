@@ -133,6 +133,21 @@ export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
       'audience.interview.admissions',
     ],
   },
+  {
+    // Demo 08 — notarización cooperativa con IA (ADR-0019). Cross-industry,
+    // pero el caso seed son cooperativas de ahorro y crédito en Ecuador
+    // (SEPS / LOEPS). Icon `shield-check` representa la combinación
+    // notarizado + verificable.
+    id: 'notarize',
+    icon: 'shield-check',
+    status: 'live',
+    route: '/demo/notarize',
+    audienceKeys: [
+      'audience.notarize.gerentes',
+      'audience.notarize.compliance',
+      'audience.notarize.auditores',
+    ],
+  },
 ] as const;
 
 /**
