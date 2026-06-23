@@ -39,6 +39,12 @@ export {
   verifyNotarized,
 } from './notarize';
 export {
+  getLoan,
+  listLoans,
+  getLoanMetrics,
+  subscribeToLoanChat,
+} from './loans';
+export {
   deleteDocument,
   getDocument,
   listDocumentChunks,
@@ -203,6 +209,23 @@ export type {
   VerificationAnchor,
   VerificationResponse,
 } from './types-notarize';
+export type {
+  EligibilityResult as LoanEligibilityResult,
+  LoanChatDoneEvent,
+  LoanChatErrorEvent,
+  LoanChatEvent,
+  LoanChatRequest,
+  LoanChatStageChangedEvent,
+  LoanChatStreamHandlers,
+  LoanChatSubscription,
+  LoanChatTokenEvent,
+  LoanChatToolEvent,
+  LoanFunnelMetrics,
+  LoanLeadDto,
+  LoanLeadListItem,
+  LoanStage,
+  LoanToolName,
+} from './types-loans';
 export type {
   ChunkSummary,
   DocumentDetail,

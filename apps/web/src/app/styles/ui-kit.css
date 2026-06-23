@@ -4436,3 +4436,387 @@ html.presenting .app-shell > .sidebar {
   margin: 0;
   padding: 0 0 0 4px;
 }
+
+/* ============================================================================
+   Demo 09 — Funnel de préstamos (ADR-0020)
+
+   Vista socio: chat tipo WhatsApp. Vista oficial (kanban): sub-PR 4.
+
+   Layout:
+     - .loans-chat: card con header sticky + scroll de mensajes + composer.
+     - .loans-bubble-{user|assistant|system}: estilos de bubble.
+     - .loans-stage-badge: chip con la etapa actual. Color por etapa.
+     - .loans-composer: textarea + botón send estilo WA.
+   ============================================================================ */
+
+.loans-chat {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 600px;
+  max-height: 75vh;
+  box-shadow: var(--shadow-card, 0 1px 3px rgba(0, 0, 0, 0.04));
+}
+
+.loans-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+.loans-chat-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  color: var(--color-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.loans-chat-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.loans-chat-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--color-fg);
+}
+
+.loans-chat-subtitle {
+  font-size: 12.5px;
+  color: var(--color-fg-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.loans-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  display: inline-block;
+}
+
+/* Stage badge — chip con color por etapa */
+.loans-stage-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.loans-stage-badge.stage-lead {
+  background: var(--nai-ink-100);
+  color: var(--nai-ink-700);
+}
+.loans-stage-badge.stage-qualification,
+.loans-stage-badge.stage-documentation {
+  background: var(--nai-navy-50);
+  color: var(--nai-navy-700);
+}
+.loans-stage-badge.stage-credit_evaluation,
+.loans-stage-badge.stage-approval {
+  background: var(--color-accent-soft);
+  color: var(--color-brand);
+}
+.loans-stage-badge.stage-disbursement,
+.loans-stage-badge.stage-servicing {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+.loans-stage-badge.stage-rejected {
+  background: var(--nai-rose-100, #fee2e2);
+  color: var(--nai-rose-700, #b91c1c);
+}
+
+/* Área de mensajes con scroll */
+.loans-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--color-bg-sunken);
+}
+
+.loans-chat-intro {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--color-fg-muted);
+  line-height: 1.5;
+}
+
+/* Bubbles tipo WhatsApp */
+.loans-bubble {
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+  padding: 8px 12px 6px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  word-wrap: break-word;
+  position: relative;
+}
+
+.loans-bubble-user {
+  align-self: flex-end;
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+  border-bottom-right-radius: 4px;
+}
+
+.loans-bubble-assistant {
+  align-self: flex-start;
+  background: var(--color-bg-elevated);
+  color: var(--color-fg);
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: 4px;
+}
+
+.loans-bubble-content {
+  white-space: pre-wrap;
+}
+
+.loans-bubble-time {
+  font-size: 11px;
+  color: var(--color-fg-subtle);
+  margin-top: 2px;
+  text-align: right;
+}
+
+.loans-bubble-caret {
+  display: inline-block;
+  width: 6px;
+  height: 14px;
+  background: var(--color-fg);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: loans-caret-blink 1s steps(2) infinite;
+}
+
+@keyframes loans-caret-blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* System bubbles (eventos de tool) — centrados, gris claro */
+.loans-bubble-system {
+  align-self: center;
+  background: var(--color-surface-hover);
+  color: var(--color-fg-muted);
+  font-size: 12.5px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  max-width: 90%;
+  text-align: center;
+}
+
+.loans-bubble-system strong {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+/* Eligibility card embebida en un bubble assistant */
+.loans-eligibility-card {
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: -4px -8px -2px;
+  min-width: 280px;
+}
+
+.loans-eligibility-card.ok {
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success);
+}
+
+.loans-eligibility-card.no {
+  background: var(--nai-rose-100, #fee2e2);
+  border: 1px solid var(--nai-rose-300, #fca5a5);
+}
+
+.loans-eligibility-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.loans-eligibility-card.ok .loans-eligibility-header {
+  color: var(--color-success);
+}
+.loans-eligibility-card.no .loans-eligibility-header {
+  color: var(--nai-rose-700, #b91c1c);
+}
+
+.loans-eligibility-verdict {
+  font-weight: 700;
+  font-size: 14.5px;
+}
+
+.loans-eligibility-reason {
+  font-size: 13px;
+  color: var(--color-fg);
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+
+.loans-eligibility-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 16px;
+  margin: 0;
+}
+
+.loans-eligibility-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.loans-eligibility-row dt {
+  font-size: 11px;
+  color: var(--color-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.loans-eligibility-row dd {
+  font-size: 14px;
+  color: var(--color-fg);
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Composer — textarea + send */
+.loans-composer {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+.loans-composer-input {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 14.5px;
+  line-height: 1.4;
+  color: var(--color-fg);
+  background: var(--color-surface);
+  outline: none;
+  transition: border-color 120ms;
+  min-height: 40px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.loans-composer-input:focus {
+  border-color: var(--color-border-focus);
+}
+
+.loans-composer-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loans-composer-send {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-brand);
+  color: var(--color-brand-fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    transform 80ms;
+  flex-shrink: 0;
+}
+
+.loans-composer-send:hover:not(:disabled) {
+  background: var(--nai-navy-700, var(--color-brand));
+}
+
+.loans-composer-send:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.loans-composer-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Error panel del chat */
+.loans-chat-error {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--nai-rose-50, #fef2f2);
+  border: 1px solid var(--nai-rose-300, #fca5a5);
+  border-radius: 12px;
+}
+
+.loans-chat-error-icon {
+  color: var(--nai-rose-700, #b91c1c);
+  flex-shrink: 0;
+}
+
+.loans-chat-error-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.loans-chat-error-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nai-rose-700, #b91c1c);
+}
+
+.loans-chat-error-msg {
+  font-size: 12.5px;
+  color: var(--color-fg-muted);
+}
+
+@media (max-width: 720px) {
+  .loans-eligibility-grid {
+    grid-template-columns: 1fr;
+  }
+  .loans-bubble {
+    max-width: 88%;
+  }
+}
