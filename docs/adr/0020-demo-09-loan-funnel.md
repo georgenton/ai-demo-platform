@@ -1,7 +1,7 @@
 # ADR-0020 — Demo 09: Funnel de préstamos asistido por IA para cooperativas
 
-- **Estado:** Propuesto
-- **Fecha:** 2026-06-23
+- **Estado:** Aceptado
+- **Fecha:** 2026-06-23 (aceptado al cierre del sub-PR 5)
 - **Decidido por:** Jorge (arquitecto) + Edguitar (negocio)
 - **Demo objetivo:** Demo 09 — _"Chat tipo WhatsApp + funnel inteligente para préstamos en cooperativas de ahorro y crédito (CACs)"_
 

@@ -35,10 +35,9 @@ describe('DemoRegistryService', () => {
       ]);
     });
 
-    it('marca los 8 demos terminados como available y loans como coming-soon', () => {
-      // Cierre del sprint Demo 08 (NotarizeModule): notarize pasó a
-      // 'available'. Demo 09 (loans) entra como 'coming-soon' en sub-PR 1
-      // y pasa a 'available' en sub-PR 5.
+    it('marca los 9 demos del roadmap como available', () => {
+      // Cierre del sprint Demo 09 (LoansModule): loans pasó a 'available'
+      // junto con los 8 previos.
       const demos = service.findAll();
       const byId = Object.fromEntries(demos.map((d) => [d.id, d.status]));
       expect(byId.rag).toBe('available');
@@ -49,7 +48,7 @@ describe('DemoRegistryService', () => {
       expect(byId.clinical).toBe('available');
       expect(byId.interview).toBe('available');
       expect(byId.notarize).toBe('available');
-      expect(byId.loans).toBe('coming-soon');
+      expect(byId.loans).toBe('available');
     });
 
     it('todos los demos traen los campos requeridos por la UI', () => {
