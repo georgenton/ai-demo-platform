@@ -17,6 +17,7 @@ import { PrismaClient } from '../../generated/client/client.js';
 export {
   EnrollmentStatus,
   ExamType,
+  LoanStage,
   Prisma,
   TenantStatus,
   UserRole,
@@ -29,6 +30,9 @@ export type {
   Enrollment,
   Grade,
   Industry,
+  LoanConversation,
+  LoanLead,
+  LoanStageHistory,
   Student,
   Tenant,
   User,
