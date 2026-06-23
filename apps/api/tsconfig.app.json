@@ -23,6 +23,9 @@
     },
     {
       "path": "../../packages/notary-adapter/tsconfig.lib.json"
+    },
+    {
+      "path": "../../packages/core-banking-adapter/tsconfig.lib.json"
     }
   ]
 }
