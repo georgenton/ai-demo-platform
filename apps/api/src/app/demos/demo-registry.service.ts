@@ -155,7 +155,7 @@ export class DemoRegistryService {
         'Oficiales de crédito',
         'Áreas comerciales',
       ],
-      status: 'coming-soon',
+      status: 'available',
       route: '/demo/loans',
     },
   ];

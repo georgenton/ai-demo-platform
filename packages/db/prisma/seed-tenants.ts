@@ -99,6 +99,18 @@ const INDUSTRIES = [
         'Plataforma de IA para retail: asistente de catálogo, agente sobre indicadores y entrevistas de primer filtro.',
     },
   },
+  {
+    slug: 'cooperativas',
+    displayName: 'Cooperativas de ahorro y crédito',
+    // Vertical agregada en sprint Demo 09 (ADR-0020). CACs ecuatorianas
+    // reguladas por SEPS/LOEPS. Acompañan los dos demos cooperativos:
+    // notarización (Demo 08) + funnel de préstamos (Demo 09).
+    enabledDemos: ['rag', 'agent', 'notarize', 'loans'],
+    defaultConfig: {
+      welcomeCopy:
+        'Plataforma de IA para cooperativas de ahorro y crédito: chat con normativa SEPS, agente sobre indicadores, notarización de actas y funnel de préstamos asistido por IA.',
+    },
+  },
 ] as const;
 
 // ---------------------------------------------------------------------------
