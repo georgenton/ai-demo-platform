@@ -148,6 +148,20 @@ export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
       'audience.notarize.auditores',
     ],
   },
+  {
+    // Demo 09 — funnel de préstamos asistido por IA (ADR-0020). Vista
+    // socio (chat tipo WhatsApp). El kanban del oficial vive en /demo/loans/funnel
+    // (sub-PR 4). El status sigue 'coming-soon' hasta el sub-PR 5.
+    id: 'loans',
+    icon: 'message-square-heart',
+    status: 'live',
+    route: '/demo/loans',
+    audienceKeys: [
+      'audience.loans.gerentes',
+      'audience.loans.oficiales',
+      'audience.loans.comercial',
+    ],
+  },
 ] as const;
 
 /**

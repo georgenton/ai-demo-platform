@@ -120,4 +120,14 @@ export const DEMO_COST_DEFAULTS: Record<DemoId, DemoCostDefaults> = {
     referenceTokensPerUse: { inputTokens: 3_000, outputTokens: 1_000 },
     usesLabelKey: 'costMini.uses.notarize',
   },
+  loans: {
+    // Demo 09 — funnel de préstamos. Cada "uso" = una conversación
+    // completa con el bot (típicamente 6-10 turns con tool calls).
+    // Una CAC mediana procesa ~200 solicitudes/mes; con ~8K input
+    // promedio (system prompt + history) + ~2K output por conversación.
+    defaultUsers: 1,
+    defaultUsesPerUserPerMonth: 200,
+    referenceTokensPerUse: { inputTokens: 8_000, outputTokens: 2_000 },
+    usesLabelKey: 'costMini.uses.loans',
+  },
 };
