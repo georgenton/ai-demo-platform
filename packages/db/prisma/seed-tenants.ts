@@ -105,10 +105,10 @@ const INDUSTRIES = [
     // Vertical agregada en sprint Demo 09 (ADR-0020). CACs ecuatorianas
     // reguladas por SEPS/LOEPS. Acompañan los dos demos cooperativos:
     // notarización (Demo 08) + funnel de préstamos (Demo 09).
-    enabledDemos: ['rag', 'agent', 'notarize', 'loans'],
+    enabledDemos: ['rag', 'agent', 'notarize', 'loans', 'bi'],
     defaultConfig: {
       welcomeCopy:
-        'Plataforma de IA para cooperativas de ahorro y crédito: chat con normativa SEPS, agente sobre indicadores, notarización de actas y funnel de préstamos asistido por IA.',
+        'Plataforma de IA para cooperativas de ahorro y crédito: chat con normativa SEPS, agente sobre indicadores, notarización de actas, funnel de préstamos asistido por IA y dashboard inteligente que reemplaza el flujo cubo→Power BI.',
     },
   },
 ] as const;

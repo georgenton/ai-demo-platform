@@ -158,6 +158,29 @@ export class DemoRegistryService {
       status: 'available',
       route: '/demo/loans',
     },
+    {
+      // Demo 10 — Dashboard inteligente / BI dinámico (ADR-0021).
+      // El gerente pregunta en español los indicadores de la cooperativa
+      // ("¿cuál agencia tiene más mora?", "cartera vigente por producto").
+      // La IA traduce a SQL contra el warehouse, ejecuta, y elige el
+      // gráfico apropiado. Reemplaza el flujo cubo OLAP → Power BI que
+      // antes tomaba semanas en cada nuevo corte de información.
+      //
+      // Sub-PR 5 lo activa como `available` después de validar el flujo
+      // end-to-end con los 29.6K filas del seed-bi.
+      id: 'bi',
+      title: 'BI dinámico',
+      tagline: 'Pregunta en español, recibe gráfico al instante',
+      description:
+        'El gerente o el oficial de operaciones pregunta en lenguaje natural sobre los indicadores de la cooperativa (cartera, mora, captaciones, desembolsos, perfil del socio). La IA traduce la pregunta a SQL contra el warehouse mock de 5 tablas, ejecuta de forma segura (whitelist + LIMIT + tenant filter inyectado) y elige el gráfico apropiado (line/bar/area/pie/treemap). Los charts que valgan la pena se guardan en un dashboard compartido por tenant. Reemplaza el flujo cubo OLAP → Power BI que antes tomaba semanas en cada nuevo corte de información.',
+      audience: [
+        'Gerentes cooperativas',
+        'Áreas de operaciones',
+        'Directorio / Consejo de vigilancia',
+      ],
+      status: 'available',
+      route: '/demo/bi',
+    },
   ];
 
   /** Devuelve todos los demos en el orden definido. */
