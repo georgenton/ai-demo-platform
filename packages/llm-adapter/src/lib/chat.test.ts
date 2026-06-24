@@ -18,6 +18,7 @@ import { AnthropicChatAdapter } from './providers/anthropic-chat.js';
 import { FakeChatAdapter } from './providers/fake-chat.js';
 import { OpenAICompatChatAdapter } from './providers/openai-compat-chat.js';
 import { PrivateMacChatAdapter } from './providers/private-mac-chat.js';
+import { PrivateOnpremChatAdapter } from './providers/private-onprem-chat.js';
 
 describe('readChatConfig', () => {
   // Antes de cada test borramos las CHAT_* para empezar desde un estado limpio.
@@ -30,6 +31,9 @@ describe('readChatConfig', () => {
     delete process.env.PRIVATE_LLM_BASE_URL;
     delete process.env.PRIVATE_LLM_API_KEY;
     delete process.env.PRIVATE_LLM_MODEL;
+    delete process.env.ONPREM_LLM_BASE_URL;
+    delete process.env.ONPREM_LLM_API_KEY;
+    delete process.env.ONPREM_LLM_MODEL;
   });
 
   it('lanza un error claro si CHAT_PROVIDER no está definida', () => {
@@ -115,6 +119,41 @@ describe('readChatConfig', () => {
       baseUrl: 'https://private-llm.example.com',
     });
   });
+
+  it('devuelve config válida con provider=private-onprem y variables ONPREM_LLM_* (ADR-0022)', () => {
+    process.env.CHAT_PROVIDER = 'private-onprem';
+    process.env.ONPREM_LLM_BASE_URL = 'http://ubuntu-onprem.local:11434';
+    process.env.ONPREM_LLM_API_KEY = 'ollama-local';
+    process.env.ONPREM_LLM_MODEL = 'llama3.2:3b';
+    expect(readChatConfig()).toEqual({
+      provider: 'private-onprem',
+      apiKey: 'ollama-local',
+      model: 'llama3.2:3b',
+      baseUrl: 'http://ubuntu-onprem.local:11434',
+    });
+  });
+
+  it('private-onprem usa fallback a CHAT_* si las ONPREM_LLM_* no están', () => {
+    process.env.CHAT_PROVIDER = 'private-onprem';
+    process.env.CHAT_API_KEY = 'fallback-key';
+    process.env.CHAT_MODEL = 'fallback-model';
+    process.env.CHAT_BASE_URL = 'http://fallback.local';
+    expect(readChatConfig()).toEqual({
+      provider: 'private-onprem',
+      apiKey: 'fallback-key',
+      model: 'fallback-model',
+      baseUrl: 'http://fallback.local',
+    });
+  });
+
+  it('private-onprem lanza si falta base URL (ni ONPREM_LLM_BASE_URL ni CHAT_BASE_URL)', () => {
+    process.env.CHAT_PROVIDER = 'private-onprem';
+    process.env.ONPREM_LLM_API_KEY = 'k';
+    process.env.ONPREM_LLM_MODEL = 'm';
+    expect(() => readChatConfig()).toThrow(
+      /ONPREM_LLM_BASE_URL\/CHAT_BASE_URL/,
+    );
+  });
 });
 
 describe('createChatAdapter', () => {
@@ -154,5 +193,15 @@ describe('createChatAdapter', () => {
       baseUrl: 'https://private-llm.example.com',
     });
     expect(adapter).toBeInstanceOf(PrivateMacChatAdapter);
+  });
+
+  it('devuelve PrivateOnpremChatAdapter para provider="private-onprem"', () => {
+    const adapter = createChatAdapter({
+      provider: 'private-onprem',
+      apiKey: 'ollama-key',
+      model: 'llama3.2:3b',
+      baseUrl: 'http://ubuntu-onprem.local:11434',
+    });
+    expect(adapter).toBeInstanceOf(PrivateOnpremChatAdapter);
   });
 });
