@@ -31,7 +31,8 @@ export type DemoId =
   | 'clinical'
   | 'interview'
   | 'notarize'
-  | 'loans';
+  | 'loans'
+  | 'bi';
 
 // ---------------------------------------------------------------------------
 // Ingest — POST /api/v1/ingest  (text/JSON)

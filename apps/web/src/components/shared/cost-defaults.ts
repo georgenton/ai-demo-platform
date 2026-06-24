@@ -130,4 +130,15 @@ export const DEMO_COST_DEFAULTS: Record<DemoId, DemoCostDefaults> = {
     referenceTokensPerUse: { inputTokens: 8_000, outputTokens: 2_000 },
     usesLabelKey: 'costMini.uses.loans',
   },
+  bi: {
+    // Demo 10 — dashboard inteligente. Cada "uso" = una pregunta del
+    // gerente que dispara run_sql + render_chart. Una CAC mediana, 5
+    // gerentes haciendo ~30 preguntas/mes cada uno = 150 queries/mes.
+    // Tokens: system prompt (catálogo de tablas) + tool calls + narrativa
+    // ≈ 6K input + 1.5K output por pregunta.
+    defaultUsers: 5,
+    defaultUsesPerUserPerMonth: 30,
+    referenceTokensPerUse: { inputTokens: 6_000, outputTokens: 1_500 },
+    usesLabelKey: 'costMini.uses.bi',
+  },
 };
