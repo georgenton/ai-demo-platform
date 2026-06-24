@@ -1,7 +1,7 @@
 # ADR-0021 — Demo 10: Dashboard inteligente / BI dinámico para cooperativas
 
-- **Estado:** Propuesto
-- **Fecha:** 2026-06-24
+- **Estado:** Aceptado
+- **Fecha:** 2026-06-24 (aceptado al cierre del sub-PR 5)
 - **Decidido por:** Jorge (arquitecto) + Edguitar (negocio)
 - **Demo objetivo:** Demo 10 — _"Pregunta en español los indicadores de la cooperativa y obtén tabla + gráfico inteligente al instante"_
 
