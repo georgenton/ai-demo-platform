@@ -19,7 +19,7 @@ describe('DemoRegistryService', () => {
   const service = new DemoRegistryService();
 
   describe('findAll()', () => {
-    it('devuelve los 9 demos del roadmap (rag, comparator, corpus, agent, tutor, clinical, interview, notarize, loans)', () => {
+    it('devuelve los 10 demos del roadmap (rag, comparator, corpus, agent, tutor, clinical, interview, notarize, loans, bi)', () => {
       const demos = service.findAll();
       const ids = demos.map((d) => d.id);
       expect(ids).toEqual([
@@ -32,12 +32,13 @@ describe('DemoRegistryService', () => {
         'interview',
         'notarize',
         'loans',
+        'bi',
       ]);
     });
 
-    it('marca los 9 demos del roadmap como available', () => {
-      // Cierre del sprint Demo 09 (LoansModule): loans pasó a 'available'
-      // junto con los 8 previos.
+    it('marca los 10 demos del roadmap como available', () => {
+      // Cierre del sprint Demo 10 (BiModule + Dashboard): bi pasó a
+      // 'available' junto con los 9 previos.
       const demos = service.findAll();
       const byId = Object.fromEntries(demos.map((d) => [d.id, d.status]));
       expect(byId.rag).toBe('available');
@@ -49,6 +50,7 @@ describe('DemoRegistryService', () => {
       expect(byId.interview).toBe('available');
       expect(byId.notarize).toBe('available');
       expect(byId.loans).toBe('available');
+      expect(byId.bi).toBe('available');
     });
 
     it('todos los demos traen los campos requeridos por la UI', () => {

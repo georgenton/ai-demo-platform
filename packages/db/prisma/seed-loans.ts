@@ -372,16 +372,16 @@ async function main() {
     update: {
       displayName: COOP_TENANT_DISPLAY,
       industryId: industry.id,
-      // Garantizar que el tenant tiene loans habilitado aunque haya
-      // sido editado manualmente. Notarize también queda asegurada por
-      // si esta es la primera corrida del seed.
-      enabledDemos: ['loans', 'notarize', 'rag', 'agent'],
+      // Garantizar que el tenant tiene los 5 demos cooperativos habilitados
+      // aunque haya sido editado manualmente. 'bi' fue agregado en el
+      // sprint Demo 10 (ADR-0021).
+      enabledDemos: ['loans', 'notarize', 'rag', 'agent', 'bi'],
     },
     create: {
       slug: COOP_TENANT_SLUG,
       displayName: COOP_TENANT_DISPLAY,
       industryId: industry.id,
-      enabledDemos: ['loans', 'notarize', 'rag', 'agent'],
+      enabledDemos: ['loans', 'notarize', 'rag', 'agent', 'bi'],
       branding: {
         accentColor: '#0EA5E9',
         displayName: 'Cooperativa Andina',
