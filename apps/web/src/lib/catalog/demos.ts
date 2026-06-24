@@ -162,6 +162,20 @@ export const DEMOS_CATALOG: readonly DemoCatalogEntry[] = [
       'audience.loans.comercial',
     ],
   },
+  {
+    // Demo 10 — BI dinámico / dashboard inteligente (ADR-0021). Reemplaza
+    // el flujo cubo → Power BI con tool calling (run_sql + render_chart).
+    // El status pasa a 'live' en el catálogo en sub-PR 5 una vez sembrado.
+    id: 'bi',
+    icon: 'bar-chart-3',
+    status: 'live',
+    route: '/demo/bi',
+    audienceKeys: [
+      'audience.bi.gerentes',
+      'audience.bi.operaciones',
+      'audience.bi.directorio',
+    ],
+  },
 ] as const;
 
 /**
