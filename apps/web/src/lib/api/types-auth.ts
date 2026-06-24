@@ -52,6 +52,12 @@ export interface MeTenantInfo {
   displayName: string;
   branding: unknown;
   status: TenantStatus;
+  /**
+   * Provider LLM activo para este tenant (ADR-0022). null = el sistema
+   * cae al `CHAT_PROVIDER` del env. El frontend cachea este valor en
+   * localStorage para mandarlo como `X-LLM-Provider` en cada request.
+   */
+  llmProvider: string | null;
 }
 
 /** Resumen visible del industry en GET /me/demos. */

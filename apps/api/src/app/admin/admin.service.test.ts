@@ -38,6 +38,7 @@ const existingTenant = {
   enabledDemos: [] as string[],
   branding: { logoUrl: 'https://cdn/old.png', accentColor: '#000000' },
   status: 'active' as const,
+  llmProvider: null as string | null,
 };
 
 const updatedTenant = (overrides: Record<string, unknown> = {}) => ({
@@ -130,5 +131,50 @@ describe('AdminService.updateMyTenant', () => {
     await expect(
       makeService().updateMyTenant('inexistente', { displayName: 'X' }),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('persiste llmProvider y lo devuelve en la respuesta (ADR-0022)', async () => {
+    mockTenantFindUnique.mockResolvedValue(existingTenant);
+    mockTenantUpdate.mockResolvedValue(
+      updatedTenant({ llmProvider: 'private-onprem' }),
+    );
+
+    const result = await makeService().updateMyTenant(TENANT_ID, {
+      llmProvider: 'private-onprem',
+    });
+
+    expect(result.llmProvider).toBe('private-onprem');
+    expect(mockTenantUpdate.mock.calls[0][0].data.llmProvider).toBe(
+      'private-onprem',
+    );
+  });
+
+  it('limpia el override del llmProvider cuando recibe null', async () => {
+    mockTenantFindUnique.mockResolvedValue({
+      ...existingTenant,
+      llmProvider: 'private-onprem',
+    });
+    mockTenantUpdate.mockResolvedValue(updatedTenant({ llmProvider: null }));
+
+    const result = await makeService().updateMyTenant(TENANT_ID, {
+      llmProvider: null,
+    });
+
+    expect(result.llmProvider).toBeNull();
+    expect(mockTenantUpdate.mock.calls[0][0].data.llmProvider).toBeNull();
+  });
+
+  it('no toca llmProvider cuando el patch no lo incluye', async () => {
+    mockTenantFindUnique.mockResolvedValue({
+      ...existingTenant,
+      llmProvider: 'anthropic',
+    });
+    mockTenantUpdate.mockResolvedValue(
+      updatedTenant({ llmProvider: 'anthropic' }),
+    );
+
+    await makeService().updateMyTenant(TENANT_ID, { displayName: 'X' });
+
+    expect(mockTenantUpdate.mock.calls[0][0].data.llmProvider).toBeUndefined();
   });
 });

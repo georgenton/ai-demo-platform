@@ -116,3 +116,17 @@ Faltaban dos piezas:
 - Si la latencia de Ollama en CPU se vuelve un problema real: ahí
   agregamos una columna `Tenant.llmModel` para permitir elegir
   modelo más liviano por tenant.
+
+## Implementación entregada (sub-PRs 1–3)
+
+- **Sub-PR 1** — schema (`Tenant.llmProvider String?` + migración) y
+  ADR aceptado.
+- **Sub-PR 2** — `PrivateOnpremChatAdapter` + `PrivateOnpremEmbeddingsAdapter`,
+  `'private-onprem'` sumado a `ChatProvider`/`EmbeddingsProvider`, env
+  vars `ONPREM_LLM_*` + tests.
+- **Sub-PR 3** — UI en `/admin/tenant` con radio de 5 opciones,
+  endpoint `PATCH /api/v1/admin/tenant` extendido con `llmProvider`,
+  propagación al frontend vía `useMyDemos` que cachea el provider en
+  `localStorage` (`adp-tenant-llm-provider`) y `getActiveLlmProvider()`
+  cae a él cuando no hay override manual. Runbook
+  `docs/runbook-demo-onprem.md` con guía Ubuntu + Ollama.

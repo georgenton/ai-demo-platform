@@ -8,7 +8,9 @@
 export {
   getActiveLlmProvider,
   llmProviderHeader,
+  setTenantLlmProvider,
   STORAGE_KEY,
+  TENANT_STORAGE_KEY,
   type LlmProviderId,
 } from './llm-provider-storage';
 
