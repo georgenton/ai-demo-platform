@@ -4820,3 +4820,453 @@ html.presenting .app-shell > .sidebar {
     max-width: 88%;
   }
 }
+
+/* ============================================================================
+   Demo 09 — Vista oficial (kanban + drawer)
+
+   Layout:
+     - .funnel-metrics: 4 KPIs en grid horizontal (responsive 2×2).
+     - .funnel-kanban: scroll horizontal con 8 columnas.
+     - .funnel-kanban-column: header sticky + body con cards verticales.
+     - .funnel-lead-card: tarjeta con nombre + monto + tiempo.
+     - .funnel-drawer: panel lateral derecho (380px), modal con backdrop.
+   ============================================================================ */
+
+/* KPI strip */
+.funnel-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+  transition: opacity 200ms;
+}
+
+.funnel-metrics.refreshing {
+  opacity: 0.7;
+}
+
+.funnel-kpi {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-left-width: 4px;
+}
+
+.funnel-kpi.tone-brand {
+  border-left-color: var(--color-brand);
+}
+.funnel-kpi.tone-accent {
+  border-left-color: var(--color-accent);
+}
+.funnel-kpi.tone-success {
+  border-left-color: var(--color-success);
+}
+.funnel-kpi.tone-danger {
+  border-left-color: var(--nai-rose-500, #ef4444);
+}
+
+.funnel-kpi-label {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.funnel-kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-fg);
+  line-height: 1;
+}
+
+.funnel-kpi-sublabel {
+  font-size: 11.5px;
+  color: var(--color-fg-subtle);
+}
+
+@media (max-width: 720px) {
+  .funnel-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Toolbar header */
+.funnel-refresh-label {
+  font-size: 12.5px;
+  color: var(--color-fg-muted);
+}
+
+/* Kanban */
+.funnel-kanban {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(220px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  min-height: 480px;
+}
+
+.funnel-kanban-column {
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+}
+
+.funnel-kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  background: var(--color-bg-sunken);
+  border-radius: 12px 12px 0 0;
+}
+
+.funnel-kanban-column-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-fg);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.funnel-kanban-column-count {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-fg-muted);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.funnel-kanban-column-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  max-height: 580px;
+  overflow-y: auto;
+}
+
+.funnel-kanban-column-empty {
+  font-size: 12.5px;
+  color: var(--color-fg-subtle);
+  font-style: italic;
+  padding: 8px;
+  text-align: center;
+}
+
+/* Color accent por etapa (línea izquierda) */
+.funnel-kanban-column.col-lead {
+  border-left: 3px solid var(--nai-ink-300);
+}
+.funnel-kanban-column.col-qualification,
+.funnel-kanban-column.col-documentation {
+  border-left: 3px solid var(--color-brand);
+}
+.funnel-kanban-column.col-credit_evaluation,
+.funnel-kanban-column.col-approval {
+  border-left: 3px solid var(--color-accent);
+}
+.funnel-kanban-column.col-disbursement,
+.funnel-kanban-column.col-servicing {
+  border-left: 3px solid var(--color-success);
+}
+.funnel-kanban-column.col-rejected {
+  border-left: 3px solid var(--nai-rose-500, #ef4444);
+  opacity: 0.85;
+}
+
+/* Lead card en el kanban */
+.funnel-lead-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition:
+    background 120ms,
+    border-color 120ms,
+    transform 80ms;
+}
+
+.funnel-lead-card:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+}
+
+.funnel-lead-card:active {
+  transform: scale(0.98);
+}
+
+.funnel-lead-card.selected {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 1px var(--color-brand);
+}
+
+.funnel-lead-card-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.funnel-lead-card-meta {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.funnel-lead-card-amount {
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.funnel-lead-card-dot {
+  color: var(--color-fg-subtle);
+}
+
+.funnel-lead-card-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--color-fg-subtle);
+}
+
+.funnel-lead-card-time {
+  flex-shrink: 0;
+}
+
+.funnel-lead-card-reason {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Estados de la página */
+.funnel-loading,
+.funnel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  color: var(--color-fg-muted);
+  text-align: center;
+}
+
+.funnel-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.funnel-empty-body {
+  font-size: 13.5px;
+  max-width: 420px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.funnel-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--nai-rose-50, #fef2f2);
+  border: 1px solid var(--nai-rose-300, #fca5a5);
+  border-radius: 12px;
+}
+
+.funnel-error-icon {
+  color: var(--nai-rose-700, #b91c1c);
+}
+
+.funnel-error-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.funnel-error-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nai-rose-700, #b91c1c);
+}
+
+.funnel-error-msg {
+  font-size: 12.5px;
+  color: var(--color-fg-muted);
+}
+
+/* Drawer lateral */
+.funnel-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  z-index: 60;
+  animation: funnel-fade-in 160ms ease-out;
+}
+
+@keyframes funnel-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.funnel-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100vw);
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08);
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  animation: funnel-slide-in 200ms ease-out;
+  overflow: hidden;
+}
+
+@keyframes funnel-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.funnel-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--color-border);
+  gap: 12px;
+}
+
+.funnel-drawer-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.funnel-drawer-phone {
+  font-size: 13px;
+  color: var(--color-fg-muted);
+  margin-top: 2px;
+}
+
+.funnel-drawer-close {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-fg-muted);
+  flex-shrink: 0;
+}
+
+.funnel-drawer-close:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-fg);
+}
+
+.funnel-drawer-loading,
+.funnel-drawer-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 18px;
+  font-size: 13.5px;
+  color: var(--color-fg-muted);
+}
+
+.funnel-drawer-error {
+  color: var(--nai-rose-700, #b91c1c);
+  background: var(--nai-rose-50, #fef2f2);
+}
+
+.funnel-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.funnel-drawer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.funnel-drawer-section-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.funnel-drawer-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.funnel-drawer-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 8px;
+  font-size: 13.5px;
+}
+
+.funnel-drawer-row dt {
+  color: var(--color-fg-muted);
+}
+
+.funnel-drawer-row dd {
+  color: var(--color-fg);
+  margin: 0;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+@media (max-width: 1100px) {
+  .funnel-kanban {
+    grid-template-columns: repeat(8, 220px);
+  }
+}
