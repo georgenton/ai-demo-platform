@@ -44,6 +44,7 @@ export {
   getLoanMetrics,
   subscribeToLoanChat,
 } from './loans';
+export { subscribeToBiChat } from './bi';
 export {
   deleteDocument,
   getDocument,
@@ -226,6 +227,21 @@ export type {
   LoanStage,
   LoanToolName,
 } from './types-loans';
+export type {
+  BiChartSpec,
+  BiChartType,
+  BiChatChartEvent,
+  BiChatDoneEvent,
+  BiChatErrorEvent,
+  BiChatEvent,
+  BiChatRequest,
+  BiChatRowsEvent,
+  BiChatSqlEvent,
+  BiChatStreamHandlers,
+  BiChatSubscription,
+  BiChatTokenEvent,
+} from './types-bi';
+export { BI_CHART_TYPES } from './types-bi';
 export type {
   ChunkSummary,
   DocumentDetail,
