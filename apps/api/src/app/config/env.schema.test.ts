@@ -66,9 +66,40 @@ describe('validateEnv', () => {
     ).not.toThrow();
   });
 
+  it('acepta private-onprem usando ONPREM_LLM_* (ADR-0022)', () => {
+    expect(() =>
+      validateEnv({
+        ...VALID,
+        CHAT_PROVIDER: 'private-onprem',
+        EMBEDDINGS_PROVIDER: 'private-onprem',
+        CHAT_API_KEY: undefined,
+        CHAT_MODEL: undefined,
+        EMBEDDINGS_API_KEY: undefined,
+        EMBEDDINGS_MODEL: undefined,
+        ONPREM_LLM_BASE_URL: 'http://ubuntu-onprem.local:11434',
+        ONPREM_LLM_API_KEY: 'ollama-local',
+        ONPREM_LLM_MODEL: 'llama3.2:3b',
+        ONPREM_EMBEDDING_MODEL: 'nomic-embed-text',
+      }),
+    ).not.toThrow();
+  });
+
+  it('rechaza private-onprem sin ONPREM_LLM_BASE_URL con mensaje claro', () => {
+    expect(() =>
+      validateEnv({
+        ...VALID,
+        CHAT_PROVIDER: 'private-onprem',
+        CHAT_API_KEY: undefined,
+        CHAT_MODEL: undefined,
+        ONPREM_LLM_API_KEY: 'ollama-local',
+        ONPREM_LLM_MODEL: 'llama3.2:3b',
+      }),
+    ).toThrow(/ONPREM_LLM_BASE_URL/);
+  });
+
   it('rechaza CHAT_PROVIDER fuera del enum con mensaje útil', () => {
     expect(() => validateEnv({ ...VALID, CHAT_PROVIDER: 'cohere' })).toThrow(
-      /CHAT_PROVIDER.*anthropic.*openai-compat.*private-mac.*fake/,
+      /CHAT_PROVIDER.*anthropic.*openai-compat.*private-mac.*private-onprem.*fake/,
     );
   });
 

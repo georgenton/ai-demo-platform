@@ -24,6 +24,7 @@ import { AnthropicChatAdapter } from './providers/anthropic-chat.js';
 import { FakeChatAdapter } from './providers/fake-chat.js';
 import { OpenAICompatChatAdapter } from './providers/openai-compat-chat.js';
 import { PrivateMacChatAdapter } from './providers/private-mac-chat.js';
+import { PrivateOnpremChatAdapter } from './providers/private-onprem-chat.js';
 import type {
   ChatAdapter,
   ChatConfig,
@@ -38,6 +39,7 @@ const VALID_PROVIDERS: ReadonlySet<ChatProvider> = new Set([
   'anthropic',
   'openai-compat',
   'private-mac',
+  'private-onprem',
   'fake',
 ]);
 
@@ -66,7 +68,7 @@ export function readChatConfig(): ChatConfig {
   }
   if (!isValidChatProvider(provider)) {
     throw new Error(
-      `CHAT_PROVIDER inválido: "${provider}". Esperado: 'anthropic', 'openai-compat', 'private-mac' o 'fake'.`,
+      `CHAT_PROVIDER inválido: "${provider}". Esperado: 'anthropic', 'openai-compat', 'private-mac', 'private-onprem' o 'fake'.`,
     );
   }
   return readConfigFor(provider);
@@ -76,12 +78,14 @@ export function readChatConfig(): ChatConfig {
  * Arma un ChatConfig para un provider arbitrario (no necesariamente el del
  * env default). Convención de env vars:
  *
- *   - `anthropic`     → CHAT_API_KEY + CHAT_MODEL (asume que el env default
- *                       ya tiene credenciales Anthropic; el caso típico).
- *   - `private-mac`   → PRIVATE_LLM_{API_KEY,MODEL,BASE_URL} con fallback
- *                       a CHAT_* (igual que el código original).
- *   - `openai-compat` → CHAT_API_KEY + CHAT_MODEL + CHAT_BASE_URL.
- *   - `fake`          → no necesita nada.
+ *   - `anthropic`      → CHAT_API_KEY + CHAT_MODEL (asume que el env default
+ *                        ya tiene credenciales Anthropic; el caso típico).
+ *   - `private-mac`    → PRIVATE_LLM_{API_KEY,MODEL,BASE_URL} con fallback
+ *                        a CHAT_* (igual que el código original).
+ *   - `private-onprem` → ONPREM_LLM_{API_KEY,MODEL,BASE_URL} con fallback
+ *                        a CHAT_* (servidor Linux del cliente, ADR-0022).
+ *   - `openai-compat`  → CHAT_API_KEY + CHAT_MODEL + CHAT_BASE_URL.
+ *   - `fake`           → no necesita nada.
  *
  * Si las env vars del provider pedido no están configuradas, lanza error
  * claro. El caller (controller) puede interpretarlo y devolver 400/500 con
@@ -96,44 +100,59 @@ function readConfigFor(provider: ChatProvider): ChatConfig {
     };
   }
 
-  // Para private-mac priorizamos PRIVATE_LLM_* con fallback a CHAT_*.
-  // Para anthropic/openai-compat usamos CHAT_* directo.
+  // Para private-mac priorizamos PRIVATE_LLM_*, para private-onprem
+  // ONPREM_LLM_*, ambos con fallback a CHAT_*. Para anthropic/openai-compat
+  // usamos CHAT_* directo.
   const apiKey =
     provider === 'private-mac'
       ? (process.env.PRIVATE_LLM_API_KEY ?? process.env.CHAT_API_KEY)
-      : process.env.CHAT_API_KEY;
+      : provider === 'private-onprem'
+        ? (process.env.ONPREM_LLM_API_KEY ?? process.env.CHAT_API_KEY)
+        : process.env.CHAT_API_KEY;
   if (!apiKey) {
     throw new Error(
       provider === 'private-mac'
         ? 'PRIVATE_LLM_API_KEY/CHAT_API_KEY no está definida en el entorno.'
-        : 'CHAT_API_KEY no está definida en el entorno.',
+        : provider === 'private-onprem'
+          ? 'ONPREM_LLM_API_KEY/CHAT_API_KEY no está definida en el entorno.'
+          : 'CHAT_API_KEY no está definida en el entorno.',
     );
   }
 
   const model =
     provider === 'private-mac'
       ? (process.env.PRIVATE_LLM_MODEL ?? process.env.CHAT_MODEL)
-      : process.env.CHAT_MODEL;
+      : provider === 'private-onprem'
+        ? (process.env.ONPREM_LLM_MODEL ?? process.env.CHAT_MODEL)
+        : process.env.CHAT_MODEL;
   if (!model) {
     throw new Error(
       provider === 'private-mac'
         ? 'PRIVATE_LLM_MODEL/CHAT_MODEL no está definida en el entorno.'
-        : 'CHAT_MODEL no está definida en el entorno.',
+        : provider === 'private-onprem'
+          ? 'ONPREM_LLM_MODEL/CHAT_MODEL no está definida en el entorno.'
+          : 'CHAT_MODEL no está definida en el entorno.',
     );
   }
 
   const baseUrl =
     provider === 'private-mac'
       ? (process.env.PRIVATE_LLM_BASE_URL ?? process.env.CHAT_BASE_URL)
-      : process.env.CHAT_BASE_URL;
+      : provider === 'private-onprem'
+        ? (process.env.ONPREM_LLM_BASE_URL ?? process.env.CHAT_BASE_URL)
+        : process.env.CHAT_BASE_URL;
   if (
-    (provider === 'openai-compat' || provider === 'private-mac') &&
+    (provider === 'openai-compat' ||
+      provider === 'private-mac' ||
+      provider === 'private-onprem') &&
     !baseUrl
   ) {
     throw new Error(
       provider === 'private-mac'
         ? 'PRIVATE_LLM_BASE_URL/CHAT_BASE_URL es obligatoria cuando el provider es private-mac.'
-        : 'CHAT_BASE_URL es obligatoria cuando el provider es openai-compat.',
+        : provider === 'private-onprem'
+          ? 'ONPREM_LLM_BASE_URL/CHAT_BASE_URL es obligatoria cuando el provider es private-onprem.'
+          : 'CHAT_BASE_URL es obligatoria cuando el provider es openai-compat.',
     );
   }
 
@@ -152,6 +171,12 @@ export function createChatAdapter(config: ChatConfig): ChatAdapter {
         ...config,
         demoName: process.env.PRIVATE_LLM_DEMO_NAME,
         timeoutMs: Number(process.env.PRIVATE_LLM_TIMEOUT_MS ?? 120000),
+      });
+    case 'private-onprem':
+      return new PrivateOnpremChatAdapter({
+        ...config,
+        demoName: process.env.ONPREM_LLM_DEMO_NAME,
+        timeoutMs: Number(process.env.ONPREM_LLM_TIMEOUT_MS ?? 120000),
       });
     case 'fake':
       return new FakeChatAdapter(config);
