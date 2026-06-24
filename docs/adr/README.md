@@ -49,6 +49,7 @@ Usamos **MADR** (Markdown ADR), uno de los formatos estándar:
 | 0019 | [Demo 08 — Notarización cooperativa con IA (Lite + Polygon)](./0019-demo-08-notarization.md)                      | Propuesto                   |
 | 0020 | [Demo 09 — Funnel de préstamos asistido por IA (CACs Ecuador)](./0020-demo-09-loan-funnel.md)                     | Aceptado                    |
 | 0021 | [Demo 10 — BI dinámico / dashboard inteligente (CACs Ecuador)](./0021-demo-10-bi-dynamic.md)                      | Aceptado                    |
+| 0022 | [Multi-provider LLM por tenant (Mac dev / Ubuntu on-prem / Anthropic)](./0022-demo-onprem-multi-provider.md)      | Aceptado                    |
 
 ## Cuándo agregar un nuevo ADR
 
