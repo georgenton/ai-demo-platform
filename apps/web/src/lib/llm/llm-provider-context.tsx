@@ -39,7 +39,12 @@ const LlmProviderContext = createContext<LlmProviderContextValue>({
   clear: () => undefined,
 });
 
-const VALID = new Set<LlmProviderId>(['anthropic', 'private-mac']);
+const VALID = new Set<LlmProviderId>([
+  'anthropic',
+  'openai-compat',
+  'private-mac',
+  'private-onprem',
+]);
 
 export function LlmProviderProvider({ children }: { children: ReactNode }) {
   // SSR-safe: arranca con null en el primer render. Rehidrata desde

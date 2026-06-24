@@ -19,13 +19,28 @@ import {
   ArrayMinSize,
   IsArray,
   IsHexColor,
+  IsIn,
   IsOptional,
   IsString,
   IsUrl,
   Length,
   MaxLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
+
+/**
+ * Set de providers que el admin puede elegir desde la UI. Espejo de
+ * `ChatProvider` del adapter menos `fake` (`fake` es solo para CI/tests, no
+ * tiene sentido exponerlo en /admin/tenant). El valor `null` lo aceptamos
+ * como "limpiar override" — el sistema vuelve a leer `CHAT_PROVIDER` del env.
+ */
+const LLM_PROVIDER_CHOICES = [
+  'anthropic',
+  'openai-compat',
+  'private-mac',
+  'private-onprem',
+] as const;
 
 /**
  * Subobjeto del branding. JSON sin schema fijo en la DB, pero validamos los
@@ -90,4 +105,23 @@ export class UpdateTenantDto {
   @ValidateNested()
   @Type(() => TenantBrandingDto)
   branding?: TenantBrandingDto;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    enum: LLM_PROVIDER_CHOICES,
+    example: 'anthropic',
+    description:
+      'Provider LLM activo para este tenant (ADR-0022). null = limpiar override y caer al CHAT_PROVIDER del env.',
+  })
+  @IsOptional()
+  // `null` es válido (limpia el override). Si NO es null, debe estar en el
+  // enum. `IsIn` no acepta null por default, así que combinamos con
+  // `ValidateIf` para saltar la validación cuando el cliente manda null
+  // explícito.
+  @ValidateIf((_o, v) => v !== null)
+  @IsIn(LLM_PROVIDER_CHOICES, {
+    message: `llmProvider debe ser uno de: ${LLM_PROVIDER_CHOICES.join(', ')} (o null para limpiar).`,
+  })
+  llmProvider?: (typeof LLM_PROVIDER_CHOICES)[number] | null;
 }

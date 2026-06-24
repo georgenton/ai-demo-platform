@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@/lib/api/client';
 import { getMyDemos } from '@/lib/api/auth';
 import type { MeDemosResponse } from '@/lib/api/types-auth';
+import { setTenantLlmProvider } from '@/lib/llm';
 
 import { useAuth } from './auth-context';
 
@@ -43,6 +44,10 @@ export function useMyDemos(): UseMyDemosValue {
       const result = await getMyDemos(signal);
       if (signal?.aborted) return;
       setData(result);
+      // ADR-0022: cacheamos el provider del tenant en localStorage para que
+      // los fetchers (no-React) lo lean al armar el header X-LLM-Provider.
+      // El override manual del user en el dropdown del header sigue ganando.
+      setTenantLlmProvider(result.tenant.llmProvider);
       setStatus('ready');
       setErrorMessage(null);
     } catch (err) {
@@ -66,6 +71,9 @@ export function useMyDemos(): UseMyDemosValue {
       setData(null);
       setStatus('idle');
       setErrorMessage(null);
+      // En logout también limpiamos el provider cacheado — el próximo
+      // user que entre en este browser empieza con su propio tenant.
+      setTenantLlmProvider(null);
       return;
     }
     const controller = new AbortController();

@@ -622,6 +622,24 @@ const STRINGS_ES = {
   'admin.section.general.hint': 'Identidad del tenant',
   'admin.section.demos': 'Demos',
   'admin.section.branding': 'Branding',
+  'admin.section.llm': 'Proveedor de IA',
+  'admin.section.llm.hint':
+    'Dónde corre el modelo que usan las demos de este tenant',
+  'admin.llm.option.env': 'Default del sistema',
+  'admin.llm.option.env.desc':
+    'Usa la variable de entorno del servidor. Útil mientras decides.',
+  'admin.llm.option.anthropic': 'Anthropic (cloud)',
+  'admin.llm.option.anthropic.desc':
+    'API comercial. Cero infraestructura. Cobro por token. Ideal para PoC.',
+  'admin.llm.option.openai-compat': 'NAI on-premise',
+  'admin.llm.option.openai-compat.desc':
+    'Servidor Nutanix Enterprise AI propio. Modelos OpenAI-compatible. Sin cobro variable.',
+  'admin.llm.option.private-mac': 'Mac M1 dev (Ollama)',
+  'admin.llm.option.private-mac.desc':
+    'Mi Mac local con túnel. Pensado para desarrollo de Jorge — no usar en cliente.',
+  'admin.llm.option.private-onprem': 'Ubuntu on-prem (Ollama)',
+  'admin.llm.option.private-onprem.desc':
+    'Servidor Linux del cliente, típicamente CPU con Ollama. ADR-0022.',
   'admin.industry.label': 'Industria',
   'admin.industry.readonly': 'solo lectura',
   'admin.enabledDemos.inherited': 'Heredado de tu industria ({industry})',
@@ -1370,6 +1388,23 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'admin.section.general.hint': 'Tenant identity',
   'admin.section.demos': 'Demos',
   'admin.section.branding': 'Branding',
+  'admin.section.llm': 'AI provider',
+  'admin.section.llm.hint': 'Where the model that powers this tenant runs',
+  'admin.llm.option.env': 'System default',
+  'admin.llm.option.env.desc':
+    'Use the server env var. Useful while you decide.',
+  'admin.llm.option.anthropic': 'Anthropic (cloud)',
+  'admin.llm.option.anthropic.desc':
+    'Commercial API. Zero infra. Per-token billing. Great for PoC.',
+  'admin.llm.option.openai-compat': 'NAI on-premise',
+  'admin.llm.option.openai-compat.desc':
+    'Your own Nutanix Enterprise AI server. OpenAI-compatible models. No variable cost.',
+  'admin.llm.option.private-mac': 'Mac M1 dev (Ollama)',
+  'admin.llm.option.private-mac.desc':
+    "Local Mac with tunnel. Built for Jorge's dev — not for client use.",
+  'admin.llm.option.private-onprem': 'On-prem Ubuntu (Ollama)',
+  'admin.llm.option.private-onprem.desc':
+    "Customer's Linux box, typically CPU with Ollama. ADR-0022.",
   'admin.industry.label': 'Industry',
   'admin.industry.readonly': 'read only',
   'admin.enabledDemos.inherited': 'Inherited from your industry ({industry})',

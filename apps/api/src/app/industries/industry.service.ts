@@ -33,6 +33,8 @@ export interface ResolvedTenantDemos {
     displayName: string;
     branding: unknown; // JSON sin schema fijo — el front decide qué leer.
     status: 'active' | 'trial' | 'suspended';
+    /** Provider LLM activo (ADR-0022). null = caer al CHAT_PROVIDER del env. */
+    llmProvider: string | null;
   };
   industry: {
     slug: string;
@@ -78,6 +80,7 @@ export class IndustryService {
         displayName: tenant.displayName,
         branding: tenant.branding,
         status: tenant.status,
+        llmProvider: tenant.llmProvider,
       },
       industry: {
         slug: tenant.industry.slug,
