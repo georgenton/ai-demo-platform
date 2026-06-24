@@ -24,6 +24,11 @@ export {
 } from '../../generated/client/client.js';
 export type {
   AgentQuery,
+  BiAgencia,
+  BiCaptacion,
+  BiCuota,
+  BiPrestamo,
+  BiSocio,
   Chunk,
   Course,
   Document,
