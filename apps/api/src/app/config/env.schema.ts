@@ -44,6 +44,12 @@ export enum ChatProvider {
   openaiCompat = 'openai-compat',
   privateMac = 'private-mac',
   /**
+   * Servidor on-prem del cliente — típicamente Ubuntu con Ollama o vLLM
+   * sirviendo OpenAI-compatible API. Lee `ONPREM_LLM_*` con fallback a
+   * `CHAT_*` (ver ADR-0022).
+   */
+  privateOnprem = 'private-onprem',
+  /**
    * Adapter determinístico sin LLM real (ver
    * `packages/llm-adapter/src/lib/providers/fake-chat.ts`). Usado en CI,
    * tests E2E y smoke tests locales donde no queremos depender de keys
@@ -56,6 +62,12 @@ export enum EmbeddingsProvider {
   openai = 'openai',
   openaiCompat = 'openai-compat',
   privateMac = 'private-mac',
+  /**
+   * Espejo de `ChatProvider.privateOnprem` para embeddings — mismo
+   * servidor on-prem del cliente. Ollama expone `/v1/embeddings`
+   * OpenAI-compatible y por ahí va.
+   */
+  privateOnprem = 'private-onprem',
   /**
    * Análogo a `ChatProvider.fake`: el adapter genera vectores
    * determinísticos vía bag-of-words. Útil para arrancar el server en
@@ -83,13 +95,16 @@ export class EnvSchema {
   })
   CHAT_PROVIDER!: ChatProvider;
 
-  // `private-mac` y `fake` no exigen CHAT_API_KEY/CHAT_MODEL en el env:
+  // `private-mac`, `private-onprem` y `fake` no exigen CHAT_API_KEY/CHAT_MODEL
+  // en el env:
   //   - `private-mac` los lee de las PRIVATE_LLM_* (ver más abajo).
+  //   - `private-onprem` los lee de las ONPREM_LLM_* (ADR-0022).
   //   - `fake` no llama a ningún LLM real — el adapter tiene defaults.
   @IsString()
   @ValidateIf(
     (o: EnvSchema) =>
       o.CHAT_PROVIDER !== ChatProvider.privateMac &&
+      o.CHAT_PROVIDER !== ChatProvider.privateOnprem &&
       o.CHAT_PROVIDER !== ChatProvider.fake,
   )
   @IsNotEmpty()
@@ -99,6 +114,7 @@ export class EnvSchema {
   @ValidateIf(
     (o: EnvSchema) =>
       o.CHAT_PROVIDER !== ChatProvider.privateMac &&
+      o.CHAT_PROVIDER !== ChatProvider.privateOnprem &&
       o.CHAT_PROVIDER !== ChatProvider.fake,
   )
   @IsNotEmpty()
@@ -148,6 +164,42 @@ export class EnvSchema {
   PRIVATE_LLM_TIMEOUT_MS?: string;
 
   // ---------------------------------------------------------------------------
+  // Chat — provider on-prem del cliente (ADR-0022)
+  //
+  // Análogo a PRIVATE_LLM_* pero apunta al servidor Linux del cliente
+  // (Ubuntu CPU con Ollama, vLLM, etc.). Variables obligatorias solo
+  // cuando CHAT_PROVIDER=private-onprem.
+  // ---------------------------------------------------------------------------
+
+  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER === ChatProvider.privateOnprem)
+  @IsUrl(
+    { require_tld: false, require_protocol: true },
+    {
+      message:
+        'ONPREM_LLM_BASE_URL es obligatoria con CHAT_PROVIDER=private-onprem y debe ser una URL con protocolo.',
+    },
+  )
+  ONPREM_LLM_BASE_URL?: string;
+
+  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER === ChatProvider.privateOnprem)
+  @IsString()
+  @IsNotEmpty()
+  ONPREM_LLM_API_KEY?: string;
+
+  @ValidateIf((o: EnvSchema) => o.CHAT_PROVIDER === ChatProvider.privateOnprem)
+  @IsString()
+  @IsNotEmpty()
+  ONPREM_LLM_MODEL?: string;
+
+  @IsOptional()
+  @IsString()
+  ONPREM_LLM_DEMO_NAME?: string;
+
+  @IsOptional()
+  @IsString()
+  ONPREM_LLM_TIMEOUT_MS?: string;
+
+  // ---------------------------------------------------------------------------
   // Embeddings
   // ---------------------------------------------------------------------------
 
@@ -156,12 +208,14 @@ export class EnvSchema {
   })
   EMBEDDINGS_PROVIDER!: EmbeddingsProvider;
 
-  // Mismo razonamiento que CHAT_API_KEY/MODEL: `private-mac` y `fake` no
-  // exigen estas variables porque tienen fuentes alternativas o defaults.
+  // Mismo razonamiento que CHAT_API_KEY/MODEL: `private-mac`,
+  // `private-onprem` y `fake` no exigen estas variables porque tienen
+  // fuentes alternativas (PRIVATE_LLM_* / ONPREM_LLM_*) o defaults.
   @IsString()
   @ValidateIf(
     (o: EnvSchema) =>
       o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateMac &&
+      o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateOnprem &&
       o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.fake,
   )
   @IsNotEmpty()
@@ -171,6 +225,7 @@ export class EnvSchema {
   @ValidateIf(
     (o: EnvSchema) =>
       o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateMac &&
+      o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.privateOnprem &&
       o.EMBEDDINGS_PROVIDER !== EmbeddingsProvider.fake,
   )
   @IsNotEmpty()
@@ -194,6 +249,14 @@ export class EnvSchema {
   @IsString()
   @IsNotEmpty()
   PRIVATE_EMBEDDING_MODEL?: string;
+
+  @ValidateIf(
+    (o: EnvSchema) =>
+      o.EMBEDDINGS_PROVIDER === EmbeddingsProvider.privateOnprem,
+  )
+  @IsString()
+  @IsNotEmpty()
+  ONPREM_EMBEDDING_MODEL?: string;
 
   // ---------------------------------------------------------------------------
   // Server

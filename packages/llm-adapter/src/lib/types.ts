@@ -184,6 +184,7 @@ export type ChatProvider =
   | 'anthropic'
   | 'openai-compat'
   | 'private-mac'
+  | 'private-onprem'
   | 'fake';
 
 /** Proveedores soportados para embeddings. `fake` análogo al de chat:
@@ -192,6 +193,7 @@ export type EmbeddingsProvider =
   | 'openai'
   | 'openai-compat'
   | 'private-mac'
+  | 'private-onprem'
   | 'fake';
 
 /**

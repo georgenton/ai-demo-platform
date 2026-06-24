@@ -27,6 +27,7 @@
 import { FakeEmbeddingsAdapter } from './providers/fake-embeddings.js';
 import { OpenAIEmbeddingsAdapter } from './providers/openai-embeddings.js';
 import { PrivateMacEmbeddingsAdapter } from './providers/private-mac-embeddings.js';
+import { PrivateOnpremEmbeddingsAdapter } from './providers/private-onprem-embeddings.js';
 import type {
   ChatProvider,
   EmbeddingsAdapter,
@@ -39,6 +40,7 @@ const VALID_PROVIDERS: ReadonlySet<EmbeddingsProvider> = new Set([
   'openai',
   'openai-compat',
   'private-mac',
+  'private-onprem',
   'fake',
 ]);
 
@@ -68,6 +70,7 @@ const DEFAULT_DIMS: Record<EmbeddingsProvider, number> = {
   openai: 1536,
   'openai-compat': 1536,
   'private-mac': 768,
+  'private-onprem': 768,
   fake: 768,
 };
 
@@ -87,6 +90,8 @@ export function resolveEmbeddingsProvider(
   switch (chat) {
     case 'private-mac':
       return 'private-mac';
+    case 'private-onprem':
+      return 'private-onprem';
     case 'openai-compat':
       return 'openai-compat';
     case 'fake':
@@ -120,7 +125,7 @@ export function readEmbeddingsConfig(): EmbeddingsConfig {
   }
   if (!isValidEmbeddingsProvider(provider)) {
     throw new Error(
-      `EMBEDDINGS_PROVIDER inválido: "${provider}". Esperado: 'openai', 'openai-compat', 'private-mac' o 'fake'.`,
+      `EMBEDDINGS_PROVIDER inválido: "${provider}". Esperado: 'openai', 'openai-compat', 'private-mac', 'private-onprem' o 'fake'.`,
     );
   }
   return readConfigFor(provider);
@@ -130,12 +135,14 @@ export function readEmbeddingsConfig(): EmbeddingsConfig {
  * Arma un EmbeddingsConfig para un provider arbitrario (no necesariamente
  * el del env default). Convención de env vars:
  *
- *   - `private-mac`   → PRIVATE_LLM_{API_KEY,BASE_URL} + PRIVATE_EMBEDDING_MODEL,
- *                       con fallback a EMBEDDINGS_* (igual que en el código
- *                       original — preserva retrocompat).
- *   - `openai`        → EMBEDDINGS_API_KEY + EMBEDDINGS_MODEL.
- *   - `openai-compat` → EMBEDDINGS_API_KEY + EMBEDDINGS_MODEL + EMBEDDINGS_BASE_URL.
- *   - `fake`          → no necesita nada.
+ *   - `private-mac`    → PRIVATE_LLM_{API_KEY,BASE_URL} + PRIVATE_EMBEDDING_MODEL,
+ *                        con fallback a EMBEDDINGS_* (igual que el código
+ *                        original — preserva retrocompat).
+ *   - `private-onprem` → ONPREM_LLM_{API_KEY,BASE_URL} + ONPREM_EMBEDDING_MODEL,
+ *                        con fallback a EMBEDDINGS_* (ADR-0022).
+ *   - `openai`         → EMBEDDINGS_API_KEY + EMBEDDINGS_MODEL.
+ *   - `openai-compat`  → EMBEDDINGS_API_KEY + EMBEDDINGS_MODEL + EMBEDDINGS_BASE_URL.
+ *   - `fake`           → no necesita nada.
  *
  * Si las env vars del provider pedido no están configuradas, lanza error
  * claro. El caller (controller / service) puede interpretarlo y devolver
@@ -151,43 +158,58 @@ function readConfigFor(provider: EmbeddingsProvider): EmbeddingsConfig {
   }
 
   // Para private-mac priorizamos PRIVATE_LLM_* / PRIVATE_EMBEDDING_MODEL.
+  // Para private-onprem priorizamos ONPREM_LLM_* / ONPREM_EMBEDDING_MODEL.
   // Para openai/openai-compat usamos EMBEDDINGS_* directo.
   const apiKey =
     provider === 'private-mac'
       ? (process.env.PRIVATE_LLM_API_KEY ?? process.env.EMBEDDINGS_API_KEY)
-      : process.env.EMBEDDINGS_API_KEY;
+      : provider === 'private-onprem'
+        ? (process.env.ONPREM_LLM_API_KEY ?? process.env.EMBEDDINGS_API_KEY)
+        : process.env.EMBEDDINGS_API_KEY;
   if (!apiKey) {
     throw new Error(
       provider === 'private-mac'
         ? 'PRIVATE_LLM_API_KEY/EMBEDDINGS_API_KEY no está definida en el entorno.'
-        : 'EMBEDDINGS_API_KEY no está definida en el entorno.',
+        : provider === 'private-onprem'
+          ? 'ONPREM_LLM_API_KEY/EMBEDDINGS_API_KEY no está definida en el entorno.'
+          : 'EMBEDDINGS_API_KEY no está definida en el entorno.',
     );
   }
 
   const model =
     provider === 'private-mac'
       ? (process.env.PRIVATE_EMBEDDING_MODEL ?? process.env.EMBEDDINGS_MODEL)
-      : process.env.EMBEDDINGS_MODEL;
+      : provider === 'private-onprem'
+        ? (process.env.ONPREM_EMBEDDING_MODEL ?? process.env.EMBEDDINGS_MODEL)
+        : process.env.EMBEDDINGS_MODEL;
   if (!model) {
     throw new Error(
       provider === 'private-mac'
         ? 'PRIVATE_EMBEDDING_MODEL/EMBEDDINGS_MODEL no está definida en el entorno.'
-        : 'EMBEDDINGS_MODEL no está definida en el entorno.',
+        : provider === 'private-onprem'
+          ? 'ONPREM_EMBEDDING_MODEL/EMBEDDINGS_MODEL no está definida en el entorno.'
+          : 'EMBEDDINGS_MODEL no está definida en el entorno.',
     );
   }
 
   const baseUrl =
     provider === 'private-mac'
       ? (process.env.PRIVATE_LLM_BASE_URL ?? process.env.EMBEDDINGS_BASE_URL)
-      : process.env.EMBEDDINGS_BASE_URL;
+      : provider === 'private-onprem'
+        ? (process.env.ONPREM_LLM_BASE_URL ?? process.env.EMBEDDINGS_BASE_URL)
+        : process.env.EMBEDDINGS_BASE_URL;
   if (
-    (provider === 'openai-compat' || provider === 'private-mac') &&
+    (provider === 'openai-compat' ||
+      provider === 'private-mac' ||
+      provider === 'private-onprem') &&
     !baseUrl
   ) {
     throw new Error(
       provider === 'private-mac'
         ? 'PRIVATE_LLM_BASE_URL/EMBEDDINGS_BASE_URL es obligatoria cuando el provider es private-mac.'
-        : 'EMBEDDINGS_BASE_URL es obligatoria cuando el provider es openai-compat.',
+        : provider === 'private-onprem'
+          ? 'ONPREM_LLM_BASE_URL/EMBEDDINGS_BASE_URL es obligatoria cuando el provider es private-onprem.'
+          : 'EMBEDDINGS_BASE_URL es obligatoria cuando el provider es openai-compat.',
     );
   }
 
@@ -209,6 +231,12 @@ export function createEmbeddingsAdapter(
         ...config,
         demoName: process.env.PRIVATE_LLM_DEMO_NAME,
         timeoutMs: Number(process.env.PRIVATE_LLM_TIMEOUT_MS ?? 120000),
+      });
+    case 'private-onprem':
+      return new PrivateOnpremEmbeddingsAdapter({
+        ...config,
+        demoName: process.env.ONPREM_LLM_DEMO_NAME,
+        timeoutMs: Number(process.env.ONPREM_LLM_TIMEOUT_MS ?? 120000),
       });
     case 'fake':
       return new FakeEmbeddingsAdapter(config);
