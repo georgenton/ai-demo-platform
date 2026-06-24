@@ -9,9 +9,10 @@ import { Module } from '@nestjs/common';
 
 import { BiController } from './bi.controller.js';
 import { BiService } from './bi.service.js';
+import { BiDashboardService } from './dashboard.service.js';
 
 @Module({
   controllers: [BiController],
-  providers: [BiService],
+  providers: [BiService, BiDashboardService],
 })
 export class BiModule {}

@@ -46,6 +46,13 @@ export {
 } from './loans';
 export { subscribeToBiChat } from './bi';
 export {
+  listBiDashboard,
+  createBiDashboardItem,
+  updateBiDashboardItem,
+  deleteBiDashboardItem,
+  executeBiDashboardItem,
+} from './bi-dashboard';
+export {
   deleteDocument,
   getDocument,
   listDocumentChunks,
@@ -242,6 +249,12 @@ export type {
   BiChatTokenEvent,
 } from './types-bi';
 export { BI_CHART_TYPES } from './types-bi';
+export type {
+  BiDashboardItem,
+  BiDashboardItemExecuteResult,
+  CreateDashboardItemInput,
+  UpdateDashboardItemInput,
+} from './types-bi-dashboard';
 export type {
   ChunkSummary,
   DocumentDetail,
