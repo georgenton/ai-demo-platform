@@ -77,6 +77,13 @@ model Tenant {
   /// usa fallbacks del proyecto.
   branding          Json               @default("{}")
   status            TenantStatus       @default(trial)
+  /// Provider LLM activo para este tenant (ADR-0022). Valores válidos:
+  /// 'anthropic' | 'openai-compat' | 'private-mac' | 'private-onprem'.
+  /// Cuando es null, el sistema cae al CHAT_PROVIDER de env vars (el
+  /// comportamiento histórico anterior al ADR-0022). El campo es String
+  /// y no enum porque Prisma no admite guiones en nombres de enum y los
+  /// valores del adapter (`'private-mac'`, etc.) llevan guión.
+  llmProvider       String?
   createdAt         DateTime           @default(now())
   users             User[]
   documents         Document[]
