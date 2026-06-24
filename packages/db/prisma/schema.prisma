@@ -104,6 +104,13 @@ model Tenant {
   // Demo 09 — Funnel de préstamos (ADR-0020). Cada cooperativa gestiona
   // sus propios leads en su pipeline crediticio.
   loanLeads         LoanLead[]
+  // Demo 10 — BI dinámico (ADR-0021). Warehouse mock de indicadores
+  // operacionales (agencias, socios, préstamos, captaciones, cuotas).
+  biAgencias        BiAgencia[]
+  biSocios          BiSocio[]
+  biPrestamos       BiPrestamo[]
+  biCaptaciones     BiCaptacion[]
+  biCuotas          BiCuota[]
 
   @@index([industryId])
 }
@@ -967,4 +974,144 @@ model LoanStageHistory {
   createdAt DateTime   @default(now())
 
   @@index([leadId, createdAt])
+}
+
+// ============================================================================
+// Demo 10 — BI dinámico / dashboard inteligente (ADR-0021)
+// ============================================================================
+//
+// Warehouse mock para que el LLM ejecute SQL contra él. 5 tablas que modelan
+// los indicadores típicos de una CAC ecuatoriana:
+//   - BiAgencia    : sucursales físicas de la cooperativa.
+//   - BiSocio      : afiliados (clientes finales).
+//   - BiPrestamo   : préstamos vigentes/cancelados/vencidos.
+//   - BiCaptacion  : depósitos a la vista y plazos fijos.
+//   - BiCuota      : cuotas de los préstamos (para queries de cartera vencida).
+//
+// La whitelist del `sql-safety.ts` (sub-PR 2) limita al LLM a SELECT sobre
+// estas 5 tablas. El `tenantId` se inyecta forzado en cada WHERE para que
+// un tenant no vea data de otro (lo mismo que el resto del sistema).
+
+/// Sucursal física de la cooperativa. Una CAC mediana tiene 5-15 agencias.
+model BiAgencia {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Código corto interno tipo "AG-001". Útil para joins legibles en SQL.
+  codigo        String
+  nombre        String
+  ciudad        String
+  provincia     String
+  fechaApertura DateTime
+
+  socios        BiSocio[]
+
+  @@unique([tenantId, codigo])
+  @@index([tenantId, provincia])
+}
+
+/// Socio (cliente) de la cooperativa. Cada socio pertenece a la agencia
+/// donde se afilió originalmente. Para queries de demografía (edad por
+/// agencia, ingreso promedio por provincia, etc).
+model BiSocio {
+  id                String   @id @default(cuid())
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agenciaId         String
+  agencia           BiAgencia @relation(fields: [agenciaId], references: [id], onDelete: Cascade)
+
+  fechaIngreso      DateTime
+  edad              Int
+  /// 'M' (masculino), 'F' (femenino), 'X' (no especificado). Sin enum
+  /// para tolerar nuevos valores sin migración futura.
+  sexo              String
+  /// Categoría libre: 'empleado', 'comerciante', 'profesional', 'agricultor', etc.
+  ocupacion         String
+  ingresoMensualUsd Decimal  @db.Decimal(10, 2)
+
+  prestamos         BiPrestamo[]
+  captaciones       BiCaptacion[]
+
+  @@index([tenantId, agenciaId])
+  @@index([tenantId, ocupacion])
+}
+
+/// Préstamo otorgado a un socio. Una sola tabla con `estado` que cambia
+/// en el tiempo — para queries históricas usar `fechaDesembolso`.
+///
+/// `diasMora` se calcula al cierre del mes y se persiste para que las
+/// queries del LLM no tengan que computarlo desde BiCuota.
+model BiPrestamo {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  socioId         String
+  socio           BiSocio  @relation(fields: [socioId], references: [id], onDelete: Cascade)
+  /// Denormalizado para queries rápidas tipo "morosidad por agencia".
+  agenciaId       String
+
+  /// Categoría del producto: 'consumo', 'vivienda', 'microempresa', 'auto', etc.
+  productoTipo    String
+  montoUsd        Decimal  @db.Decimal(12, 2)
+  plazoMeses      Int
+  tasaAnual       Decimal  @db.Decimal(5, 2)
+  fechaDesembolso DateTime
+  fechaCancelacion DateTime?
+  /// 'vigente' | 'cancelado' | 'vencido' | 'castigado'.
+  estado          String
+  /// Días de mora al último cierre mensual. 0 si está al día o cancelado.
+  diasMora        Int      @default(0)
+
+  cuotas          BiCuota[]
+
+  @@index([tenantId, agenciaId, estado])
+  @@index([tenantId, productoTipo])
+  @@index([tenantId, fechaDesembolso])
+}
+
+/// Captación: depósito del socio (ahorro a la vista, plazo fijo,
+/// ahorro programado). Para queries de fondeo / liquidez.
+model BiCaptacion {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  socioId       String
+  socio         BiSocio  @relation(fields: [socioId], references: [id], onDelete: Cascade)
+  /// Denormalizado.
+  agenciaId     String
+
+  /// 'ahorro_vista' | 'plazo_fijo' | 'ahorro_navideno' | 'ahorro_escolar'.
+  productoTipo  String
+  saldoUsd      Decimal  @db.Decimal(12, 2)
+  fechaApertura DateTime
+  fechaCierre   DateTime?
+  /// 'activa' | 'cerrada'.
+  estado        String
+
+  @@index([tenantId, agenciaId, estado])
+  @@index([tenantId, productoTipo])
+}
+
+/// Cuota mensual de un préstamo. ~5-10 cuotas en promedio por préstamo
+/// vigente. Permite queries detalladas de cartera vencida y proyecciones
+/// de cobranza.
+model BiCuota {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  prestamoId      String
+  prestamo        BiPrestamo @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
+
+  /// Número de cuota dentro del cronograma (1..plazoMeses).
+  numero          Int
+  fechaProgramada DateTime
+  fechaPago       DateTime?
+  montoUsd        Decimal  @db.Decimal(10, 2)
+  /// 'pagada' | 'pendiente' | 'vencida'.
+  estado          String
+  diasAtraso      Int      @default(0)
+
+  @@index([tenantId, prestamoId])
+  @@index([tenantId, estado])
 }

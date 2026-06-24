@@ -26,6 +26,8 @@
     "db:seed:hr:railway": "railway run sh -c 'DATABASE_URL=\"${DATABASE_PUBLIC_URL:-$DATABASE_URL}\" tsx packages/db/prisma/seed-hr.ts'",
     "db:seed:loans": "dotenv -e .env -- tsx packages/db/prisma/seed-loans.ts",
     "db:seed:loans:railway": "railway run sh -c 'DATABASE_URL=\"${DATABASE_PUBLIC_URL:-$DATABASE_URL}\" tsx packages/db/prisma/seed-loans.ts'",
+    "db:seed:bi": "dotenv -e .env -- tsx packages/db/prisma/seed-bi.ts",
+    "db:seed:bi:railway": "railway run sh -c 'DATABASE_URL=\"${DATABASE_PUBLIC_URL:-$DATABASE_URL}\" tsx packages/db/prisma/seed-bi.ts'",
     "demo:start": "bash scripts/demo-start.sh",
     "postinstall": "npx prisma generate --schema packages/db/prisma/schema.prisma",
     "prepare": "husky"
