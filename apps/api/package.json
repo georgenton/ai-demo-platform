@@ -81,6 +81,7 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@org/core-banking-adapter": "^0.0.1",
     "@org/db": "^0.0.1",
     "@org/llm-adapter": "^0.0.1",
     "@org/notary-adapter": "^0.0.1",

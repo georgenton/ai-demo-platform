@@ -47,6 +47,7 @@ Usamos **MADR** (Markdown ADR), uno de los formatos estándar:
 | 0017 | [Demo 07 — Avatar entrevistador HR (screening de candidatos)](./0017-demo-07-hr-interview.md)                     | Aceptado                    |
 | 0018 | [Embeddings 100% on-prem (nomic-embed-text vía NAI)](./0018-embeddings-on-prem.md)                                | Aceptado                    |
 | 0019 | [Demo 08 — Notarización cooperativa con IA (Lite + Polygon)](./0019-demo-08-notarization.md)                      | Propuesto                   |
+| 0020 | [Demo 09 — Funnel de préstamos asistido por IA (CACs Ecuador)](./0020-demo-09-loan-funnel.md)                     | Propuesto                   |
 
 ## Cuándo agregar un nuevo ADR
 

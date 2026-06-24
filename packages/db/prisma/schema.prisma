@@ -101,6 +101,9 @@ model Tenant {
   localAnchors      LocalAnchor[]
   publicAnchors     PublicAnchor[]
   notaryKey         TenantNotaryKey?
+  // Demo 09 — Funnel de préstamos (ADR-0020). Cada cooperativa gestiona
+  // sus propios leads en su pipeline crediticio.
+  loanLeads         LoanLead[]
 
   @@index([industryId])
 }
@@ -819,4 +822,149 @@ model TenantNotaryKey {
   deactivatedAt  DateTime?
 
   @@index([fingerprint])
+}
+
+// ============================================================================
+// Demo 09 — Funnel de préstamos asistido por IA (ADR-0020)
+// ============================================================================
+//
+// El demo modela un "pipeline de préstamos" para cooperativas de ahorro y
+// crédito (CACs). Cada socio que solicita un préstamo es un LoanLead que
+// avanza por etapas (lead → qualification → ... → disbursement → servicing),
+// movido por un asistente IA conversacional que llama tools del backend.
+//
+// 3 modelos:
+//   - LoanLead: la "tarjeta" del kanban. Estado actual + datos del socio +
+//     id en el core bancario externo.
+//   - LoanConversation: historial chat completo (role + content + toolCall).
+//     Audit trail de qué dijo el LLM y qué tool llamó.
+//   - LoanStageHistory: audit trail de transiciones de etapa (quién movió,
+//     desde dónde, hacia dónde, por qué).
+//
+// La integración con el core bancario es vía MockCoreBankingAdapter en el
+// package @org/core-banking-adapter (sub-PR 1). El core real (Cobis,
+// Conexus, Compac) se enchufa cambiando el provider — la lógica no se toca.
+
+/// Etapas canónicas del funnel de préstamos para CACs ecuatorianas.
+/// Basado en el flujo estándar regulado por SEPS / LOEPS.
+enum LoanStage {
+  /// Socio contactó. Datos mínimos (nombre, teléfono).
+  lead
+  /// Pre-calificación: monto solicitado, plazo, propósito del préstamo.
+  qualification
+  /// Recolección de documentos: cédula, rol de pagos, planilla básica.
+  documentation
+  /// Evaluación crediticia: consulta al core bancario + score interno +
+  /// cálculo de ratio cuota/ingreso.
+  credit_evaluation
+  /// Decisión final: aprobado, contra-oferta o pendiente de comité.
+  approval
+  /// Firma de pagaré + desembolso a la cuenta del socio.
+  disbursement
+  /// Préstamo activo, cobro de cuotas mensuales.
+  servicing
+  /// Terminal alternativo: solicitud rechazada. Real-world las CACs
+  /// permiten re-aplicar después de un cooldown, modelado en el demo
+  /// con un campo opcional rejectedUntil (sub-PR 5).
+  rejected
+}
+
+/// "Tarjeta" del kanban — un socio que está solicitando o tiene un
+/// préstamo activo en la cooperativa. Vive en una etapa del funnel
+/// (currentStage) y avanza vía la tool moveToStage() del LLM.
+///
+/// Multi-tenant: cada tenant ve solo sus propios leads (filtrado en
+/// el service con tenantId del JWT).
+model LoanLead {
+  id              String     @id @default(cuid())
+  tenantId        String
+  tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // ----- Datos del socio -----
+  fullName        String
+  phone           String
+  /// Cédula ecuatoriana — 10 dígitos. Opcional hasta etapa qualification.
+  idNumber        String?
+  /// Propósito del préstamo en lenguaje libre del socio. Útil para
+  /// análisis de cartera y reporting regulatorio.
+  purpose         String?
+
+  // ----- Solicitud -----
+  /// Monto solicitado en USD (la moneda de Ecuador). Decimal para
+  /// evitar imprecisión de floats.
+  requestedAmount Decimal?   @db.Decimal(12, 2)
+  /// Plazo en meses. Típico CAC: 6, 12, 24, 36, 48.
+  termMonths      Int?
+
+  // ----- Estado en el funnel -----
+  currentStage    LoanStage  @default(lead)
+
+  // ----- Integración con core bancario (mock o real) -----
+  /// requestId que devolvió el CoreBankingAdapter al crear la solicitud.
+  /// Permite consultas posteriores al core sin re-enviar datos.
+  coreRequestId   String?
+  /// Snapshot del último análisis crediticio (score, ratios, veredicto).
+  /// JSON porque la forma del análisis evoluciona y no queremos churn
+  /// de migraciones por cada cambio de forma.
+  lastEligibility Json?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  conversations   LoanConversation[]
+  stageHistory    LoanStageHistory[]
+
+  @@index([tenantId, currentStage])
+  @@index([tenantId, phone])
+}
+
+/// Historial completo del chat entre el socio y el asistente IA. Un
+/// turn por fila. Audit trail + permite rehidratar el contexto para
+/// nuevas respuestas del LLM.
+model LoanConversation {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      LoanLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  /// 'user' (mensaje del socio) o 'assistant' (respuesta del bot).
+  /// String suelto en vez de enum para tolerar 'tool' o 'system' si
+  /// el flujo lo necesita más adelante.
+  role      String
+  /// Texto plano del mensaje. Si el assistant usó una tool, content
+  /// suele ser vacío y toolCall contiene los detalles.
+  content   String   @db.Text
+
+  /// Si este turn corresponde a una llamada a tool del LLM, acá vive
+  /// el detalle: { name, input, output }. Null para mensajes de texto
+  /// normales. JSON porque cada tool tiene su propio shape.
+  toolCall  Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+}
+
+/// Audit trail de transiciones de etapa. Cada vez que un lead cambia
+/// de etapa, se inserta una fila. Permite reportar tasas de
+/// conversión, tiempos por etapa, y quién/qué movió cada lead.
+model LoanStageHistory {
+  id        String     @id @default(cuid())
+  leadId    String
+  lead      LoanLead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  /// Etapa de la que venía. Null para el primer registro (creación).
+  fromStage LoanStage?
+  toStage   LoanStage
+
+  /// Quién/qué movió la etapa:
+  ///   - 'llm': el bot llamó moveToStage() durante el chat.
+  ///   - 'officer': el oficial de crédito tocó algo en el kanban.
+  ///   - 'system': transición automática (ej. auto-rechazo por timeout).
+  movedBy   String
+  /// Texto libre con la razón. Útil para auditoría SEPS.
+  reason    String?
+
+  createdAt DateTime   @default(now())
+
+  @@index([leadId, createdAt])
 }

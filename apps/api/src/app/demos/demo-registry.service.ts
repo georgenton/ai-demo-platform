@@ -135,6 +135,29 @@ export class DemoRegistryService {
       status: 'available',
       route: '/demo/notarize',
     },
+    {
+      // Demo 09 — Funnel de préstamos asistido por IA (ADR-0020). El socio
+      // conversa con un bot tipo WhatsApp que recolecta datos, valida con
+      // el core bancario, pre-califica el crédito y mueve al lead por las
+      // etapas del funnel. Vista paralela del oficial: kanban con todos
+      // los leads del tenant + métricas de conversión por etapa.
+      //
+      // En sub-PR 1 el demo aparece como `coming-soon` en el catálogo.
+      // Pasa a `available` en sub-PR 5 cuando se entrega el frontend
+      // de las dos vistas.
+      id: 'loans',
+      title: 'Préstamos cooperativos',
+      tagline: 'Chat tipo WhatsApp + funnel inteligente para crédito',
+      description:
+        'El socio conversa con un asistente IA que parece WhatsApp, sube fotos de cédula y rol de pagos, y avanza automáticamente por las 7 etapas del funnel de crédito de la cooperativa. El oficial de crédito ve un kanban en tiempo real con todos los leads del tenant, métricas de conversión por etapa y dónde está cada socio. Pensado para CACs ecuatorianas reguladas por SEPS.',
+      audience: [
+        'Gerentes cooperativas',
+        'Oficiales de crédito',
+        'Áreas comerciales',
+      ],
+      status: 'coming-soon',
+      route: '/demo/loans',
+    },
   ];
 
   /** Devuelve todos los demos en el orden definido. */
