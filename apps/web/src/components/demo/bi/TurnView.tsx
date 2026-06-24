@@ -17,6 +17,7 @@ import { Button, Icon } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 
 import { DynamicChart } from './DynamicChart';
+import { SaveToDashboard } from './SaveToDashboard';
 import { SqlBlock } from './SqlBlock';
 import { SqlResultTable } from './SqlResultTable';
 import type { BiTurn } from './use-bi-chat';
@@ -78,6 +79,16 @@ export function TurnView({ turn, onRetry }: Props) {
           rows={turn.rows}
           rowCount={turn.rowCount}
         />
+      )}
+
+      {turn.chart && turn.sql && !turn.error && (
+        <div className="bi-turn-actions">
+          <SaveToDashboard
+            question={turn.question}
+            sql={turn.sql}
+            chartSpec={turn.chart}
+          />
+        </div>
       )}
 
       {turn.sql && <SqlBlock sql={turn.sql} tablesUsed={turn.tablesUsed} />}

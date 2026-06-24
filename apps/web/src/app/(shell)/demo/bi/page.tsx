@@ -9,6 +9,7 @@
 
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 
 import { Button, Eyebrow, Icon } from '@/components/ui';
@@ -55,6 +56,11 @@ export default function DemoBiPage() {
           className="row"
           style={{ gap: 12, alignItems: 'center', flexWrap: 'wrap' }}
         >
+          <Link href="/demo/bi/dashboard">
+            <Button variant="secondary" icon="bookmark" size="sm">
+              {t('bi.dashboard.openButton')}
+            </Button>
+          </Link>
           {hasAny && (
             <Button
               variant="secondary"

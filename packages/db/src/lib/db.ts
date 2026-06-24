@@ -27,6 +27,7 @@ export type {
   BiAgencia,
   BiCaptacion,
   BiCuota,
+  BiDashboardItem,
   BiPrestamo,
   BiSocio,
   Chunk,

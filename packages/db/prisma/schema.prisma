@@ -111,6 +111,7 @@ model Tenant {
   biPrestamos       BiPrestamo[]
   biCaptaciones     BiCaptacion[]
   biCuotas          BiCuota[]
+  biDashboardItems  BiDashboardItem[]
 
   @@index([industryId])
 }
@@ -1114,4 +1115,38 @@ model BiCuota {
 
   @@index([tenantId, prestamoId])
   @@index([tenantId, estado])
+}
+
+/// Demo 10 — Item del dashboard guardado (ADR-0021, sub-PR 4).
+///
+/// Cuando un usuario genera un chart con run_sql + render_chart y le gusta,
+/// puede "Guardar al dashboard". Eso persiste el SQL ya sanitizado + la
+/// spec del chart + el título + la pregunta original. Cuando alguien del
+/// mismo tenant entra a /demo/bi/dashboard, los items se re-ejecutan
+/// contra el warehouse para mostrar datos actuales.
+///
+/// El dashboard es per-tenant (no per-user): el oficial guarda un chart y
+/// el gerente lo ve también. Para el demo es lo más útil.
+model BiDashboardItem {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Título corto editable por el usuario al guardar (default = chart.title).
+  title          String
+  /// Pregunta original en español. Útil para mostrar al usuario "lo que pediste fue X".
+  question       String
+  /// SQL ejecutado (post-safety). Se re-ejecuta tal cual al refrescar.
+  sql            String   @db.Text
+  /// Snapshot de las tablas que tocaba el SQL — útil para badges.
+  tablesUsed     String[]
+  /// Spec del gráfico tal como la emitió render_chart. JSON.
+  chartSpec      Json
+  /// Orden manual dentro de la grid del dashboard. Menor número primero.
+  order          Int      @default(0)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tenantId, order])
 }
