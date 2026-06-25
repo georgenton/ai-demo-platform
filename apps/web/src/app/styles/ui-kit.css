@@ -4545,6 +4545,153 @@ html.presenting .app-shell > .sidebar {
   color: var(--nai-rose-700, #b91c1c);
 }
 
+/* -- Mini-funnel horizontal (LoanFunnelStepper) -- */
+.loan-funnel-stepper {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  list-style: none;
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border);
+  gap: 4px;
+}
+
+.loan-funnel-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  font-size: 11px;
+  color: var(--color-fg-muted);
+}
+
+/* Línea conectora entre dots — `::before` del label cubre el espacio. */
+.loan-funnel-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: calc(50% + 12px);
+  right: calc(-50% + 12px);
+  height: 2px;
+  background: var(--color-border);
+  z-index: 0;
+}
+
+.loan-funnel-step.state-past::after,
+.loan-funnel-step.state-active::after {
+  background: var(--color-accent, #43c194);
+}
+
+.loan-funnel-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-bg-elevated);
+  position: relative;
+  z-index: 1;
+}
+
+.loan-funnel-dot-inner {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.loan-funnel-step.state-active .loan-funnel-dot {
+  border-color: var(--color-accent, #43c194);
+  background: var(--color-accent, #43c194);
+  box-shadow: 0 0 0 4px rgba(67, 193, 148, 0.15);
+}
+.loan-funnel-step.state-active .loan-funnel-dot-inner {
+  background: var(--color-bg-elevated);
+}
+
+.loan-funnel-step.state-past .loan-funnel-dot {
+  border-color: var(--color-accent, #43c194);
+  background: var(--color-accent, #43c194);
+  color: var(--color-bg-elevated);
+}
+
+.loan-funnel-step-label {
+  text-align: center;
+  line-height: 1.2;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loan-funnel-step.state-active .loan-funnel-step-label {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+.loan-funnel-rejected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--nai-rose-100, #fee2e2);
+  color: var(--nai-rose-700, #b91c1c);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* -- Botones de preguntas sugeridas (LoanSuggestedQuestions) -- */
+.loan-suggested {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+.loan-suggested-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.loan-suggested-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.loan-suggested-chip {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-sunken);
+  color: var(--color-fg);
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.loan-suggested-chip:hover:not(:disabled) {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-accent, #43c194);
+}
+.loan-suggested-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Área de mensajes con scroll */
 .loans-chat-messages {
   flex: 1;
@@ -5285,6 +5432,124 @@ html.presenting .app-shell > .sidebar {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* Body en split: schema panel a la izquierda, chat de turns a la derecha.
+   En viewports angostos colapsa a una sola columna. */
+.bi-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .bi-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bi-schema-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 14px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+.bi-schema-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-fg);
+}
+.bi-schema-hint {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  margin: 6px 0 12px;
+  line-height: 1.4;
+}
+.bi-schema-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bi-schema-table {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.bi-schema-table.used {
+  border-color: var(--color-accent, #43c194);
+  background: rgba(67, 193, 148, 0.08);
+}
+.bi-schema-table-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  color: var(--color-fg);
+  cursor: pointer;
+  text-align: left;
+}
+.bi-schema-table-head:hover {
+  background: var(--color-bg-sunken);
+}
+.bi-schema-table-name {
+  flex: 1;
+  font-weight: 600;
+}
+.bi-schema-used-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-accent, #43c194);
+  color: var(--color-bg-elevated);
+}
+.bi-schema-table-desc {
+  padding: 4px 10px 6px;
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  line-height: 1.4;
+}
+.bi-schema-cols {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bi-schema-col {
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px;
+  color: var(--color-fg-muted);
+  padding-left: 14px;
+  position: relative;
+}
+.bi-schema-col::before {
+  content: '•';
+  position: absolute;
+  left: 4px;
+  color: var(--color-fg-subtle);
 }
 
 /* Composer + suggestions */

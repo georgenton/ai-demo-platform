@@ -431,6 +431,15 @@ const STRINGS_ES = {
   'loans.stage.disbursement': 'Desembolso',
   'loans.stage.servicing': 'Vigente',
   'loans.stage.rejected': 'Rechazado',
+  'loans.funnel.label': 'Etapa del funnel',
+  'loans.suggested.title': 'Preguntas sugeridas',
+  'loans.suggested.q1':
+    'Hola, soy María González, cédula 1709876543. Necesito un préstamo de USD 5.000 para arreglar mi casa.',
+  'loans.suggested.q2':
+    'Trabajo hace 3 años en una panadería y mi ingreso mensual es de USD 850.',
+  'loans.suggested.q3': '¿Califico para el crédito que pedí?',
+  'loans.suggested.q4': '¿Qué documentos necesito enviar?',
+  'loans.suggested.q5': 'Quiero empezar una solicitud nueva.',
   'loans.eligibility.eligibleTrue': 'Elegible',
   'loans.eligibility.eligibleFalse': 'No elegible',
   'loans.eligibility.maxAmount': 'Monto máximo',
@@ -486,6 +495,20 @@ const STRINGS_ES = {
   'bi.empty.title': 'Empieza preguntando',
   'bi.empty.body':
     'Algunas ideas: morosidad por agencia, cartera vigente por producto, desembolsos mensuales del último año, distribución de socios por ocupación.',
+  'bi.schema.title': 'Warehouse de la cooperativa',
+  'bi.schema.hint':
+    'El asistente traduce tu pregunta a SQL contra estas 5 tablas. Cuando una tabla se usa, la verás resaltada acá.',
+  'bi.schema.usedNow': 'Usada en la última consulta',
+  'bi.schema.agencia.desc':
+    '10 agencias de la cooperativa con su provincia y fecha de apertura.',
+  'bi.schema.socio.desc':
+    'Datos demográficos y de ingresos de los socios — fuente para análisis de perfil.',
+  'bi.schema.prestamo.desc':
+    'Cartera de préstamos viva e histórica. Monto, producto, plazo, mora y estado.',
+  'bi.schema.captacion.desc':
+    'Depósitos de los socios: ahorro a la vista, plazo fijo y CDP.',
+  'bi.schema.cuota.desc':
+    'Cuotas pactadas por préstamo. Útil para mora y pagos.',
   'bi.suggestions.title': 'Preguntas de ejemplo',
   'bi.suggestions.q1': '¿Qué agencia tiene más mora?',
   'bi.suggestions.q2': 'Cartera vigente por tipo de producto',
@@ -1203,6 +1226,15 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'loans.stage.disbursement': 'Disbursement',
   'loans.stage.servicing': 'Active',
   'loans.stage.rejected': 'Rejected',
+  'loans.funnel.label': 'Funnel stage',
+  'loans.suggested.title': 'Suggested prompts',
+  'loans.suggested.q1':
+    "Hi, I'm Maria Gonzalez, ID 1709876543. I need a USD 5,000 loan to repair my house.",
+  'loans.suggested.q2':
+    "I've worked at a bakery for 3 years and my monthly income is USD 850.",
+  'loans.suggested.q3': 'Do I qualify for the loan I asked for?',
+  'loans.suggested.q4': 'Which documents do I need to send?',
+  'loans.suggested.q5': 'I want to start a new application.',
   'loans.eligibility.eligibleTrue': 'Eligible',
   'loans.eligibility.eligibleFalse': 'Not eligible',
   'loans.eligibility.maxAmount': 'Max amount',
@@ -1258,6 +1290,19 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'bi.empty.title': 'Start by asking',
   'bi.empty.body':
     'Ideas: default rate by branch, current portfolio by product, monthly disbursements over the last year, member distribution by occupation.',
+  'bi.schema.title': 'Cooperative warehouse',
+  'bi.schema.hint':
+    'The assistant translates your question to SQL against these 5 tables. When a table is used, it gets highlighted here.',
+  'bi.schema.usedNow': 'Used in the latest query',
+  'bi.schema.agencia.desc':
+    '10 cooperative branches with province and opening date.',
+  'bi.schema.socio.desc':
+    'Member demographics and income — source for profile analysis.',
+  'bi.schema.prestamo.desc':
+    'Live and historical loan portfolio. Amount, product, term, delinquency, status.',
+  'bi.schema.captacion.desc': 'Member deposits: savings, fixed-term and CDP.',
+  'bi.schema.cuota.desc':
+    'Scheduled installments per loan. Useful for delinquency and payments.',
   'bi.suggestions.title': 'Example questions',
   'bi.suggestions.q1': 'Which branch has the highest default?',
   'bi.suggestions.q2': 'Current portfolio by product type',
