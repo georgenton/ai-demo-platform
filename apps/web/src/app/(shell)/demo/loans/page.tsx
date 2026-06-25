@@ -16,6 +16,8 @@ import { useEffect, useRef } from 'react';
 import { Button, Eyebrow, Icon } from '@/components/ui';
 import { EligibilityCard } from '@/components/demo/loans/EligibilityCard';
 import { LoanComposer } from '@/components/demo/loans/LoanComposer';
+import { LoanFunnelStepper } from '@/components/demo/loans/LoanFunnelStepper';
+import { LoanSuggestedQuestions } from '@/components/demo/loans/LoanSuggestedQuestions';
 import { MessageBubble } from '@/components/demo/loans/MessageBubble';
 import { StageBadge } from '@/components/demo/loans/StageBadge';
 import { useLoanChat } from '@/components/demo/loans/use-loan-chat';
@@ -81,6 +83,10 @@ export default function DemoLoansPage() {
           <StageBadge stage={chat.currentStage} />
         </header>
 
+        {/* Mini-funnel horizontal: muestra en qué etapa está el lead activo.
+            Se mueve en vivo cuando llega el evento `stage_changed` del SSE. */}
+        <LoanFunnelStepper stage={chat.currentStage} />
+
         {/* Lista de mensajes */}
         <div className="loans-chat-messages" ref={scrollRef}>
           <Eyebrow>{t('loans.intro.title')}</Eyebrow>
@@ -135,6 +141,13 @@ export default function DemoLoansPage() {
             </div>
           )}
         </div>
+
+        {/* Preguntas sugeridas — el vendedor click y envia para guiar la
+            demo paso a paso por el funnel. */}
+        <LoanSuggestedQuestions
+          disabled={chat.isStreaming}
+          onPick={chat.send}
+        />
 
         {/* Composer */}
         <LoanComposer disabled={chat.isStreaming} onSend={chat.send} />

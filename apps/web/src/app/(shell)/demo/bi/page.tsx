@@ -10,10 +10,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { Button, Eyebrow, Icon } from '@/components/ui';
 import { BiComposer, BiSuggestions } from '@/components/demo/bi/BiComposer';
+import { BiSchemaPanel } from '@/components/demo/bi/BiSchemaPanel';
 import { TurnView } from '@/components/demo/bi/TurnView';
 import { useBiChat } from '@/components/demo/bi/use-bi-chat';
 import { AudienceLine } from '@/components/shared/AudienceLine';
@@ -41,6 +42,15 @@ export default function DemoBiPage() {
 
   const isStreaming = chat.status === 'streaming';
   const hasAny = chat.turns.length > 0;
+
+  // Tablas usadas en el ÚLTIMO turn (el activo si está streameando, o el
+  // último completado). Se pasa al schema panel para resaltarlas y vender
+  // el "no es magia, hay un cubo detrás".
+  const usedTables = useMemo<ReadonlySet<string>>(() => {
+    if (!hasAny) return new Set();
+    const last = chat.turns[chat.turns.length - 1];
+    return new Set(last.tablesUsed ?? []);
+  }, [hasAny, chat.turns]);
 
   return (
     <div className="page bi-page">
@@ -81,34 +91,41 @@ export default function DemoBiPage() {
         {!hasAny && <BiSuggestions onPick={chat.ask} disabled={isStreaming} />}
       </section>
 
-      {/* Body */}
-      {!hasAny ? (
-        <div className="bi-empty">
-          <div className="bi-empty-icon">
-            <Icon name="bar-chart-3" size={42} strokeWidth={1.4} />
-          </div>
-          <Eyebrow>{t('bi.empty.title')}</Eyebrow>
-          <p className="bi-empty-body">{t('bi.empty.body')}</p>
-        </div>
-      ) : (
-        <div className="bi-turns">
-          {chat.turns.map((turn, i) => {
-            const isLast = i === chat.turns.length - 1;
-            return (
-              <div
-                key={turn.id}
-                ref={isLast ? lastTurnRef : undefined}
-                className="bi-turn-wrapper"
-              >
-                <TurnView
-                  turn={turn}
-                  onRetry={isLast ? chat.retry : undefined}
-                />
+      {/* Body: schema panel (izq) + turns (der). El panel se mantiene
+          sticky para que el cliente pueda seguir viendo qué tabla se
+          consultó mientras lee el gráfico. */}
+      <div className="bi-body">
+        <BiSchemaPanel usedTables={usedTables} />
+        <div className="bi-body-main">
+          {!hasAny ? (
+            <div className="bi-empty">
+              <div className="bi-empty-icon">
+                <Icon name="bar-chart-3" size={42} strokeWidth={1.4} />
               </div>
-            );
-          })}
+              <Eyebrow>{t('bi.empty.title')}</Eyebrow>
+              <p className="bi-empty-body">{t('bi.empty.body')}</p>
+            </div>
+          ) : (
+            <div className="bi-turns">
+              {chat.turns.map((turn, i) => {
+                const isLast = i === chat.turns.length - 1;
+                return (
+                  <div
+                    key={turn.id}
+                    ref={isLast ? lastTurnRef : undefined}
+                    className="bi-turn-wrapper"
+                  >
+                    <TurnView
+                      turn={turn}
+                      onRetry={isLast ? chat.retry : undefined}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
