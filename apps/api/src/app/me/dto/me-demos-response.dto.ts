@@ -29,6 +29,15 @@ export class MeTenantInfoDto {
 
   @ApiProperty({ enum: ['active', 'trial', 'suspended'] })
   status!: 'active' | 'trial' | 'suspended';
+
+  @ApiProperty({
+    nullable: true,
+    enum: ['anthropic', 'openai-compat', 'private-mac', 'private-onprem'],
+    description:
+      'Provider LLM activo para este tenant (ADR-0022). null = el sistema cae al CHAT_PROVIDER de env vars. El frontend usa este valor como fallback del header X-LLM-Provider cuando el user no eligió manualmente.',
+    example: 'anthropic',
+  })
+  llmProvider!: string | null;
 }
 
 export class MeIndustryInfoDto {

@@ -63,7 +63,56 @@ interface FormState {
   accentColor: string;
   logoUrl: string;
   brandingDisplayName: string;
+  /**
+   * Provider LLM activo del tenant (ADR-0022). Valor especial `''` = "default
+   * del entorno" → en el PATCH se manda `null` y el backend limpia el
+   * override. Cualquier otro valor debe ser uno de los 4 IDs válidos.
+   */
+  llmProvider:
+    | ''
+    | 'anthropic'
+    | 'openai-compat'
+    | 'private-mac'
+    | 'private-onprem';
 }
+
+/**
+ * Choices del radio del provider. El primero (valor '') es "limpiar
+ * override"; los demás corresponden 1:1 a los IDs del backend.
+ */
+const LLM_PROVIDER_CHOICES: ReadonlyArray<{
+  value: FormState['llmProvider'];
+  /** Key i18n del label visible. */
+  labelKey: StringKey;
+  /** Key i18n del subtítulo descriptivo. */
+  descKey: StringKey;
+}> = [
+  {
+    value: '',
+    labelKey: 'admin.llm.option.env',
+    descKey: 'admin.llm.option.env.desc',
+  },
+  {
+    value: 'anthropic',
+    labelKey: 'admin.llm.option.anthropic',
+    descKey: 'admin.llm.option.anthropic.desc',
+  },
+  {
+    value: 'openai-compat',
+    labelKey: 'admin.llm.option.openai-compat',
+    descKey: 'admin.llm.option.openai-compat.desc',
+  },
+  {
+    value: 'private-mac',
+    labelKey: 'admin.llm.option.private-mac',
+    descKey: 'admin.llm.option.private-mac.desc',
+  },
+  {
+    value: 'private-onprem',
+    labelKey: 'admin.llm.option.private-onprem',
+    descKey: 'admin.llm.option.private-onprem.desc',
+  },
+];
 
 type SaveStatus =
   | { kind: 'idle' }
@@ -82,6 +131,7 @@ export default function AdminTenantPage() {
     accentColor: '',
     logoUrl: '',
     brandingDisplayName: '',
+    llmProvider: '',
   });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ kind: 'idle' });
 
@@ -92,6 +142,13 @@ export default function AdminTenantPage() {
       meDemos.tenant.branding && typeof meDemos.tenant.branding === 'object'
         ? (meDemos.tenant.branding as Record<string, unknown>)
         : {};
+    // El llmProvider que viene del backend puede ser null (sin override) o
+    // uno de los IDs válidos. Si no matchea, caemos al string vacío =
+    // "default del entorno", evitando que un valor corrupto rompa el radio.
+    const llmFromDb = meDemos.tenant.llmProvider;
+    const llmValid = LLM_PROVIDER_CHOICES.find(
+      (c) => c.value === llmFromDb,
+    )?.value;
     setForm({
       displayName: meDemos.tenant.displayName,
       enabledDemoIds: new Set(meDemos.demos.map((d) => d.id)),
@@ -100,6 +157,7 @@ export default function AdminTenantPage() {
       logoUrl: typeof branding.logoUrl === 'string' ? branding.logoUrl : '',
       brandingDisplayName:
         typeof branding.displayName === 'string' ? branding.displayName : '',
+      llmProvider: llmValid ?? '',
     });
   }, [meStatus, meDemos]);
 
@@ -138,6 +196,9 @@ export default function AdminTenantPage() {
             logoUrl: form.logoUrl || undefined,
             displayName: form.brandingDisplayName || undefined,
           },
+          // ADR-0022: '' = default del entorno (mandar null para limpiar
+          // el override); cualquier otro valor es uno de los 4 providers.
+          llmProvider: form.llmProvider === '' ? null : form.llmProvider,
         });
         setSaveStatus({ kind: 'saved' });
         // Refresh sin reload — el sidebar + dashboard reflejan los cambios.
@@ -438,6 +499,84 @@ export default function AdminTenantPage() {
                   }
                   maxLength={120}
                 />
+              </div>
+            </div>
+          </section>
+
+          {/* Sección 4 — Proveedor de IA (ADR-0022).
+
+              Por qué un radio en lugar de un select: la pieza importante de
+              esta sección es la descripción de cada opción ("cloud", "tu
+              servidor", etc.). Un select esconde esa info detrás de un
+              click; el radio la deja toda visible y vendible en la demo. */}
+          <section className="admin-section">
+            <div className="admin-section-head">
+              <Icon name="cpu" className="ic" />
+              <div>
+                <div className="t">{t('admin.section.llm')}</div>
+                <div className="d">{t('admin.section.llm.hint')}</div>
+              </div>
+            </div>
+            <div className="admin-section-body">
+              <div
+                role="radiogroup"
+                aria-labelledby="llm-provider-group"
+                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+              >
+                {LLM_PROVIDER_CHOICES.map((choice) => {
+                  const id = `llm-provider-${choice.value || 'env'}`;
+                  const checked = form.llmProvider === choice.value;
+                  return (
+                    <label
+                      key={choice.value || 'env'}
+                      htmlFor={id}
+                      style={{
+                        display: 'flex',
+                        gap: 12,
+                        alignItems: 'flex-start',
+                        padding: 12,
+                        borderRadius: 8,
+                        border: `1px solid ${
+                          checked
+                            ? 'var(--color-accent, #43C194)'
+                            : 'var(--color-border, #2A2F36)'
+                        }`,
+                        cursor: 'pointer',
+                        background: checked
+                          ? 'var(--color-bg-subtle, transparent)'
+                          : 'transparent',
+                      }}
+                    >
+                      <input
+                        id={id}
+                        type="radio"
+                        name="llmProvider"
+                        value={choice.value}
+                        checked={checked}
+                        onChange={() =>
+                          setForm((p) => ({
+                            ...p,
+                            llmProvider: choice.value,
+                          }))
+                        }
+                        style={{ marginTop: 2 }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 600 }}>
+                          {t(choice.labelKey)}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: 'var(--color-fg-muted)',
+                          }}
+                        >
+                          {t(choice.descKey)}
+                        </span>
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </section>

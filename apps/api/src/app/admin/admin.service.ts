@@ -38,6 +38,8 @@ export interface TenantResponse {
   enabledDemos: string[];
   branding: unknown;
   status: 'active' | 'trial' | 'suspended';
+  /** Provider LLM activo (ADR-0022). null = caer al CHAT_PROVIDER del env. */
+  llmProvider: string | null;
   industry: {
     slug: string;
     displayName: string;
@@ -94,6 +96,10 @@ export class AdminService {
     }
 
     // 4) Update parcial. Prisma ignora campos `undefined` automáticamente.
+    //    Para llmProvider distinguimos:
+    //      - undefined → no tocar (mantener el valor actual).
+    //      - null      → limpiar el override (vuelve a leer env CHAT_PROVIDER).
+    //      - string    → guardar el provider elegido por el admin.
     const updated = await prisma.tenant.update({
       where: { id: tenantId },
       data: {
@@ -101,6 +107,7 @@ export class AdminService {
         enabledDemos: patch.enabledDemos,
         branding:
           patch.branding !== undefined ? (mergedBranding as object) : undefined,
+        llmProvider: patch.llmProvider,
       },
       include: { industry: true },
     });
@@ -116,6 +123,7 @@ export class AdminService {
       enabledDemos: updated.enabledDemos,
       branding: updated.branding,
       status: updated.status,
+      llmProvider: updated.llmProvider,
       industry: {
         slug: updated.industry.slug,
         displayName: updated.industry.displayName,
