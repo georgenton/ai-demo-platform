@@ -297,17 +297,21 @@ function montoCaptacionPorProducto(rng: () => number, tipo: string): number {
 // Main
 // -----------------------------------------------------------------------------
 
-async function main() {
-  console.log('🌱 Seeding Demo 10 — Warehouse BI de cooperativa...');
-
-  const tenant = await prisma.tenant.findUnique({
-    where: { slug: COOP_TENANT_SLUG },
-  });
-  if (!tenant) {
-    throw new Error(
-      `Tenant '${COOP_TENANT_SLUG}' no existe. Corre primero: npm run db:seed:loans`,
-    );
-  }
+/**
+ * Siembra el warehouse BI completo para UN tenant. Idempotente: borra los
+ * registros BI previos del tenant antes de recrear.
+ *
+ * Se llama una vez por cada tenant con `bi` habilitado — así el demo
+ * funciona desde TODOS los logins, no solo desde el de cooperativa.
+ */
+async function seedBiForTenant(tenant: {
+  id: string;
+  slug: string;
+  displayName: string;
+}) {
+  console.log(
+    `\n🌱 Sembrando BI para tenant '${tenant.slug}' (${tenant.displayName})...`,
+  );
 
   // Limpiar data BI previa del tenant. Cascade limpia BiCuota desde
   // BiPrestamo y BiCaptacion desde BiSocio. Hacemos los deletes en orden
@@ -620,10 +624,71 @@ async function main() {
   await prisma.biCaptacion.createMany({ data: captacionesToCreate });
   console.log(`  ✓ ${captacionesToCreate.length} captaciones`);
 
-  console.log('✅ Seed Demo 10 completo.');
+  const total =
+    AGENCIAS_DATA.length +
+    socioIds.length +
+    prestamosCreados.length +
+    cuotasToCreate.length +
+    captacionesToCreate.length;
+  console.log(`  ✅ Tenant '${tenant.slug}' listo (${total} filas)`);
+  return total;
+}
+
+/**
+ * Resuelve la lista efectiva de demos habilitados para un tenant aplicando
+ * la regla de herencia del ADR-0013: si `Tenant.enabledDemos` está vacío,
+ * hereda de `Industry.enabledDemos`; si no, el tenant overridea.
+ *
+ * Espejo de `IndustryService.resolveEnabledDemos` del backend — mantenemos
+ * la duplicación porque el seed corre fuera del backend.
+ */
+function resolveEnabledDemos(tenant: {
+  enabledDemos: string[];
+  industry: { enabledDemos: string[] };
+}): string[] {
+  const override = tenant.enabledDemos ?? [];
+  if (override.length > 0) return override;
+  return tenant.industry.enabledDemos ?? [];
+}
+
+async function main() {
   console.log(
-    `   Total filas: ${AGENCIAS_DATA.length + socioIds.length + prestamosCreados.length + cuotasToCreate.length + captacionesToCreate.length}`,
+    '🌱 Seeding Demo 10 — Warehouse BI para TODOS los tenants con BI habilitado',
   );
+
+  // Buscar tenants candidatos: traemos todos y filtramos en JS porque
+  // Prisma no permite filtros sobre arrays de la industry en este shape.
+  const allTenants = await prisma.tenant.findMany({
+    include: { industry: { select: { enabledDemos: true } } },
+    orderBy: { slug: 'asc' },
+  });
+  const targets = allTenants.filter((t) =>
+    resolveEnabledDemos(t).includes('bi'),
+  );
+
+  if (targets.length === 0) {
+    console.warn(
+      `⚠ Ningún tenant tiene 'bi' habilitado. ` +
+        `Corre primero 'npm run db:seed:tenants' (que activa 'bi' en el tenant 'demo') ` +
+        `o 'npm run db:seed:loans' (que crea '${COOP_TENANT_SLUG}').`,
+    );
+    return;
+  }
+
+  console.log(
+    `  → ${targets.length} tenant(s) recibirán data: ${targets.map((t) => t.slug).join(', ')}`,
+  );
+
+  let grandTotal = 0;
+  for (const t of targets) {
+    grandTotal += await seedBiForTenant({
+      id: t.id,
+      slug: t.slug,
+      displayName: t.displayName,
+    });
+  }
+
+  console.log(`\n🎉 Seed Demo 10 completo. ${grandTotal} filas en total.`);
 }
 
 main()
