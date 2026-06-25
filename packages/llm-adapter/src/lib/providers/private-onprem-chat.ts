@@ -25,6 +25,12 @@ import type {
   StreamWithUsage,
 } from '../types.js';
 
+import {
+  messagesToOpenAI,
+  parseOpenAIToolStream,
+  toolsToOpenAI,
+} from './openai-tool-stream.js';
+
 type PrivateOnpremChatConfig = ChatConfig & {
   demoName?: string;
   timeoutMs?: number;
@@ -96,15 +102,52 @@ export class PrivateOnpremChatAdapter implements ChatAdapter {
     return { stream: iterate(this), usage };
   }
 
-  // eslint-disable-next-line require-yield
   async *streamWithTools(
     messages: ChatRichMessage[],
     tools: ChatTool[],
   ): AsyncIterable<AssistantStreamEvent> {
-    throw new Error(
-      `PrivateOnpremChatAdapter.streamWithTools no está implementado aún ` +
-        `(recibí ${messages.length} mensajes y ${tools.length} tools).`,
-    );
+    const response = await this.postWithTools(messages, tools);
+    yield* parseOpenAIToolStream(response);
+  }
+
+  /**
+   * POST al endpoint OpenAI-compatible del gateway con `tools` y
+   * `stream: true`. Mismo shape que `private-mac` — el adapter Ollama
+   * sirve la spec estándar.
+   */
+  private async postWithTools(
+    messages: ChatRichMessage[],
+    tools: ChatTool[],
+  ): Promise<Response> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          'Content-Type': 'application/json',
+          'x-demo-name': this.demoName,
+          'x-request-id': `ai-demo-tools-${requestId()}`,
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          messages: messagesToOpenAI(messages),
+          tools: toolsToOpenAI(tools),
+          stream: true,
+        }),
+      });
+      if (!response.ok || !response.body) {
+        const body = await response.text().catch(() => '');
+        throw new Error(
+          `Private on-prem chat (tools) failed with HTTP ${response.status}: ${body}`,
+        );
+      }
+      return response;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private async postChat(
