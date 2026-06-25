@@ -46,7 +46,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Login con email + contraseña',
     description:
-      'Valida credenciales. Si son correctas, setea una cookie httpOnly + Secure + SameSite=Strict con el JWT firmado y devuelve datos del user y su tenant. Si fallan, 401 sin distinguir entre "email no existe" y "contraseña incorrecta".',
+      'Valida credenciales. Si son correctas, setea una cookie httpOnly + Secure + SameSite=Lax con el JWT firmado y devuelve datos del user y su tenant. Si fallan, 401 sin distinguir entre "email no existe" y "contraseña incorrecta".',
   })
   async login(
     @Body() dto: LoginDto,
@@ -106,10 +106,23 @@ export class AuthController {
 
   /**
    * Opciones de cookie según entorno. En producción/staging (HTTPS) la
-   * cookie va con Secure=true; en local con http, false. SameSite siempre
-   * 'strict' porque el frontend es la misma origin (proxy via Next.js
-   * rewrites). El maxAge espeja el JWT_EXPIRES_IN para que el browser
-   * tire la cookie cuando el token vence.
+   * cookie va con Secure=true; en local con http, false.
+   *
+   * SameSite=Lax (cambio del 2026-06-25, antes era Strict). Razón del
+   * cambio: aunque el frontend usa un proxy same-origin a /api, Chrome
+   * y Safari tratan ciertos contextos (preview deployments con dominios
+   * generados por Vercel, hard refresh tras login, navegación desde
+   * tabs) como "cross-site" para `Strict`, y NO envían la cookie. El
+   * síntoma era el clásico: login devuelve 200 y user payload, pero el
+   * siguiente `/auth/me` da 401 porque la cookie no viaja. Con `Lax`
+   * la cookie va en todas las navegaciones top-level GET (suficiente
+   * para la rehidratación del frontend) y sigue protegiendo CSRF en
+   * POST/PUT/DELETE cross-site, que es lo que importa. Es el default
+   * moderno de Express, NestJS y la mayoría de stacks de auth con
+   * cookie httpOnly.
+   *
+   * El maxAge espeja JWT_EXPIRES_IN para que el browser tire la cookie
+   * cuando el token vence.
    */
   private cookieOptions() {
     const isProd = process.env.NODE_ENV === 'production';
@@ -118,7 +131,7 @@ export class AuthController {
     return {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'strict' as const,
+      sameSite: 'lax' as const,
       maxAge: parseDurationMs(expiresIn),
       ...(domain ? { domain } : {}),
       path: '/',
