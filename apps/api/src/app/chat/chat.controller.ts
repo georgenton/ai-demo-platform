@@ -18,7 +18,9 @@ import { ChatService } from './chat.service.js';
 import {
   CurrentLlmProvider,
   CurrentTenant,
+  CurrentUser,
 } from '../auth/current-user.decorator.js';
+import type { JwtPayload } from '../auth/auth.types.js';
 import { RequireDemo } from '../auth/require-demo.decorator.js';
 
 @ApiTags('Chat (Demo 01)')
@@ -53,9 +55,10 @@ export class ChatController {
     @Query() query: ChatQueryDto,
     @CurrentTenant() tenantId: string,
     @CurrentLlmProvider() llmProvider: ChatProvider | undefined,
+    @CurrentUser() user: JwtPayload | undefined,
   ): Observable<MessageEvent> {
-    return from(this.chatService.streamChat(query, tenantId, llmProvider)).pipe(
-      map((token) => ({ data: token })),
-    );
+    return from(
+      this.chatService.streamChat(query, tenantId, llmProvider, user?.sub),
+    ).pipe(map((token) => ({ data: token })));
   }
 }

@@ -147,8 +147,41 @@ model User {
   tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
+  tokenUsage   TokenUsage[]
 
   @@index([tenantId])
+}
+
+/// Registro de tokens consumidos por un user al hablar con el LLM.
+/// Una fila por llamada al LLM (chat, agent SQL, tool calling, etc.).
+/// El TokenQuotaService consulta SUM(inputTokens + outputTokens) en una
+/// ventana de 1 hora rolling para enforce del rate limit (ver ADR pendiente).
+///
+/// Decisiones:
+///   - Granularidad por llamada (no por session/conversación). Permite
+///     auditoría por demo y ventana temporal.
+///   - `demoId` opcional porque algunos endpoints internos podrían no
+///     pertenecer a un demo (ej. ingest, embeddings).
+///   - Índice (userId, createdAt) para hacer la suma rolling eficiente.
+model TokenUsage {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId      String
+  /// Identificador del demo que disparó la llamada (rag, agent, bi, …).
+  /// Útil para reportes "qué demo consume más" sin parsear logs.
+  demoId        String?
+  /// Tokens del prompt enviado al LLM (system + history + user).
+  inputTokens   Int
+  /// Tokens de la respuesta del LLM.
+  outputTokens  Int
+  /// Provider que cobró estos tokens. Ayuda a separar consumo Anthropic
+  /// (con costo) vs on-prem (sin costo) en reportes.
+  provider      String
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([tenantId, createdAt])
 }
 
 enum UserRole {

@@ -19,6 +19,8 @@ import {
 import type { ChatProvider, EmbeddingsProvider } from '@org/llm-adapter';
 import { EmbeddingService, PromptBuilder, VectorStore } from '@org/rag-core';
 
+import { TokenQuotaService } from '../quota/token-quota.service.js';
+
 import type { ChatQueryDto } from './dto/chat.dto.js';
 
 /** Default de top-K si el query no lo especifica. */
@@ -32,6 +34,7 @@ export class ChatService {
     private readonly embeddings: EmbeddingService,
     private readonly vectorStore: VectorStore,
     private readonly promptBuilder: PromptBuilder,
+    private readonly tokenQuota: TokenQuotaService,
   ) {}
 
   /**
@@ -47,6 +50,7 @@ export class ChatService {
     query: ChatQueryDto,
     tenantId: string,
     llmProvider?: ChatProvider,
+    userId?: string,
   ): AsyncIterable<string> {
     this.logger.log(
       `Chat for tenant=${tenantId} demo=${query.demoId}: "${query.q}" ` +
@@ -111,8 +115,43 @@ export class ChatService {
       })),
     });
 
-    // 4) Streaming del LLM — yield de cada token cuesta abajo. yield* delega
-    //    al AsyncIterable del adapter sin envolverlo, así no pagamos overhead.
-    yield* chat.completeStream(messages, { provider: llmProvider });
+    // 4) Streaming del LLM — yield de cada token cuesta abajo, contando
+    //    chars de input (messages) y output (tokens) para registrar el
+    //    consumo al cierre. Sin el record, el guard global de quota nunca
+    //    sumaría y el rate limit no funcionaría.
+    const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+    let outputChars = 0;
+    try {
+      for await (const token of chat.completeStream(messages, {
+        provider: llmProvider,
+      })) {
+        outputChars += token.length;
+        yield token;
+      }
+    } finally {
+      // Registramos aunque el stream se haya cortado a mitad (cliente
+      // canceló, error en el LLM): los tokens ya consumidos cuentan.
+      if (userId) {
+        const provider = llmProvider ?? process.env.CHAT_PROVIDER ?? 'unknown';
+        void this.tokenQuota
+          .recordEstimated({
+            userId,
+            tenantId,
+            demoId: query.demoId,
+            inputChars,
+            outputChars,
+            provider,
+          })
+          .catch((err) => {
+            // No queremos que un error de DB en el tracking afecte la
+            // experiencia del user — logueamos y seguimos.
+            this.logger.warn(
+              `Failed to record token usage for user=${userId}: ${
+                err instanceof Error ? err.message : String(err)
+              }`,
+            );
+          });
+      }
+    }
   }
 }

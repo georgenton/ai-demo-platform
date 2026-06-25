@@ -151,17 +151,36 @@ async function main() {
     );
   }
 
+  // El equipo de ventas (Edguitar, Luis, Juan Carlos) entra a este tenant
+  // con rol `member`. Para que vean los 10 demos en el sidebar (no solo los
+  // 6 que hereda la industria 'universidad'), overrideamos enabledDemos
+  // explícitamente con todos los IDs del catálogo. La industria sigue
+  // siendo 'universidad' por consistencia de copy/welcomeCopy.
+  const ALL_DEMOS = [
+    'rag',
+    'comparator',
+    'corpus',
+    'agent',
+    'tutor',
+    'clinical',
+    'interview',
+    'notarize',
+    'loans',
+    'bi',
+  ];
+
   const demoTenant = await prisma.tenant.upsert({
     where: { slug: 'demo' },
     update: {
       displayName: 'Demo · Tenant interno NAI',
       industryId: universidadIndustry.id,
+      enabledDemos: ALL_DEMOS,
     },
     create: {
       slug: 'demo',
       displayName: 'Demo · Tenant interno NAI',
       industryId: universidadIndustry.id,
-      enabledDemos: [],
+      enabledDemos: ALL_DEMOS,
       branding: {
         accentColor: '#43C194',
         displayName: 'Demo Platform',
@@ -170,6 +189,7 @@ async function main() {
     },
   });
   console.log(`  ✓ Tenant 'demo' (id: ${demoTenant.id})`);
+  console.log(`  ✓ Tenant 'demo' enabledDemos = [${ALL_DEMOS.join(', ')}]`);
 
   // 3) Superadmin user. La contraseña se toma del env DEMO_ADMIN_PASSWORD
   //    o usa el default. EN PRODUCCIÓN cambiar la contraseña del seed
@@ -198,6 +218,38 @@ async function main() {
   console.log(`  ✓ Superadmin user: ${adminEmail}`);
   console.log(`  ⚠ Contraseña inicial: ${adminPassword}`);
   console.log('  ⚠ CÁMBIALA en producción tras el primer login.');
+
+  // 4) Equipo de ventas (rol member). Acceso a todos los demos via el
+  //    enabledDemos override del tenant 'demo'. La contraseña común se lee
+  //    de SALES_PASSWORD; default fijo para que el equipo pueda entrar
+  //    sin coordinar credenciales.
+  const salesPassword = process.env.SALES_PASSWORD ?? 'ventas-demo-2026';
+  const salesPasswordHash = await bcrypt.hash(salesPassword, BCRYPT_COST);
+  const SALES_TEAM = [
+    { email: 'edguitar@nai.local', displayName: 'Edguitar (Ventas)' },
+    { email: 'luis@nai.local', displayName: 'Luis (Ventas)' },
+    { email: 'juancarlos@nai.local', displayName: 'Juan Carlos (Ventas)' },
+  ];
+  for (const s of SALES_TEAM) {
+    await prisma.user.upsert({
+      where: { email: s.email },
+      update: {
+        passwordHash: salesPasswordHash,
+        role: 'member',
+        tenantId: demoTenant.id,
+        displayName: s.displayName,
+      },
+      create: {
+        email: s.email,
+        passwordHash: salesPasswordHash,
+        displayName: s.displayName,
+        role: 'member',
+        tenantId: demoTenant.id,
+      },
+    });
+    console.log(`  ✓ Sales user: ${s.email}`);
+  }
+  console.log(`  ⚠ Contraseña común equipo ventas: ${salesPassword}`);
 
   console.log('🎉 Done.');
 }
