@@ -16,10 +16,13 @@ import { Module } from '@nestjs/common';
 
 import { EmbeddingService, PromptBuilder, VectorStore } from '@org/rag-core';
 
+import { TokenQuotaModule } from '../quota/token-quota.module.js';
+
 import { ChatController } from './chat.controller.js';
 import { ChatService } from './chat.service.js';
 
 @Module({
+  imports: [TokenQuotaModule],
   controllers: [ChatController],
   providers: [
     ChatService,

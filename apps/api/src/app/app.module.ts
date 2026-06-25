@@ -22,7 +22,10 @@ import { LoansModule } from './loans/loans.module.js';
 import { MeModule } from './me/me.module.js';
 import { NotarizeModule } from './notarize/notarize.module.js';
 import { PrivateLlmModule } from './private-llm/private-llm.module.js';
+import { TokenQuotaGuard } from './quota/token-quota.guard.js';
+import { TokenQuotaModule } from './quota/token-quota.module.js';
 import { TutorModule } from './tutor/tutor.module.js';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -56,9 +59,21 @@ import { TutorModule } from './tutor/tutor.module.js';
     MeModule,
     NotarizeModule,
     PrivateLlmModule,
+    TokenQuotaModule,
     TutorModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Guard global del rate limit. Hace pre-check de quota a TODOS los
+    // requests autenticados (endpoints @Public() y superadmin pasan
+    // derecho). Si el user excedió 20k tokens/hora, devuelve 429 antes
+    // de tocar el LLM. El record del usage lo hacen los servicios después
+    // de la llamada al LLM via TokenQuotaService.recordUsage().
+    {
+      provide: APP_GUARD,
+      useClass: TokenQuotaGuard,
+    },
+  ],
 })
 export class AppModule {}
