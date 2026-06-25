@@ -133,20 +133,34 @@ describe('ChatService.streamChat()', () => {
     );
   });
 
-  it('rechaza con 400 cuando llmProvider=anthropic (no tiene embeddings)', async () => {
-    // ADR-0018: Anthropic no fabrica embeddings → no podemos hacer retrieval.
-    // El service debe rechazar antes de tocar la DB.
+  it('cae al EMBEDDINGS_PROVIDER del env cuando llmProvider=anthropic', async () => {
+    // Decisión renovada Q2 2026 (ver ChatService.streamChat docstring):
+    // Anthropic no fabrica embeddings; en lugar de rechazar, el service
+    // deja que el adapter caiga al env default (típicamente openai en
+    // producción). El user puede elegir Anthropic en el header y el RAG
+    // sigue funcionando con embeddings cloud.
     mockResolveEmbeddingsProvider.mockReturnValue(null);
+    vi.mocked(embeddings.embed).mockResolvedValue([0.1, 0.2]);
+    vi.mocked(vectorStore.searchTopK).mockResolvedValue([]);
+    vi.mocked(promptBuilder.build).mockReturnValue([
+      { role: 'user', content: 'algo' },
+    ]);
+    mockChatStream.mockImplementation(async function* () {
+      yield 'ok';
+    });
 
     const iter = service.streamChat(
       { q: 'algo', demoId: 'rag' },
       'tenant-x',
       'anthropic',
     );
-    await expect(iter.next()).rejects.toThrow(/Anthropic/);
+    // Consumimos el iterable — no debería throw.
+    for await (const _ of iter) {
+      void _;
+    }
     expect(mockResolveEmbeddingsProvider).toHaveBeenCalledWith('anthropic');
-    expect(embeddings.embed).not.toHaveBeenCalled();
-    expect(vectorStore.searchTopK).not.toHaveBeenCalled();
+    // El embed se llama SIN provider explícito (queda undefined) → cae al env.
+    expect(embeddings.embed).toHaveBeenCalledWith('algo', undefined);
   });
 
   it('usa topK del query cuando se provee', async () => {

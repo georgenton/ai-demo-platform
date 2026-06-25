@@ -34,7 +34,8 @@ const STRINGS_ES = {
     'Selecciona el modelo de LLM antes de enviar la primera consulta.',
   'llm.provider.changeHint': 'Cambiar el modelo de LLM activo',
   'llm.provider.anthropic': 'Anthropic API',
-  'llm.provider.privateMac': 'NAI on-prem',
+  'llm.provider.privateMac': 'Mac local (Ollama)',
+  'llm.provider.privateOnprem': 'Ubuntu on-prem',
   // Badge que aparece en la opción Anthropic del dropdown. Anthropic no
   // fabrica embeddings, así que cuando está activo el demo RAG queda
   // bloqueado (ver ADR-0018).
@@ -828,7 +829,8 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
     'Select the LLM model before sending the first request.',
   'llm.provider.changeHint': 'Change the active LLM model',
   'llm.provider.anthropic': 'Anthropic API',
-  'llm.provider.privateMac': 'NAI on-prem',
+  'llm.provider.privateMac': 'Local Mac (Ollama)',
+  'llm.provider.privateOnprem': 'On-prem Ubuntu',
   'shell.theme.tip': 'Toggle theme',
   'shell.lang.tip': 'Change language',
   'shell.presentation.enter': 'Presentation mode (Shift + P)',

@@ -18,9 +18,10 @@
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Icon } from '@/components/ui';
+import { useAuth } from '@/lib/auth';
 import { useLlmProvider, type LlmProviderId } from '@/lib/llm';
 import { useT } from '@/lib/i18n';
 
@@ -29,33 +30,69 @@ interface ProviderOption {
   /** Nombre Lucide del icono. */
   icon: string;
   /** Clave i18n del label visible. */
-  labelKey: 'llm.provider.anthropic' | 'llm.provider.privateMac';
-  /**
-   * Badge opcional al lado del label (ej. "sin RAG" cuando un provider no
-   * tiene embeddings — ADR-0018). Aparece en el menú y en el tooltip.
-   */
-  badgeKey?: 'llm.provider.anthropicNoRag';
-  /** Tooltip del badge para explicar el porqué. */
-  badgeHintKey?: 'llm.provider.anthropicNoRagHint';
+  labelKey:
+    | 'llm.provider.anthropic'
+    | 'llm.provider.privateMac'
+    | 'llm.provider.privateOnprem';
 }
 
-const OPTIONS: ProviderOption[] = [
-  {
+/**
+ * Catálogo completo de opciones del switch. La función
+ * `optionsForRole` decide cuáles ve cada user:
+ *
+ *   - `admin` / `superadmin` → 3 opciones (Anthropic, Mac local, Ubuntu).
+ *   - `member` (equipo de ventas) → 2 opciones (Anthropic, Ubuntu).
+ *
+ * NAI (`openai-compat`) se excluye del switch porque hoy se setea a nivel
+ * de tenant en `/admin/tenant`, no por sesión del user.
+ *
+ * El badge "sin RAG" para Anthropic se eliminó: el backend ahora cae al
+ * `EMBEDDINGS_PROVIDER` del env (OpenAI cloud) cuando el chat=Anthropic,
+ * así que RAG funciona en los 3 providers.
+ */
+const ALL_OPTIONS: Record<
+  Exclude<LlmProviderId, 'openai-compat'>,
+  ProviderOption
+> = {
+  anthropic: {
     id: 'anthropic',
     icon: 'cloud',
     labelKey: 'llm.provider.anthropic',
-    // Anthropic no fabrica embeddings; los demos que indexan/buscan
-    // documentos (RAG, corpus) quedan bloqueados con este provider. El
-    // badge avisa al user antes de que elija.
-    badgeKey: 'llm.provider.anthropicNoRag',
-    badgeHintKey: 'llm.provider.anthropicNoRagHint',
   },
-  { id: 'private-mac', icon: 'server', labelKey: 'llm.provider.privateMac' },
-];
+  'private-mac': {
+    id: 'private-mac',
+    icon: 'server',
+    labelKey: 'llm.provider.privateMac',
+  },
+  'private-onprem': {
+    id: 'private-onprem',
+    icon: 'hard-drive',
+    labelKey: 'llm.provider.privateOnprem',
+  },
+};
+
+function optionsForRole(role: string | undefined): ProviderOption[] {
+  // Default conservador: si no sabemos el rol todavía, mostramos solo las
+  // 2 opciones de ventas. Cuando `useAuth` hidrata, el menú se actualiza.
+  const isAdmin = role === 'admin' || role === 'superadmin';
+  if (isAdmin) {
+    return [
+      ALL_OPTIONS.anthropic,
+      ALL_OPTIONS['private-mac'],
+      ALL_OPTIONS['private-onprem'],
+    ];
+  }
+  return [ALL_OPTIONS.anthropic, ALL_OPTIONS['private-onprem']];
+}
 
 export function LlmProviderSwitch() {
   const { t } = useT();
   const { provider, setProvider } = useLlmProvider();
+  const auth = useAuth();
+  const OPTIONS = useMemo(
+    () => optionsForRole(auth.user?.role),
+    [auth.user?.role],
+  );
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -111,13 +148,9 @@ export function LlmProviderSwitch() {
                   setProvider(opt.id);
                   setOpen(false);
                 }}
-                title={opt.badgeHintKey ? t(opt.badgeHintKey) : undefined}
               >
                 <Icon name={opt.icon} size={14} />
                 <span>{t(opt.labelKey)}</span>
-                {opt.badgeKey && (
-                  <span className="llm-switch-badge">{t(opt.badgeKey)}</span>
-                )}
                 {selected && <Icon name="check" size={13} strokeWidth={2.5} />}
               </button>
             );

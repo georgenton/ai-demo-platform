@@ -42,11 +42,13 @@ const DEMO_ID = 'corpus' as const;
 
 export default function DemoCorpusPage() {
   const { t } = useT();
-  // Corpus también usa embeddings (indexa PDFs vía ingestService). Si el
-  // dropdown está en anthropic, las acciones de búsqueda y upload fallan
-  // con 400 — mostramos el banner y bloqueamos el upload (ver ADR-0018).
+  // Decisión renovada Q2 2026: el backend cae al EMBEDDINGS_PROVIDER del
+  // env (OpenAI cloud) cuando chat=Anthropic, así que el corpus funciona
+  // con los 3 providers. La variable queda en false; mantenemos el
+  // import del banner por si el bloqueo vuelve para algún provider futuro.
   const { provider } = useLlmProvider();
-  const ragBlocked = provider === 'anthropic';
+  void provider;
+  const ragBlocked = false;
 
   const [uploadOpen, setUploadOpen] = useState(false);
   // refreshKey aumenta tras cada upload exitoso. Sus consumidores
