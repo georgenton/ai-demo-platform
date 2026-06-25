@@ -30,7 +30,7 @@
 
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   getSpeechRecognitionCtor,
@@ -170,16 +170,34 @@ export function useSpeechRecognition(
     setError(null);
   }, []);
 
-  return {
-    isSupported,
-    isListening,
-    transcript,
-    interimTranscript,
-    error,
-    start,
-    stop,
-    reset,
-  };
+  // Memoizamos el objeto retornado para que su identidad solo cambie cuando
+  // alguno de los valores internos cambia. Sin esto, cada render del consumer
+  // crea un objeto nuevo {...} con identidad distinta, y cualquier useEffect
+  // del consumer que tenga `recognition` en sus deps se ejecuta cada render
+  // — bug que congeló el demo clínico al disparar reset() en loop infinito
+  // (junio 2026).
+  return useMemo(
+    () => ({
+      isSupported,
+      isListening,
+      transcript,
+      interimTranscript,
+      error,
+      start,
+      stop,
+      reset,
+    }),
+    [
+      isSupported,
+      isListening,
+      transcript,
+      interimTranscript,
+      error,
+      start,
+      stop,
+      reset,
+    ],
+  );
 }
 
 /**

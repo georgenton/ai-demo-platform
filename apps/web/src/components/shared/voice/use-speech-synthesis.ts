@@ -20,7 +20,7 @@
 
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { hasSpeechSynthesis } from './web-speech-types';
 
@@ -115,5 +115,13 @@ export function useSpeechSynthesis(
     setIsSpeaking(false);
   }, []);
 
-  return { isSupported, isSpeaking, speak, cancel };
+  // Memoizamos para que la identidad del objeto solo cambie cuando uno de
+  // sus valores cambia. Sin esto, el consumer que ponga `synthesis` en las
+  // deps de un useEffect dispara ese effect en cada render — bug que causó
+  // un loop infinito en /demo/clinical al disparar reset()+setState en cada
+  // ciclo y dejar la UI congelada (junio 2026).
+  return useMemo(
+    () => ({ isSupported, isSpeaking, speak, cancel }),
+    [isSupported, isSpeaking, speak, cancel],
+  );
 }
