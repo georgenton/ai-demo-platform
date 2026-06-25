@@ -54,11 +54,15 @@ const DEMO_ID = 'rag' as const;
 
 export default function DemoRagPage() {
   const { t, lang } = useT();
-  // Provider activo (dropdown del header). Si es `anthropic`, el backend
-  // rechaza ingest y chat con 400 — ADR-0018. La UI muestra el banner y
-  // bloquea las acciones que dispararían ese error.
+  // Provider activo (dropdown del header). Histórico: Anthropic bloqueaba
+  // RAG porque no tiene embeddings. Decisión renovada Q2 2026: el backend
+  // cae al EMBEDDINGS_PROVIDER del env (OpenAI cloud) cuando chat=Anthropic,
+  // así que RAG ahora funciona en los 3 providers. El bloqueo queda
+  // siempre `false`; se mantiene la variable por si vuelve a aparecer un
+  // provider sin embeddings y queremos reactivar el banner.
   const { provider } = useLlmProvider();
-  const ragBlocked = provider === 'anthropic';
+  void provider;
+  const ragBlocked = false;
 
   // Documents
   const {

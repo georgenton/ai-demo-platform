@@ -101,24 +101,32 @@ describe('IngestService', () => {
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it('rechaza con 400 cuando llmProvider=anthropic (no tiene embeddings)', async () => {
-    // ADR-0018: el ingest necesita generar embeddings, y Anthropic no los
-    // ofrece. El service debe rechazar antes de chunkear / embeber / tocar
-    // la DB.
+  it('cae al EMBEDDINGS_PROVIDER del env cuando llmProvider=anthropic', async () => {
+    // Decisión renovada Q2 2026 (ver IngestService.ingest docstring):
+    // Anthropic no fabrica embeddings; en lugar de rechazar, el service
+    // deja que el adapter caiga al env default (típicamente openai).
+    // Permite indexar PDFs con chat=Anthropic sin bloquear al user.
     mockResolveEmbeddingsProvider.mockReturnValue(null);
+    vi.mocked(chunker.split).mockReturnValue([{ content: 'algo', index: 0 }]);
+    vi.mocked(embeddings.embedMany).mockResolvedValue([[0.1, 0.2]]);
+    // El default de mockTransaction ya provee tx.document.create con
+    // mockTxDocumentCreate — solo necesitamos definir su retorno.
+    mockTxDocumentCreate.mockResolvedValue({ id: 'doc-123' });
+    vi.mocked(vectorStore.saveChunks).mockResolvedValue(undefined);
 
-    await expect(
-      service.ingest(
-        { name: 'doc.txt', content: 'algo', demoId: 'rag' },
-        'tenant-x',
-        'anthropic',
-      ),
-    ).rejects.toThrow(/Anthropic/);
+    await service.ingest(
+      { name: 'doc.txt', content: 'algo', demoId: 'rag' },
+      'tenant-x',
+      'anthropic',
+    );
 
     expect(mockResolveEmbeddingsProvider).toHaveBeenCalledWith('anthropic');
-    expect(chunker.split).not.toHaveBeenCalled();
-    expect(embeddings.embedMany).not.toHaveBeenCalled();
-    expect(mockTransaction).not.toHaveBeenCalled();
+    // embedMany se llama SIN provider explícito (segundo arg undefined)
+    // → cae al env default.
+    expect(embeddings.embedMany).toHaveBeenCalledWith(
+      expect.any(Array),
+      undefined,
+    );
   });
 
   it('corre el pipeline completo dentro de una sola transacción', async () => {

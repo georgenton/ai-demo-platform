@@ -44,9 +44,11 @@ export class IngestService {
    * Indexa un documento: chunking → embeddings → vector store. Acepta un
    * `llmProvider` opcional para respetar el dropdown del header del frontend.
    *
-   * Si `llmProvider === 'anthropic'`, rechaza con 400: Anthropic no fabrica
-   * embeddings y el ADR-0018 decidió no sumar un tercer proveedor cloud
-   * solo para esto. El usuario debe cambiar al provider on-prem.
+   * Si `llmProvider === 'anthropic'` (no fabrica embeddings) caemos al
+   * `EMBEDDINGS_PROVIDER` del env — en producción típicamente OpenAI.
+   * Decisión renovada Q2 2026: el RAG en producción necesita un fallback
+   * cloud para embeddings cuando el Mac on-prem está offline y NAI no
+   * está instalado. Ver ADR-0018 + nota en ChatService.streamChat.
    */
   async ingest(
     input: IngestRequestDto,
@@ -59,20 +61,16 @@ export class IngestService {
     );
 
     // 0) Resolver el provider de embeddings desde el llmProvider activo. Si
-    //    el chat provider activo es 'anthropic', resolveEmbeddingsProvider
-    //    devuelve null (Anthropic no tiene API de embeddings) y rechazamos
-    //    el ingest con un mensaje claro. ADR-0018 explica el porqué.
+    //    el chat es Anthropic, `resolveEmbeddingsProvider` devuelve null y
+    //    dejamos `embeddingsProvider` undefined → el adapter cae al
+    //    `EMBEDDINGS_PROVIDER` del env (típicamente openai en prod).
     let embeddingsProvider: EmbeddingsProvider | undefined;
     if (llmProvider) {
       const mapped = resolveEmbeddingsProvider(llmProvider);
-      if (mapped === null) {
-        throw new BadRequestException(
-          'El proveedor "Anthropic API" no soporta embeddings. ' +
-            'Cambia al modelo "NAI on-prem" en el header para indexar documentos. ' +
-            'Ver ADR-0018.',
-        );
+      if (mapped !== null) {
+        embeddingsProvider = mapped;
       }
-      embeddingsProvider = mapped;
+      // null (anthropic) → embeddingsProvider queda undefined → env default.
     }
 
     // 1) Chunkear. Si el chunker devuelve 0, el contenido no tenía nada útil

@@ -9,7 +9,7 @@
 // para SSE. Esto mantiene el service desacoplado de RxJS / NestJS-specifics.
 // -----------------------------------------------------------------------------
 
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import {
   chat,
@@ -41,10 +41,13 @@ export class ChatService {
    * Orquesta una pregunta RAG end-to-end: embed → retrieval filtrado por
    * espacio vectorial → prompt → streaming.
    *
-   * Si `llmProvider === 'anthropic'`, rechaza con 400 ANTES de hacer
-   * trabajo: Anthropic no tiene embeddings, así que no podríamos hacer
-   * retrieval — y RAG sin retrieval no es RAG. ADR-0018 documenta la
-   * decisión de no sumar un tercer proveedor cloud para esto.
+   * Si `llmProvider === 'anthropic'` (que no tiene embeddings), caemos al
+   * `EMBEDDINGS_PROVIDER` del env (típicamente OpenAI). Decisión renovada
+   * de Q2 2026: el Mac on-prem está offline y NAI no está instalado, así
+   * que el RAG en producción necesita un fallback cloud para embeddings
+   * cuando el chat va a Anthropic. ADR-0018 documenta el "on-prem
+   * preferido"; este fallback no lo invalida — sigue siendo el preferido
+   * cuando hay infra. Solo deja de bloquear al user cuando NO la hay.
    */
   async *streamChat(
     query: ChatQueryDto,
@@ -58,20 +61,17 @@ export class ChatService {
     );
 
     // 0) Resolver embeddings provider desde el chat provider activo. Si el
-    //    user eligió Anthropic en el dropdown, rechazamos acá con 400 —
-    //    Anthropic no fabrica embeddings y el resto del flujo no tiene
-    //    sentido. Ver ADR-0018.
+    //    chat es Anthropic, `resolveEmbeddingsProvider` devuelve null —
+    //    en ese caso dejamos `embeddingsProvider` undefined y el adapter
+    //    cae al `EMBEDDINGS_PROVIDER` del env (en producción = openai).
+    //    Para los demás providers, el embeddings sigue el chat.
     let embeddingsProvider: EmbeddingsProvider | undefined;
     if (llmProvider) {
       const mapped = resolveEmbeddingsProvider(llmProvider);
-      if (mapped === null) {
-        throw new BadRequestException(
-          'El demo RAG requiere embeddings, y el proveedor "Anthropic API" ' +
-            'no los ofrece. Cambia al modelo "NAI on-prem" en el header para ' +
-            'preguntar sobre tus documentos. Ver ADR-0018.',
-        );
+      if (mapped !== null) {
+        embeddingsProvider = mapped;
       }
-      embeddingsProvider = mapped;
+      // null (anthropic) → embeddingsProvider queda undefined → env default.
     }
 
     // 1) Embed de la pregunta usando el mismo provider que se usó al indexar.
