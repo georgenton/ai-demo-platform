@@ -31,6 +31,8 @@ import type {
   ToolUseBlock,
 } from '@org/llm-adapter';
 
+import { SqlGenerationService } from '../sql-generation/sql-generation.service.js';
+
 import type { AgentEvent } from './agent-events.js';
 import type {
   AgentHistoryQueryDto,
@@ -93,11 +95,48 @@ const MAX_TURNS = 5;
 /** Cantidad de filas que mandamos al frontend como preview de cada tool_result. */
 const PREVIEW_ROW_LIMIT = 10;
 
+/**
+ * Schema en formato DDL puro para alimentar al modelo SQL especializado
+ * (text-to-SQL). Más simple que el SYSTEM_PROMPT que tiene narrativa +
+ * reglas — SQLCoder solo necesita las tablas, columnas y FKs.
+ */
+const SCHEMA_DDL = `CREATE TABLE "Course" (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL,
+  name TEXT NOT NULL,
+  credits INT NOT NULL,
+  "createdAt" TIMESTAMP NOT NULL
+);
+CREATE TABLE "Student" (
+  id TEXT PRIMARY KEY,
+  "fullName" TEXT NOT NULL,
+  email TEXT NOT NULL,
+  "enrolledAt" TIMESTAMP NOT NULL
+);
+CREATE TABLE "Enrollment" (
+  id TEXT PRIMARY KEY,
+  "studentId" TEXT NOT NULL REFERENCES "Student"(id),
+  "courseId" TEXT NOT NULL REFERENCES "Course"(id),
+  term TEXT NOT NULL,
+  status TEXT NOT NULL,  -- 'enrolled' | 'withdrawn' | 'completed'
+  "createdAt" TIMESTAMP NOT NULL
+);
+CREATE TABLE "Grade" (
+  id TEXT PRIMARY KEY,
+  "enrollmentId" TEXT NOT NULL REFERENCES "Enrollment"(id),
+  "examType" TEXT NOT NULL,  -- 'parcial-1' | 'parcial-2' | 'final'
+  score FLOAT NOT NULL,  -- < 60 = reprobado
+  "gradedAt" TIMESTAMP NOT NULL
+);`;
+
 @Injectable()
 export class AgentService {
   private readonly logger = new Logger(AgentService.name);
 
-  constructor(private readonly executor: SafeSqlExecutor) {}
+  constructor(
+    private readonly executor: SafeSqlExecutor,
+    private readonly sqlGen: SqlGenerationService,
+  ) {}
 
   async *streamAgent(
     query: AgentQueryDto,
@@ -106,8 +145,22 @@ export class AgentService {
   ): AsyncIterable<AgentEvent> {
     this.logger.log(`Agent query: "${query.q}" (tenant=${tenantId})`);
 
+    // Pre-gen del SQL con el modelo especializado si el provider lo soporta.
+    // Igual que en BiService: en anthropic devuelve null y el flujo sigue
+    // normal; en private-mac/onprem con SQL model configurado, pre-genera
+    // el SQL y se lo damos como hint al LLM general.
+    const preGeneratedSql = await this.sqlGen.generateIfAvailable({
+      provider: llmProvider,
+      schema: SCHEMA_DDL,
+      question: query.q,
+      demoLabel: 'agent',
+    });
+    const systemPrompt = preGeneratedSql
+      ? SYSTEM_PROMPT + this.sqlGen.formatHintForLlm(preGeneratedSql)
+      : SYSTEM_PROMPT;
+
     const messages: ChatRichMessage[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: query.q },
     ];
 

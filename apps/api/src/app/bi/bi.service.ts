@@ -26,8 +26,10 @@ import type {
 } from '@org/llm-adapter';
 import { chat } from '@org/llm-adapter';
 
+import { SqlGenerationService } from '../sql-generation/sql-generation.service.js';
+
 import type { BiChatEvent, BiChartSpec } from './dto/bi.dto.js';
-import { BI_SYSTEM_PROMPT } from './prompts.js';
+import { BI_SCHEMA_DDL, BI_SYSTEM_PROMPT } from './prompts.js';
 import { sanitizeBiSql, SqlSafetyError } from './sql-safety.js';
 import {
   BI_TOOLS,
@@ -42,6 +44,8 @@ const ROWS_LIMIT_FOR_LLM = 50;
 export class BiService {
   private readonly logger = new Logger(BiService.name);
 
+  constructor(private readonly sqlGen: SqlGenerationService) {}
+
   async *chat(
     tenantId: string,
     input: { conversationId?: string; message: string },
@@ -52,8 +56,23 @@ export class BiService {
       `bi chat → conv=${conversationId}, provider=${llmProvider ?? 'env default'}, q="${input.message.slice(0, 120)}"`,
     );
 
+    // Si el provider tiene un modelo SQL especializado configurado
+    // (PRIVATE_LLM_SQL_MODEL u ONPREM_LLM_SQL_MODEL), pre-generamos el SQL
+    // con él antes de invocar al LLM general. El LLM general (qwen) se
+    // queda solo con elegir el chart y narrar — sus dos tareas fáciles.
+    // En anthropic el método devuelve null y el flujo sigue como siempre.
+    const preGeneratedSql = await this.sqlGen.generateIfAvailable({
+      provider: llmProvider,
+      schema: BI_SCHEMA_DDL,
+      question: input.message,
+      demoLabel: 'bi',
+    });
+    const systemPrompt = preGeneratedSql
+      ? BI_SYSTEM_PROMPT + this.sqlGen.formatHintForLlm(preGeneratedSql)
+      : BI_SYSTEM_PROMPT;
+
     const messages: ChatRichMessage[] = [
-      { role: 'system', content: BI_SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: input.message },
     ];
 

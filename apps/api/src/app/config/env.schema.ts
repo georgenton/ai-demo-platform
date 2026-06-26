@@ -163,6 +163,18 @@ export class EnvSchema {
   @IsString()
   PRIVATE_LLM_TIMEOUT_MS?: string;
 
+  /**
+   * Modelo SQL especializado para el Mac (típicamente
+   * `mannix/defog-llama3-sqlcoder-8b` o similar — text-to-SQL puro).
+   * Cuando está definido, `SqlGenerationService` lo usa para pre-generar
+   * el SQL en BiService y AgentService antes de pasarle al LLM general.
+   * Solo aplica cuando el chat provider activo es `private-mac`.
+   * Si vacío, se omite el pre-generation y se cae al LLM general.
+   */
+  @IsOptional()
+  @IsString()
+  PRIVATE_LLM_SQL_MODEL?: string;
+
   // ---------------------------------------------------------------------------
   // Chat — provider on-prem del cliente (ADR-0022)
   //
@@ -198,6 +210,18 @@ export class EnvSchema {
   @IsOptional()
   @IsString()
   ONPREM_LLM_TIMEOUT_MS?: string;
+
+  /**
+   * Modelo SQL especializado para el Ubuntu (típicamente
+   * `mannix/defog-llama3-sqlcoder-8b` — text-to-SQL puro, sin tools).
+   * Cuando está definido, `SqlGenerationService` lo usa para
+   * pre-generar el SQL en BiService y AgentService antes de pasarle
+   * al LLM general. Solo aplica cuando el chat provider activo es
+   * `private-onprem`. Si vacío, se omite el pre-generation.
+   */
+  @IsOptional()
+  @IsString()
+  ONPREM_LLM_SQL_MODEL?: string;
 
   // ---------------------------------------------------------------------------
   // Embeddings

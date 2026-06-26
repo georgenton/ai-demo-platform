@@ -44,6 +44,8 @@ vi.mock('@org/db', () => ({
   },
 }));
 
+import { SqlGenerationService } from '../sql-generation/sql-generation.service.js';
+
 import { AgentService } from './agent.service.js';
 import type { AgentEvent } from './agent-events.js';
 import type { SafeSqlExecutor } from './safe-sql-executor.js';
@@ -61,6 +63,7 @@ async function collect(iter: AsyncIterable<AgentEvent>): Promise<AgentEvent[]> {
 
 describe('AgentService.streamAgent()', () => {
   let executor: SafeSqlExecutor;
+  let sqlGen: SqlGenerationService;
   let service: AgentService;
 
   beforeEach(() => {
@@ -71,7 +74,14 @@ describe('AgentService.streamAgent()', () => {
     // Por defecto el insert del audit log succeeds — no nos rompe los tests.
     mockAgentQueryCreate.mockResolvedValue({ id: 'audit-1' });
     executor = { run: vi.fn() } as unknown as SafeSqlExecutor;
-    service = new AgentService(executor);
+    // SqlGenerationService stub: por default devuelve null (no hay SQL model
+    // configurado), igual al runtime cuando el provider es anthropic o cuando
+    // PRIVATE_LLM_SQL_MODEL / ONPREM_LLM_SQL_MODEL no están seteadas.
+    sqlGen = {
+      generateIfAvailable: vi.fn().mockResolvedValue(null),
+      formatHintForLlm: vi.fn(),
+    } as unknown as SqlGenerationService;
+    service = new AgentService(executor, sqlGen);
   });
 
   it('happy path: turn 1 pide SQL → ejecuta → turn 2 responde', async () => {

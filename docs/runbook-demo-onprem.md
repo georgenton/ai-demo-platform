@@ -43,6 +43,11 @@ ollama pull llama3.2:3b
 # 4. Bajar un modelo de embeddings (opcional, solo si vas a usar RAG)
 ollama pull nomic-embed-text
 
+# 5. (Opcional pero recomendado para BI / Agente) Modelo SQL especializado.
+#    text-to-SQL fine-tuned — mucho mejor que el general para esos demos.
+#    Pesa ~5GB y corre razonable en CPU.
+ollama pull mannix/defog-llama3-sqlcoder-8b
+
 # 5. Smoke test desde el mismo Ubuntu
 curl http://localhost:11434/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -101,6 +106,13 @@ ONPREM_LLM_MODEL=llama3.2:3b
 
 # Si vas a indexar PDFs (RAG):
 ONPREM_EMBEDDING_MODEL=nomic-embed-text
+
+# (Opcional) Modelo SQL especializado para BI y Agente. Si esta var está
+# seteada, el backend pre-genera el SQL con SQLCoder antes de invocar al
+# LLM general. El general (llama/qwen) queda solo con elegir el chart y
+# narrar — sus dos tareas más fáciles. Sin esta var, los demos siguen
+# funcionando 100% contra `ONPREM_LLM_MODEL`.
+ONPREM_LLM_SQL_MODEL=mannix/defog-llama3-sqlcoder-8b
 ```
 
 Notas:
@@ -115,7 +127,7 @@ Mismas variables, pero seteadas desde el dashboard de Railway:
 
 1. Service backend → **Variables**.
 2. Sumá `ONPREM_LLM_BASE_URL`, `ONPREM_LLM_API_KEY`, `ONPREM_LLM_MODEL`,
-   `ONPREM_EMBEDDING_MODEL`.
+   `ONPREM_EMBEDDING_MODEL` y (opcional) `ONPREM_LLM_SQL_MODEL`.
 3. Para usar el switch **por tenant** (sin tocar el `CHAT_PROVIDER`
    global), dejá `CHAT_PROVIDER=anthropic` como default y elegí
    `private-onprem` desde `/admin/tenant` para cada tenant que lo quiera.
@@ -181,6 +193,18 @@ sudo journalctl -u ollama -f | grep llama3.2
 - Ollama puede timeoutear si el primer request entra "frío" (carga el
   modelo a memoria). Da un primer call con `curl` después de cada
   reinicio para tirarlo "tibio".
+
+**El demo BI o Agente devuelve SQL malo / inventa columnas.**
+
+- Sumá `ONPREM_LLM_SQL_MODEL=mannix/defog-llama3-sqlcoder-8b` al `.env`
+  (o a las vars de Railway) y bajá el modelo con `ollama pull
+mannix/defog-llama3-sqlcoder-8b`. El backend lo va a usar para
+  pre-generar el SQL y dejar al LLM general (llama/qwen) solo con elegir
+  el chart y narrar.
+- Si el Mac corre Ollama vía Docker Compose (gateway local), el `ollama
+pull` hay que hacerlo dentro del contenedor:
+  `docker compose exec ollama ollama pull mannix/defog-llama3-sqlcoder-8b`.
+  En el Mac la env var equivalente es `PRIVATE_LLM_SQL_MODEL`.
 
 ## 6. Cuándo NO usar `private-onprem`
 
