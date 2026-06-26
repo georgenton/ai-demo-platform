@@ -48,7 +48,7 @@ ollama pull nomic-embed-text
 #    Pesa ~5GB y corre razonable en CPU.
 ollama pull mannix/defog-llama3-sqlcoder-8b
 
-# 5. Smoke test desde el mismo Ubuntu
+# 6. Smoke test desde el mismo Ubuntu
 curl http://localhost:11434/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
