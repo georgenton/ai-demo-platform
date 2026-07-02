@@ -21,6 +21,73 @@
 // (pct_mora vs m), el orden de las tools, y el estilo de narrativa.
 // -----------------------------------------------------------------------------
 
+/**
+ * Schema en formato DDL (no narrativo) para alimentar al modelo SQL
+ * especializado (`mannix/defog-llama3-sqlcoder-8b` o similar). SQLCoder
+ * entrenó con DDL clásico — un CREATE TABLE por tabla con FKs explícitas.
+ * Por eso el contenido es distinto al catálogo narrativo del system prompt
+ * principal (que está optimizado para el LLM conversacional).
+ */
+export const BI_SCHEMA_DDL = `CREATE TABLE "BiAgencia" (
+  id TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  codigo TEXT NOT NULL,
+  nombre TEXT NOT NULL,
+  ciudad TEXT NOT NULL,
+  provincia TEXT NOT NULL,
+  "fechaApertura" DATE NOT NULL
+);
+
+CREATE TABLE "BiSocio" (
+  id TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  "agenciaId" TEXT NOT NULL REFERENCES "BiAgencia"(id),
+  "fechaIngreso" DATE NOT NULL,
+  edad INT NOT NULL,
+  sexo TEXT NOT NULL,  -- 'M' | 'F' | 'X'
+  ocupacion TEXT NOT NULL,  -- 'empleado'|'comerciante'|'agricultor'|'profesional'|'emprendedor'|'estudiante'|'jubilado'
+  "ingresoMensualUsd" NUMERIC NOT NULL
+);
+
+CREATE TABLE "BiPrestamo" (
+  id TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  "socioId" TEXT NOT NULL REFERENCES "BiSocio"(id),
+  "agenciaId" TEXT NOT NULL REFERENCES "BiAgencia"(id),
+  "productoTipo" TEXT NOT NULL,  -- 'consumo'|'microempresa'|'vivienda'|'auto'|'educacion'
+  "montoUsd" NUMERIC NOT NULL,
+  "plazoMeses" INT NOT NULL,
+  "tasaAnual" NUMERIC NOT NULL,
+  "fechaDesembolso" DATE NOT NULL,
+  "fechaCancelacion" DATE,
+  estado TEXT NOT NULL,  -- 'vigente'|'cancelado'|'vencido'|'castigado'
+  "diasMora" INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE "BiCaptacion" (
+  id TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  "socioId" TEXT NOT NULL REFERENCES "BiSocio"(id),
+  "agenciaId" TEXT NOT NULL REFERENCES "BiAgencia"(id),
+  "productoTipo" TEXT NOT NULL,  -- 'ahorro_vista'|'plazo_fijo'|'ahorro_programado'|'ahorro_navideno'
+  "saldoUsd" NUMERIC NOT NULL,
+  "fechaApertura" DATE NOT NULL,
+  "fechaCierre" DATE,
+  estado TEXT NOT NULL  -- 'activa'|'cerrada'
+);
+
+CREATE TABLE "BiCuota" (
+  id TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  "prestamoId" TEXT NOT NULL REFERENCES "BiPrestamo"(id),
+  numero INT NOT NULL,
+  "fechaProgramada" DATE NOT NULL,
+  "fechaPago" DATE,
+  "montoUsd" NUMERIC NOT NULL,
+  estado TEXT NOT NULL,  -- 'pagada'|'pendiente'|'vencida'
+  "diasAtraso" INT NOT NULL DEFAULT 0
+);`;
+
 export const BI_SYSTEM_PROMPT = `# Quién eres
 
 Eres "Coopi Analytics", el analista virtual de una **cooperativa de ahorro y

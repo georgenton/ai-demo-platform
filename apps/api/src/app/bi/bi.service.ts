@@ -26,8 +26,10 @@ import type {
 } from '@org/llm-adapter';
 import { chat } from '@org/llm-adapter';
 
+import { SqlGenerationService } from '../sql-generation/sql-generation.service.js';
+
 import type { BiChatEvent, BiChartSpec } from './dto/bi.dto.js';
-import { BI_SYSTEM_PROMPT } from './prompts.js';
+import { BI_SCHEMA_DDL, BI_SYSTEM_PROMPT } from './prompts.js';
 import { sanitizeBiSql, SqlSafetyError } from './sql-safety.js';
 import {
   BI_TOOLS,
@@ -38,9 +40,20 @@ import {
 const MAX_TURNS = 6;
 const ROWS_LIMIT_FOR_LLM = 50;
 
+const PREEXECUTED_SQL_PROMPT = `
+
+# Resultado SQL pre-ejecutado
+
+Si esta conversación ya incluye un tool_result de \`run_sql\` antes de tu primer
+turno, NO repitas \`run_sql\`. Usa esas filas para llamar \`render_chart\` y
+narrar el resultado. Solo vuelve a llamar \`run_sql\` si el tool_result previo
+es un error o claramente no responde la pregunta.`;
+
 @Injectable()
 export class BiService {
   private readonly logger = new Logger(BiService.name);
+
+  constructor(private readonly sqlGen: SqlGenerationService) {}
 
   async *chat(
     tenantId: string,
@@ -52,14 +65,91 @@ export class BiService {
       `bi chat → conv=${conversationId}, provider=${llmProvider ?? 'env default'}, q="${input.message.slice(0, 120)}"`,
     );
 
+    // Si el provider tiene un modelo SQL especializado configurado
+    // (PRIVATE_LLM_SQL_MODEL u ONPREM_LLM_SQL_MODEL), pre-generamos y
+    // ejecutamos el SQL antes de invocar al LLM general. El LLM general
+    // (qwen) se queda con elegir el chart y narrar — sus dos tareas fáciles.
+    // En anthropic el método devuelve null y el flujo sigue como siempre.
+    const preGeneratedSql = await this.sqlGen.generateIfAvailable({
+      provider: llmProvider,
+      schema: BI_SCHEMA_DDL,
+      question: input.message,
+      demoLabel: 'bi',
+    });
+    const systemPrompt = preGeneratedSql
+      ? BI_SYSTEM_PROMPT + PREEXECUTED_SQL_PROMPT
+      : BI_SYSTEM_PROMPT;
+
     const messages: ChatRichMessage[] = [
-      { role: 'system', content: BI_SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: input.message },
     ];
 
     let turns = 0;
 
     try {
+      if (preGeneratedSql) {
+        const toolUseId = 'sqlcoder_pre_run';
+        const result = await this.executeRunSql(
+          { sql: preGeneratedSql },
+          tenantId,
+        );
+
+        messages.push({
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              id: toolUseId,
+              name: 'run_sql',
+              input: { sql: preGeneratedSql },
+            },
+          ],
+        });
+
+        if ('error' in result) {
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                toolUseId,
+                content: result.error,
+                isError: true,
+              },
+            ],
+          });
+        } else {
+          yield {
+            type: 'sql',
+            sql: result.sanitizedSql,
+            tablesUsed: result.tablesUsed,
+          };
+          yield {
+            type: 'rows',
+            columns: result.columns,
+            rows: result.rows,
+            rowCount: result.rows.length,
+          };
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                toolUseId,
+                content: JSON.stringify({
+                  columns: result.columns,
+                  rows: result.rows.slice(0, ROWS_LIMIT_FOR_LLM),
+                  rowCountTotal: result.rows.length,
+                  truncatedForLlm: result.rows.length > ROWS_LIMIT_FOR_LLM,
+                }),
+                isError: false,
+              },
+            ],
+          });
+        }
+      }
+
       while (turns < MAX_TURNS) {
         turns++;
         const assistantBlocks: (TextBlock | ToolUseBlock)[] = [];

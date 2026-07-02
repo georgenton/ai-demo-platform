@@ -31,6 +31,8 @@ import type {
   ToolUseBlock,
 } from '@org/llm-adapter';
 
+import { SqlGenerationService } from '../sql-generation/sql-generation.service.js';
+
 import type { AgentEvent } from './agent-events.js';
 import type {
   AgentHistoryQueryDto,
@@ -93,11 +95,60 @@ const MAX_TURNS = 5;
 /** Cantidad de filas que mandamos al frontend como preview de cada tool_result. */
 const PREVIEW_ROW_LIMIT = 10;
 
+/**
+ * Cuando SQLCoder ya ejecutó un query antes del primer turno del LLM general,
+ * este hint evita que el modelo chico repita el trabajo y vuelva a inventar SQL.
+ */
+const PREEXECUTED_SQL_PROMPT = `
+
+Contexto operativo:
+- Si esta conversación ya incluye un tool_result de \`run_sql\` antes de tu
+  primer turno, usa esos datos para responder.
+- No vuelvas a llamar \`run_sql\` salvo que el resultado sea un error o sea
+  claramente insuficiente para la pregunta.`;
+
+/**
+ * Schema en formato DDL puro para alimentar al modelo SQL especializado
+ * (text-to-SQL). Más simple que el SYSTEM_PROMPT que tiene narrativa +
+ * reglas — SQLCoder solo necesita las tablas, columnas y FKs.
+ */
+const SCHEMA_DDL = `CREATE TABLE "Course" (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL,
+  name TEXT NOT NULL,
+  credits INT NOT NULL,
+  "createdAt" TIMESTAMP NOT NULL
+);
+CREATE TABLE "Student" (
+  id TEXT PRIMARY KEY,
+  "fullName" TEXT NOT NULL,
+  email TEXT NOT NULL,
+  "enrolledAt" TIMESTAMP NOT NULL
+);
+CREATE TABLE "Enrollment" (
+  id TEXT PRIMARY KEY,
+  "studentId" TEXT NOT NULL REFERENCES "Student"(id),
+  "courseId" TEXT NOT NULL REFERENCES "Course"(id),
+  term TEXT NOT NULL,
+  status TEXT NOT NULL,  -- 'enrolled' | 'withdrawn' | 'completed'
+  "createdAt" TIMESTAMP NOT NULL
+);
+CREATE TABLE "Grade" (
+  id TEXT PRIMARY KEY,
+  "enrollmentId" TEXT NOT NULL REFERENCES "Enrollment"(id),
+  "examType" TEXT NOT NULL,  -- 'parcial-1' | 'parcial-2' | 'final'
+  score FLOAT NOT NULL,  -- < 60 = reprobado
+  "gradedAt" TIMESTAMP NOT NULL
+);`;
+
 @Injectable()
 export class AgentService {
   private readonly logger = new Logger(AgentService.name);
 
-  constructor(private readonly executor: SafeSqlExecutor) {}
+  constructor(
+    private readonly executor: SafeSqlExecutor,
+    private readonly sqlGen: SqlGenerationService,
+  ) {}
 
   async *streamAgent(
     query: AgentQueryDto,
@@ -106,8 +157,22 @@ export class AgentService {
   ): AsyncIterable<AgentEvent> {
     this.logger.log(`Agent query: "${query.q}" (tenant=${tenantId})`);
 
+    // Pre-gen del SQL con el modelo especializado si el provider lo soporta.
+    // En private-mac/onprem con SQL model configurado lo ejecutamos antes
+    // del primer turno del LLM general. Así qwen queda a cargo de narrar,
+    // no de inventar nombres de columnas.
+    const preGeneratedSql = await this.sqlGen.generateIfAvailable({
+      provider: llmProvider,
+      schema: SCHEMA_DDL,
+      question: query.q,
+      demoLabel: 'agent',
+    });
+    const systemPrompt = preGeneratedSql
+      ? SYSTEM_PROMPT + PREEXECUTED_SQL_PROMPT
+      : SYSTEM_PROMPT;
+
     const messages: ChatRichMessage[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: query.q },
     ];
 
@@ -123,6 +188,75 @@ export class AgentService {
     let success = false;
 
     try {
+      if (preGeneratedSql) {
+        const toolUseId = 'sqlcoder_pre_run';
+        lastSql = preGeneratedSql;
+        yield { type: 'tool_call', sql: preGeneratedSql };
+
+        const result = await this.executor.run(preGeneratedSql);
+        if (!result.ok) {
+          yield { type: 'tool_error', error: result.error };
+          errorMessage = result.error;
+          messages.push({
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool_use',
+                id: toolUseId,
+                name: 'run_sql',
+                input: { sql: preGeneratedSql },
+              },
+            ],
+          });
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                toolUseId,
+                content: `Error ejecutando SQL pre-generado: ${result.error}`,
+                isError: true,
+              },
+            ],
+          });
+        } else {
+          lastRowCount = result.rowCount;
+          yield {
+            type: 'tool_result',
+            rowCount: result.rowCount,
+            durationMs: result.durationMs,
+            preview: result.rows.slice(0, PREVIEW_ROW_LIMIT),
+            truncated: result.truncated,
+          };
+          messages.push({
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool_use',
+                id: toolUseId,
+                name: 'run_sql',
+                input: { sql: preGeneratedSql },
+              },
+            ],
+          });
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                toolUseId,
+                content: JSON.stringify({
+                  rowCount: result.rowCount,
+                  rows: result.rows,
+                  truncated: result.truncated,
+                }),
+                isError: false,
+              },
+            ],
+          });
+        }
+      }
+
       while (turns < MAX_TURNS) {
         turns++;
 

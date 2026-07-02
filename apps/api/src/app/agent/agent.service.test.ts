@@ -44,6 +44,8 @@ vi.mock('@org/db', () => ({
   },
 }));
 
+import { SqlGenerationService } from '../sql-generation/sql-generation.service.js';
+
 import { AgentService } from './agent.service.js';
 import type { AgentEvent } from './agent-events.js';
 import type { SafeSqlExecutor } from './safe-sql-executor.js';
@@ -61,6 +63,7 @@ async function collect(iter: AsyncIterable<AgentEvent>): Promise<AgentEvent[]> {
 
 describe('AgentService.streamAgent()', () => {
   let executor: SafeSqlExecutor;
+  let sqlGen: SqlGenerationService;
   let service: AgentService;
 
   beforeEach(() => {
@@ -71,7 +74,14 @@ describe('AgentService.streamAgent()', () => {
     // Por defecto el insert del audit log succeeds — no nos rompe los tests.
     mockAgentQueryCreate.mockResolvedValue({ id: 'audit-1' });
     executor = { run: vi.fn() } as unknown as SafeSqlExecutor;
-    service = new AgentService(executor);
+    // SqlGenerationService stub: por default devuelve null (no hay SQL model
+    // configurado), igual al runtime cuando el provider es anthropic o cuando
+    // PRIVATE_LLM_SQL_MODEL / ONPREM_LLM_SQL_MODEL no están seteadas.
+    sqlGen = {
+      generateIfAvailable: vi.fn().mockResolvedValue(null),
+      formatHintForLlm: vi.fn(),
+    } as unknown as SqlGenerationService;
+    service = new AgentService(executor, sqlGen);
   });
 
   it('happy path: turn 1 pide SQL → ejecuta → turn 2 responde', async () => {
@@ -150,6 +160,94 @@ describe('AgentService.streamAgent()', () => {
       toolUseId: 'toolu_1',
       content: expect.stringContaining('"c":"50"'),
       isError: false,
+    });
+  });
+
+  it('si SQLCoder pre-genera SQL, lo ejecuta antes del primer turno del LLM', async () => {
+    vi.mocked(sqlGen.generateIfAvailable).mockResolvedValueOnce(
+      'SELECT COUNT(*) AS total FROM "Student"',
+    );
+
+    const callSnapshots: { messages: unknown[] }[] = [];
+    mockStreamWithTools.mockImplementation((messages: unknown[]) => {
+      callSnapshots.push({ messages: JSON.parse(JSON.stringify(messages)) });
+      return asStream([
+        { type: 'text_delta', text: 'Hay 50 estudiantes.' },
+        { type: 'turn_end', stopReason: 'end_turn' },
+      ]);
+    });
+
+    vi.mocked(executor.run).mockResolvedValueOnce({
+      ok: true,
+      rows: [{ total: '50' }],
+      rowCount: 1,
+      durationMs: 10,
+      truncated: false,
+    });
+
+    const events = await collect(
+      service.streamAgent(
+        { q: '¿Cuántos estudiantes hay?' },
+        'tenant-demo',
+        'private-mac',
+      ),
+    );
+
+    expect(events).toEqual([
+      { type: 'tool_call', sql: 'SELECT COUNT(*) AS total FROM "Student"' },
+      {
+        type: 'tool_result',
+        rowCount: 1,
+        durationMs: 10,
+        preview: [{ total: '50' }],
+        truncated: false,
+      },
+      { type: 'token', text: 'Hay 50 estudiantes.' },
+      { type: 'done', turns: 1, truncated: false },
+    ]);
+    expect(executor.run).toHaveBeenCalledWith(
+      'SELECT COUNT(*) AS total FROM "Student"',
+    );
+    expect(mockStreamWithTools).toHaveBeenCalledOnce();
+
+    const firstMessages = callSnapshots[0].messages as Array<{
+      role: string;
+      content: unknown;
+    }>;
+    expect(firstMessages).toHaveLength(4);
+    expect(firstMessages[0].content).toEqual(
+      expect.stringContaining('tool_result de `run_sql`'),
+    );
+    expect(firstMessages[2]).toMatchObject({
+      role: 'assistant',
+      content: [
+        {
+          type: 'tool_use',
+          id: 'sqlcoder_pre_run',
+          name: 'run_sql',
+          input: { sql: 'SELECT COUNT(*) AS total FROM "Student"' },
+        },
+      ],
+    });
+    expect(firstMessages[3]).toMatchObject({
+      role: 'user',
+      content: [
+        {
+          type: 'tool_result',
+          toolUseId: 'sqlcoder_pre_run',
+          isError: false,
+        },
+      ],
+    });
+
+    const audit = mockAgentQueryCreate.mock.calls[0][0].data;
+    expect(audit).toMatchObject({
+      question: '¿Cuántos estudiantes hay?',
+      sql: 'SELECT COUNT(*) AS total FROM "Student"',
+      rowCount: 1,
+      success: true,
+      turns: 1,
+      tenantId: 'tenant-demo',
     });
   });
 
