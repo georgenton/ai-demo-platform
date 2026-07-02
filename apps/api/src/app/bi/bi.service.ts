@@ -47,7 +47,12 @@ const PREEXECUTED_SQL_PROMPT = `
 Si esta conversación ya incluye un tool_result de \`run_sql\` antes de tu primer
 turno, NO repitas \`run_sql\`. Usa esas filas para llamar \`render_chart\` y
 narrar el resultado. Solo vuelve a llamar \`run_sql\` si el tool_result previo
-es un error o claramente no responde la pregunta.`;
+es un error o claramente no responde la pregunta.
+
+Cuando ya tengas filas válidas:
+- No pidas disculpas ni digas que hubo un error.
+- No incluyas markdown de imagen, enlaces, HTML ni texto en otro idioma.
+- Después de \`render_chart\`, responde únicamente con 2-4 oraciones en español.`;
 
 @Injectable()
 export class BiService {

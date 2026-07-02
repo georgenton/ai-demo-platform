@@ -58,8 +58,8 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 
 /**
  * Limpia el SQL devuelto por el modelo: quita fences ```sql```, espacios
- * extras y comentarios sueltos al inicio/final. Acepta que el modelo
- * devuelva algo como ```sql\nSELECT ...\n``` con o sin lenguaje.
+ * extras, fences y un `;` final. Acepta que el modelo devuelva algo como
+ * ```sql\nSELECT ...;\n``` con o sin lenguaje.
  */
 function stripSqlFences(raw: string): string {
   let text = raw.trim();
@@ -67,6 +67,9 @@ function stripSqlFences(raw: string): string {
   text = text.replace(/^```(?:sql)?\s*\n?/i, '');
   // Remove fence at end.
   text = text.replace(/\n?```\s*$/, '');
+  // SQLCoder a veces desobedece "no semicolons" y agrega un ; final.
+  // Lo removemos acá; los ; intermedios siguen siendo rechazados por safety.
+  text = text.replace(/;\s*$/, '');
   return text.trim();
 }
 

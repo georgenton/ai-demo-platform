@@ -193,6 +193,33 @@ describe('SqlGenerationService', () => {
     expect(result).toBe('SELECT * FROM t');
   });
 
+  it('remueve un punto y coma final del SQL generado', async () => {
+    process.env.PRIVATE_LLM_BASE_URL = 'http://mac.local';
+    process.env.PRIVATE_LLM_API_KEY = 'k';
+    process.env.PRIVATE_LLM_SQL_MODEL = 'sqlcoder:8b';
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: '```sql\nSELECT "productoTipo" FROM "BiPrestamo";\n```',
+            },
+          },
+        ],
+      }),
+    });
+
+    const result = await svc.generateIfAvailable({
+      provider: 'private-mac',
+      schema: 'x',
+      question: 'y',
+      demoLabel: 'bi',
+    });
+
+    expect(result).toBe('SELECT "productoTipo" FROM "BiPrestamo"');
+  });
+
   describe('formatHintForLlm', () => {
     it('devuelve un bloque con el SQL formateado para inyectar al prompt', () => {
       const hint = svc.formatHintForLlm('SELECT 1');
