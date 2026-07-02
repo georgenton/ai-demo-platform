@@ -3942,6 +3942,9 @@ html.presenting .app-shell > .sidebar {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.notarize-option.unavailable {
+  opacity: 0.72;
+}
 .notarize-option-icon {
   display: flex;
   align-items: center;
@@ -3971,9 +3974,25 @@ html.presenting .app-shell > .sidebar {
   min-width: 0;
 }
 .notarize-option-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   font-size: 14px;
   font-weight: 600;
   color: var(--color-fg);
+}
+.notarize-option-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 .notarize-option-subtitle {
   font-size: 12.5px;

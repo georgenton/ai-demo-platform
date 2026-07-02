@@ -46,7 +46,7 @@ export default function DemoNotarizePage() {
   const { pricing } = useTutorPricing();
 
   const [docType, setDocType] = useState<NotarizedDocType>('assembly_minutes');
-  const [mode, setMode] = useState<NotarizeMode>('both');
+  const [mode, setMode] = useState<NotarizeMode>('local');
   const [file, setFile] = useState<File | null>(null);
 
   const [status, setStatus] = useState<Status>('idle');

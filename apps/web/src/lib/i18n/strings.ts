@@ -364,6 +364,7 @@ const STRINGS_ES = {
   'notarize.mode.both.title': 'Ambos (recomendado)',
   'notarize.mode.both.subtitle':
     'Lo mejor de los dos mundos: rapidez interna + evidencia pública.',
+  'notarize.mode.pendingBadge': 'Testnet pendiente',
   'notarize.submit': 'Notarizar y analizar',
   'notarize.submitting': 'Procesando…',
   'notarize.errorTitle': 'No se pudo notarizar',
@@ -1159,6 +1160,7 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'notarize.mode.both.title': 'Both (recommended)',
   'notarize.mode.both.subtitle':
     'Best of both worlds: internal speed + public evidence.',
+  'notarize.mode.pendingBadge': 'Testnet pending',
   'notarize.submit': 'Notarize and analyze',
   'notarize.submitting': 'Processing…',
   'notarize.errorTitle': 'Could not notarize',

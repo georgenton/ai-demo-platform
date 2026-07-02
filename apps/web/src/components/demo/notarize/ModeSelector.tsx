@@ -20,6 +20,8 @@ interface Option {
     | 'notarize.mode.local.subtitle'
     | 'notarize.mode.public.subtitle'
     | 'notarize.mode.both.subtitle';
+  badgeKey?: 'notarize.mode.pendingBadge';
+  disabled?: boolean;
 }
 
 const OPTIONS: Option[] = [
@@ -34,12 +36,16 @@ const OPTIONS: Option[] = [
     icon: 'cloud',
     titleKey: 'notarize.mode.public.title',
     subtitleKey: 'notarize.mode.public.subtitle',
+    badgeKey: 'notarize.mode.pendingBadge',
+    disabled: true,
   },
   {
     id: 'both',
     icon: 'shield-check',
     titleKey: 'notarize.mode.both.title',
     subtitleKey: 'notarize.mode.both.subtitle',
+    badgeKey: 'notarize.mode.pendingBadge',
+    disabled: true,
   },
 ];
 
@@ -55,21 +61,31 @@ export function ModeSelector({ value, onChange, disabled = false }: Props) {
     <div className="notarize-card-row" role="radiogroup">
       {OPTIONS.map((opt) => {
         const selected = opt.id === value;
+        const optionDisabled = disabled || opt.disabled;
         return (
           <button
             key={opt.id}
             type="button"
             role="radio"
             aria-checked={selected}
-            disabled={disabled}
-            className={`notarize-option${selected ? ' selected' : ''}`}
-            onClick={() => onChange(opt.id)}
+            disabled={optionDisabled}
+            className={`notarize-option${selected ? ' selected' : ''}${opt.disabled ? ' unavailable' : ''}`}
+            onClick={() => {
+              if (!optionDisabled) onChange(opt.id);
+            }}
           >
             <div className="notarize-option-icon">
               <Icon name={opt.icon} size={20} strokeWidth={1.6} />
             </div>
             <div className="notarize-option-text">
-              <div className="notarize-option-title">{t(opt.titleKey)}</div>
+              <div className="notarize-option-title">
+                <span>{t(opt.titleKey)}</span>
+                {opt.badgeKey && (
+                  <span className="notarize-option-badge">
+                    {t(opt.badgeKey)}
+                  </span>
+                )}
+              </div>
               <div className="notarize-option-subtitle">
                 {t(opt.subtitleKey)}
               </div>
