@@ -40,6 +40,15 @@ import {
 const MAX_TURNS = 6;
 const ROWS_LIMIT_FOR_LLM = 50;
 
+const PREEXECUTED_SQL_PROMPT = `
+
+# Resultado SQL pre-ejecutado
+
+Si esta conversación ya incluye un tool_result de \`run_sql\` antes de tu primer
+turno, NO repitas \`run_sql\`. Usa esas filas para llamar \`render_chart\` y
+narrar el resultado. Solo vuelve a llamar \`run_sql\` si el tool_result previo
+es un error o claramente no responde la pregunta.`;
+
 @Injectable()
 export class BiService {
   private readonly logger = new Logger(BiService.name);
@@ -57,9 +66,9 @@ export class BiService {
     );
 
     // Si el provider tiene un modelo SQL especializado configurado
-    // (PRIVATE_LLM_SQL_MODEL u ONPREM_LLM_SQL_MODEL), pre-generamos el SQL
-    // con él antes de invocar al LLM general. El LLM general (qwen) se
-    // queda solo con elegir el chart y narrar — sus dos tareas fáciles.
+    // (PRIVATE_LLM_SQL_MODEL u ONPREM_LLM_SQL_MODEL), pre-generamos y
+    // ejecutamos el SQL antes de invocar al LLM general. El LLM general
+    // (qwen) se queda con elegir el chart y narrar — sus dos tareas fáciles.
     // En anthropic el método devuelve null y el flujo sigue como siempre.
     const preGeneratedSql = await this.sqlGen.generateIfAvailable({
       provider: llmProvider,
@@ -68,7 +77,7 @@ export class BiService {
       demoLabel: 'bi',
     });
     const systemPrompt = preGeneratedSql
-      ? BI_SYSTEM_PROMPT + this.sqlGen.formatHintForLlm(preGeneratedSql)
+      ? BI_SYSTEM_PROMPT + PREEXECUTED_SQL_PROMPT
       : BI_SYSTEM_PROMPT;
 
     const messages: ChatRichMessage[] = [
@@ -79,6 +88,68 @@ export class BiService {
     let turns = 0;
 
     try {
+      if (preGeneratedSql) {
+        const toolUseId = 'sqlcoder_pre_run';
+        const result = await this.executeRunSql(
+          { sql: preGeneratedSql },
+          tenantId,
+        );
+
+        messages.push({
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              id: toolUseId,
+              name: 'run_sql',
+              input: { sql: preGeneratedSql },
+            },
+          ],
+        });
+
+        if ('error' in result) {
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                toolUseId,
+                content: result.error,
+                isError: true,
+              },
+            ],
+          });
+        } else {
+          yield {
+            type: 'sql',
+            sql: result.sanitizedSql,
+            tablesUsed: result.tablesUsed,
+          };
+          yield {
+            type: 'rows',
+            columns: result.columns,
+            rows: result.rows,
+            rowCount: result.rows.length,
+          };
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                toolUseId,
+                content: JSON.stringify({
+                  columns: result.columns,
+                  rows: result.rows.slice(0, ROWS_LIMIT_FOR_LLM),
+                  rowCountTotal: result.rows.length,
+                  truncatedForLlm: result.rows.length > ROWS_LIMIT_FOR_LLM,
+                }),
+                isError: false,
+              },
+            ],
+          });
+        }
+      }
+
       while (turns < MAX_TURNS) {
         turns++;
         const assistantBlocks: (TextBlock | ToolUseBlock)[] = [];

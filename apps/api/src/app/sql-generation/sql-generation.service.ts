@@ -9,13 +9,12 @@
 //   chico ESPECIALIZADO en text-to-SQL solo para esa parte, y dejamos al
 //   LLM general (qwen) hacer lo que sí hace bien: elegir el chart y narrar.
 //
-// Estrategia "pre-generate then hint":
+// Estrategia "pre-generate then execute":
 //   1. SqlGenerationService genera el SQL puro con SQLCoder.
-//   2. BiService / AgentService inyectan ese SQL en el system prompt como
-//      hint ("Para esta pregunta otro modelo experto ya generó: ...").
-//   3. El LLM general ejecuta `run_sql` con ese SQL (puede ajustarlo si
-//      claramente está mal), recibe los resultados, y arma narrativa +
-//      chart.
+//   2. BiService / AgentService ejecutan ese SQL por la misma capa segura que
+//      usa `run_sql`.
+//   3. El LLM general recibe un tool_result ya poblado y solo arma narrativa
+//      + chart, salvo que el SQL pre-generado haya fallado y necesite corregir.
 //
 // Cuándo se activa:
 //   - Provider activo === `private-mac` y `PRIVATE_LLM_SQL_MODEL` definido.
@@ -234,8 +233,9 @@ ${schema}
   }
 
   /**
-   * Helper para insertar el SQL pre-generado al system prompt del LLM
-   * general. El caller lo concatena al final del prompt original.
+   * Helper legado para insertar el SQL pre-generado al system prompt del LLM
+   * general. El flujo principal ahora pre-ejecuta el SQL, pero lo mantenemos
+   * disponible para pruebas o demos donde solo se quiera sugerir el query.
    */
   formatHintForLlm(sql: string): string {
     return `

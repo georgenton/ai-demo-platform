@@ -96,6 +96,18 @@ const MAX_TURNS = 5;
 const PREVIEW_ROW_LIMIT = 10;
 
 /**
+ * Cuando SQLCoder ya ejecutó un query antes del primer turno del LLM general,
+ * este hint evita que el modelo chico repita el trabajo y vuelva a inventar SQL.
+ */
+const PREEXECUTED_SQL_PROMPT = `
+
+Contexto operativo:
+- Si esta conversación ya incluye un tool_result de \`run_sql\` antes de tu
+  primer turno, usa esos datos para responder.
+- No vuelvas a llamar \`run_sql\` salvo que el resultado sea un error o sea
+  claramente insuficiente para la pregunta.`;
+
+/**
  * Schema en formato DDL puro para alimentar al modelo SQL especializado
  * (text-to-SQL). Más simple que el SYSTEM_PROMPT que tiene narrativa +
  * reglas — SQLCoder solo necesita las tablas, columnas y FKs.
@@ -146,9 +158,9 @@ export class AgentService {
     this.logger.log(`Agent query: "${query.q}" (tenant=${tenantId})`);
 
     // Pre-gen del SQL con el modelo especializado si el provider lo soporta.
-    // Igual que en BiService: en anthropic devuelve null y el flujo sigue
-    // normal; en private-mac/onprem con SQL model configurado, pre-genera
-    // el SQL y se lo damos como hint al LLM general.
+    // En private-mac/onprem con SQL model configurado lo ejecutamos antes
+    // del primer turno del LLM general. Así qwen queda a cargo de narrar,
+    // no de inventar nombres de columnas.
     const preGeneratedSql = await this.sqlGen.generateIfAvailable({
       provider: llmProvider,
       schema: SCHEMA_DDL,
@@ -156,7 +168,7 @@ export class AgentService {
       demoLabel: 'agent',
     });
     const systemPrompt = preGeneratedSql
-      ? SYSTEM_PROMPT + this.sqlGen.formatHintForLlm(preGeneratedSql)
+      ? SYSTEM_PROMPT + PREEXECUTED_SQL_PROMPT
       : SYSTEM_PROMPT;
 
     const messages: ChatRichMessage[] = [
@@ -176,6 +188,75 @@ export class AgentService {
     let success = false;
 
     try {
+      if (preGeneratedSql) {
+        const toolUseId = 'sqlcoder_pre_run';
+        lastSql = preGeneratedSql;
+        yield { type: 'tool_call', sql: preGeneratedSql };
+
+        const result = await this.executor.run(preGeneratedSql);
+        if (!result.ok) {
+          yield { type: 'tool_error', error: result.error };
+          errorMessage = result.error;
+          messages.push({
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool_use',
+                id: toolUseId,
+                name: 'run_sql',
+                input: { sql: preGeneratedSql },
+              },
+            ],
+          });
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                toolUseId,
+                content: `Error ejecutando SQL pre-generado: ${result.error}`,
+                isError: true,
+              },
+            ],
+          });
+        } else {
+          lastRowCount = result.rowCount;
+          yield {
+            type: 'tool_result',
+            rowCount: result.rowCount,
+            durationMs: result.durationMs,
+            preview: result.rows.slice(0, PREVIEW_ROW_LIMIT),
+            truncated: result.truncated,
+          };
+          messages.push({
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool_use',
+                id: toolUseId,
+                name: 'run_sql',
+                input: { sql: preGeneratedSql },
+              },
+            ],
+          });
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                toolUseId,
+                content: JSON.stringify({
+                  rowCount: result.rowCount,
+                  rows: result.rows,
+                  truncated: result.truncated,
+                }),
+                isError: false,
+              },
+            ],
+          });
+        }
+      }
+
       while (turns < MAX_TURNS) {
         turns++;
 
