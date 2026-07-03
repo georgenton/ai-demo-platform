@@ -16,7 +16,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { llmProviderHeader } from '../llm/llm-provider-storage';
 import { ApiError, ingestPdf, ingestText } from './client';
+
+vi.mock('../llm/llm-provider-storage', () => ({
+  getActiveLlmProvider: vi.fn(() => null),
+  llmProviderHeader: vi.fn(() => ({})),
+}));
 
 /**
  * Helper para armar un Response fake. Devolvemos exactamente lo que el
@@ -39,6 +45,7 @@ function jsonResponse(
 describe('api client', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
+    vi.mocked(llmProviderHeader).mockReturnValue({});
   });
 
   afterEach(() => {
@@ -132,6 +139,23 @@ describe('api client', () => {
       const init = vi.mocked(fetch).mock.calls[0][1];
       expect(init?.signal).toBe(controller.signal);
     });
+
+    it('propaga X-LLM-Provider cuando hay provider activo', async () => {
+      vi.mocked(llmProviderHeader).mockReturnValue({
+        'X-LLM-Provider': 'private-mac',
+      });
+      vi.mocked(fetch).mockResolvedValue(
+        jsonResponse({ documentId: 'd', chunkCount: 1 }),
+      );
+
+      await ingestText({ name: 'x', content: 'x', demoId: 'rag' });
+
+      const init = vi.mocked(fetch).mock.calls[0][1];
+      expect(init?.headers).toMatchObject({
+        'Content-Type': 'application/json',
+        'X-LLM-Provider': 'private-mac',
+      });
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -171,6 +195,27 @@ describe('api client', () => {
       expect(uploaded).toBeInstanceOf(File);
       expect((uploaded as File).name).toBe('reglamento.pdf');
       expect((uploaded as File).type).toBe('application/pdf');
+    });
+
+    it('propaga X-LLM-Provider sin setear Content-Type manual en multipart', async () => {
+      vi.mocked(llmProviderHeader).mockReturnValue({
+        'X-LLM-Provider': 'private-mac',
+      });
+      vi.mocked(fetch).mockResolvedValue(
+        jsonResponse({ documentId: 'doc-2', chunkCount: 7 }),
+      );
+
+      const file = new File(['%PDF-1.4 fake'], 'reglamento.pdf', {
+        type: 'application/pdf',
+      });
+
+      await ingestPdf({ file, demoId: 'rag' });
+
+      const init = vi.mocked(fetch).mock.calls[0][1];
+      const headers = (init?.headers ?? {}) as Record<string, string>;
+      expect(headers['X-LLM-Provider']).toBe('private-mac');
+      expect(headers['Content-Type']).toBeUndefined();
+      expect(init?.body).toBeInstanceOf(FormData);
     });
 
     it('lanza ApiError 422 cuando el backend rechaza el archivo (size/mime)', async () => {
