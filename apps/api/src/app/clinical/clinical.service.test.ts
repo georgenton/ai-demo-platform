@@ -419,6 +419,10 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('No incluyas chino, inglés ni ningún otro idioma');
     expect(prompt).toContain('diagnóstico diferencial');
     expect(prompt).toContain('SOLO a la Consulta 1 - más reciente');
+    expect(prompt).toContain('prioriza 3-5 causas frecuentes');
+    expect(prompt).toContain('cefalea con náusea');
+    expect(prompt).toContain('examen neurológico normal');
+    expect(prompt).toContain('se reservan para red flags');
   });
 });
 
