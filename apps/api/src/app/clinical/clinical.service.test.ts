@@ -35,8 +35,13 @@ vi.mock('@org/llm-adapter', () => ({
 }));
 
 import { prisma } from '@org/db';
+import { chat } from '@org/llm-adapter';
 
-import { buildSystemPrompt, ClinicalService } from './clinical.service.js';
+import {
+  buildSystemPrompt,
+  ClinicalService,
+  sanitizeClinicalOutput,
+} from './clinical.service.js';
 
 const SHARED_TENANT_ID = 'ctnt_clinical_shared';
 
@@ -255,6 +260,67 @@ describe('ClinicalService', () => {
       );
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // streamAnalyze
+  // ---------------------------------------------------------------------------
+
+  describe('streamAnalyze', () => {
+    it('sanitiza caracteres CJK antes de emitir tokens al frontend', async () => {
+      (prisma.patient.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: 'p_carlos',
+        displayName: 'Carlos Andrés Mendoza',
+        age: 58,
+        gender: 'M',
+        allergies: [],
+        chronicConditions: ['HTA', 'dislipidemia'],
+        currentMedications: ['losartán 50mg QD', 'atorvastatina 20mg QD'],
+        consultations: [
+          {
+            date: new Date('2025-10-01T08:00:00Z'),
+            treatingPhysician: 'Dra. Mejía',
+            reasonForVisit: 'Cefalea de 3 días con náusea',
+            examFindings: 'TA 142/88 mmHg. Examen neurológico normal.',
+            diagnosis: 'Cefalea tensional secundaria a estrés',
+            treatment: 'Paracetamol 500mg c/8h por 3 días. Hidratación.',
+            notes: 'Sin signos de alarma.',
+          },
+        ],
+      });
+      (chat.streamWithTools as ReturnType<typeof vi.fn>).mockImplementation(
+        async function* () {
+          yield {
+            type: 'text_delta',
+            text: 'Diferencial anclado a la consulta reciente. 详细的答復如下：',
+          };
+          yield { type: 'turn_end', stopReason: 'end_turn' };
+        },
+      );
+
+      const events = [];
+      for await (const event of service.streamAnalyze(
+        {
+          patientId: 'p_carlos',
+          question: '¿Qué diagnóstico diferencial debo considerar?',
+        },
+        'tenant-superadmin',
+        'superadmin',
+      )) {
+        events.push(event);
+      }
+
+      const answer = events
+        .filter((event) => event.type === 'token')
+        .map((event) => ('text' in event ? event.text : ''))
+        .join('');
+
+      expect(answer).toContain('Diferencial anclado');
+      expect(answer).not.toMatch(
+        /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u,
+      );
+      expect(events.at(-1)).toEqual({ type: 'done', turns: 1 });
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -318,6 +384,7 @@ describe('buildSystemPrompt', () => {
     });
 
     expect(prompt).toContain('2025-04-12');
+    expect(prompt).toContain('Consulta 1 - más reciente');
     expect(prompt).toContain('Dr. Pérez');
     expect(prompt).toContain('Control HTA');
     expect(prompt).toContain('HTA estadio 1');
@@ -335,5 +402,40 @@ describe('buildSystemPrompt', () => {
       consultations: [],
     });
     expect(prompt).toContain('decisión clínica final corresponde al médico');
+  });
+
+  it('fuerza español exclusivo y ancla diferenciales amplios a la consulta más reciente', () => {
+    const prompt = buildSystemPrompt({
+      displayName: 'Carlos Andrés Mendoza',
+      age: 58,
+      gender: 'M',
+      allergies: [],
+      chronicConditions: ['HTA', 'dislipidemia'],
+      currentMedications: ['losartán 50mg QD'],
+      consultations: [],
+    });
+
+    expect(prompt).toContain('exclusivamente en español');
+    expect(prompt).toContain('No incluyas chino, inglés ni ningún otro idioma');
+    expect(prompt).toContain('diagnóstico diferencial');
+    expect(prompt).toContain('SOLO a la Consulta 1 - más reciente');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sanitizeClinicalOutput — helper puro
+// ---------------------------------------------------------------------------
+
+describe('sanitizeClinicalOutput', () => {
+  it('elimina caracteres chinos sin alterar el texto clínico en español', () => {
+    const output = sanitizeClinicalOutput(
+      'Diagnóstico diferencial: cefalea tensional. 详细的答復如下： 基于病史。',
+    );
+
+    expect(output).toContain('Diagnóstico diferencial');
+    expect(output).toContain('cefalea tensional');
+    expect(output).not.toMatch(
+      /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u,
+    );
   });
 });

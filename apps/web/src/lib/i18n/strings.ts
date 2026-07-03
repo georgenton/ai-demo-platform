@@ -739,7 +739,8 @@ const STRINGS_ES = {
   'clinical.suggest.title': 'Preguntas frecuentes para empezar',
   'clinical.suggest.1': '¿Puedo recetarle amoxicilina?',
   'clinical.suggest.2': 'Resume su historia clínica de los últimos 12 meses',
-  'clinical.suggest.3': '¿Qué diagnóstico diferencial debo considerar?',
+  'clinical.suggest.3':
+    'Según la consulta más reciente, ¿qué diagnóstico diferencial debo considerar?',
   'clinical.suggest.4': '¿Su medicación actual tiene interacciones?',
   // Composer del asistente.
   'clinical.input.placeholder': 'Escribe tu pregunta…',
@@ -1514,7 +1515,8 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'clinical.suggest.1': 'Can I prescribe amoxicillin?',
   'clinical.suggest.2':
     'Summarize their clinical history over the last 12 months',
-  'clinical.suggest.3': 'What differential diagnoses should I consider?',
+  'clinical.suggest.3':
+    'Based on the most recent visit, what differential diagnoses should I consider?',
   'clinical.suggest.4': 'Does their current medication have interactions?',
   'clinical.input.placeholder': 'Type your question…',
   'clinical.input.voice': 'Voice available soon',

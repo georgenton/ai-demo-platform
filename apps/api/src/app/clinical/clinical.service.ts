@@ -311,13 +311,17 @@ export class ClinicalService {
           { provider: llmProvider },
         )) {
           if (event.type === 'text_delta') {
+            const safeText = sanitizeClinicalOutput(event.text);
+            if (!safeText) {
+              continue;
+            }
             const last = assistantBlocks[assistantBlocks.length - 1];
             if (last && last.type === 'text') {
-              last.text += event.text;
+              last.text += safeText;
             } else {
-              assistantBlocks.push({ type: 'text', text: event.text });
+              assistantBlocks.push({ type: 'text', text: safeText });
             }
-            yield { type: 'token', text: event.text };
+            yield { type: 'token', text: safeText };
           } else if (event.type === 'tool_use_complete') {
             assistantBlocks.push({
               type: 'tool_use',
@@ -454,8 +458,12 @@ export function buildSystemPrompt(patient: PatientWithContext): string {
       : patient.consultations
           .map((c, i) => {
             const dateStr = c.date.toISOString().slice(0, 10);
+            const consultationLabel =
+              i === 0
+                ? `  [Consulta ${i + 1} - más reciente]`
+                : `  [Consulta ${i + 1}]`;
             return [
-              `  [Consulta ${i + 1}] ${dateStr} — atendido por ${c.treatingPhysician}`,
+              `${consultationLabel} ${dateStr} — atendido por ${c.treatingPhysician}`,
               `  - Motivo: ${c.reasonForVisit}`,
               c.examFindings ? `  - Examen: ${c.examFindings}` : null,
               `  - Diagnóstico: ${c.diagnosis}`,
@@ -497,9 +505,30 @@ ${meds}
 ${consultationsBlock}
 
 REGLAS DE COMPORTAMIENTO:
-1. Responde en español, en tono técnico pero claro. Sin emojis.
+1. Responde siempre y exclusivamente en español. No incluyas chino, inglés ni ningún otro idioma. Sin emojis.
 2. Cita fragmentos de la historia clínica cuando los uses ("según consulta del 2025-04-12...").
 3. Si el médico va a recetar un medicamento o pregunta por interacciones, USA la herramienta \`check_drug_interactions\` con la lista de medicaciones actuales + la nueva. Espera el resultado antes de responder.
-4. Si no encuentras información suficiente en la historia para responder con seguridad, dilo explícitamente. NO inventes datos.
-5. Termina siempre con un breve recordatorio: "La decisión clínica final corresponde al médico tratante."`;
+4. Si el médico pregunta por diagnóstico diferencial sin indicar síntoma, motivo actual o problema específico, responde anclando el diferencial SOLO a la Consulta 1 - más reciente. Aclara ese alcance y pide el síntoma principal si se necesita más precisión.
+5. No mezcles problemas antiguos como si todos fueran el cuadro actual. Diferencia "antecedente/consulta previa" de "problema activo".
+6. No atribuyas enfermedades crónicas que no constan en la ficha de condiciones crónicas, salvo que lo menciones explícitamente como antecedente documentado en una consulta previa.
+7. Si no encuentras información suficiente en la historia para responder con seguridad, dilo explícitamente. NO inventes datos.
+8. Termina siempre con un breve recordatorio: "La decisión clínica final corresponde al médico tratante."`;
+}
+
+const NON_SPANISH_SCRIPT_RE =
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\u3100-\u312f\u31a0-\u31bf]+/gu;
+const CJK_PUNCTUATION_RE = /[\u3000-\u303f\uff00-\uffef]+/g;
+
+/**
+ * Defensa de salida para modelos locales multilingües.
+ *
+ * El prompt ya fuerza español, pero modelos como Qwen pueden derivar a chino
+ * en mitad de un stream. Sanitizamos antes de mandar tokens al navegador y
+ * antes de guardar el bloque que se reinyecta al loop de tool calling.
+ */
+export function sanitizeClinicalOutput(text: string): string {
+  return text
+    .replace(NON_SPANISH_SCRIPT_RE, '')
+    .replace(CJK_PUNCTUATION_RE, ' ')
+    .replace(/[ \t]{2,}/g, ' ');
 }
