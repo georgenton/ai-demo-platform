@@ -77,3 +77,16 @@ export function formatAxisTick(value: unknown): string {
   if (typeof value === 'number') return value.toLocaleString('es-EC');
   return String(value);
 }
+
+export function formatMetricValue(value: unknown): string {
+  const n =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value)
+        : Number.NaN;
+  if (!Number.isFinite(n)) return String(value ?? '');
+  return n.toLocaleString('es-EC', {
+    maximumFractionDigits: n >= 100 ? 0 : 2,
+  });
+}

@@ -45,15 +45,25 @@ export interface BiChartSpec {
   chartType: BiChartType;
   title: string;
   /**
+   * Explicación breve de por qué este tipo de gráfico es el más adecuado
+   * para la forma de los datos. Se muestra antes del chart.
+   */
+  recommendationReason: string;
+  /**
    * Eje X — la clave del row (nombre de columna) y un label legible.
    * Para pie/treemap, xAxis es la categoría.
+   * Para heatmap, xAxis es la dimensión horizontal.
    */
   xAxis: { key: string; label: string };
   /**
    * Series del eje Y. Permite multi-line/multi-bar. Para pie/treemap es
-   * un solo elemento.
+   * un solo elemento. Para heatmap, yAxis[0] es la dimensión vertical.
    */
   yAxis: ReadonlyArray<{ key: string; label: string }>;
+  /**
+   * Métrica del heatmap. Solo requerida cuando chartType='heatmap'.
+   */
+  zAxis?: { key: string; label: string };
   /** Descripción opcional para tooltip o leyenda. */
   description?: string;
 }
