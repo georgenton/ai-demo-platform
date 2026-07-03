@@ -38,6 +38,7 @@ import { prisma } from '@org/db';
 import { chat } from '@org/llm-adapter';
 
 import {
+  buildGuidedDifferentialAnswer,
   buildSystemPrompt,
   ClinicalService,
   sanitizeClinicalOutput,
@@ -301,7 +302,7 @@ describe('ClinicalService', () => {
       for await (const event of service.streamAnalyze(
         {
           patientId: 'p_carlos',
-          question: '¿Qué diagnóstico diferencial debo considerar?',
+          question: 'Resume la consulta más reciente.',
         },
         'tenant-superadmin',
         'superadmin',
@@ -319,6 +320,58 @@ describe('ClinicalService', () => {
         /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u,
       );
       expect(events.at(-1)).toEqual({ type: 'done', turns: 1 });
+    });
+
+    it('usa fallback guiado para diferencial amplio de cefalea y no llama al LLM', async () => {
+      (prisma.patient.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: 'p_carlos',
+        displayName: 'Carlos Andrés Mendoza',
+        age: 58,
+        gender: 'M',
+        allergies: [],
+        chronicConditions: ['HTA', 'dislipidemia'],
+        currentMedications: ['losartán 50mg QD', 'atorvastatina 20mg QD'],
+        consultations: [
+          {
+            date: new Date('2025-10-01T08:00:00Z'),
+            treatingPhysician: 'Dra. Mejía',
+            reasonForVisit: 'Cefalea de 3 días con náusea',
+            examFindings: 'TA 142/88 mmHg. Examen neurológico normal.',
+            diagnosis: 'Cefalea tensional secundaria a estrés',
+            treatment: 'Paracetamol 500mg c/8h por 3 días. Hidratación.',
+            notes: 'Sin signos de alarma.',
+          },
+        ],
+      });
+
+      const events = [];
+      for await (const event of service.streamAnalyze(
+        {
+          patientId: 'p_carlos',
+          question:
+            'Según la consulta más reciente, ¿qué diagnóstico diferencial debo considerar?',
+        },
+        'tenant-superadmin',
+        'superadmin',
+        'private-mac',
+      )) {
+        events.push(event);
+      }
+
+      const answer = events
+        .filter((event) => event.type === 'token')
+        .map((event) => ('text' in event ? event.text : ''))
+        .join('');
+
+      expect(chat.streamWithTools).not.toHaveBeenCalled();
+      expect(answer).toContain('Cefalea tensional');
+      expect(answer).toContain('Migraña');
+      expect(answer).toContain('antecedente de HTA');
+      expect(answer).toContain(
+        'La decisión clínica final corresponde al médico tratante.',
+      );
+      expect(answer).not.toMatch(/Meier|hipogénic|intoxic/i);
+      expect(events.at(-1)).toEqual({ type: 'done', turns: 0 });
     });
   });
 });
@@ -441,5 +494,60 @@ describe('sanitizeClinicalOutput', () => {
     expect(output).not.toMatch(
       /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u,
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildGuidedDifferentialAnswer — fallback determinístico
+// ---------------------------------------------------------------------------
+
+describe('buildGuidedDifferentialAnswer', () => {
+  it('devuelve un diferencial conservador para cefalea reciente sin red flags', () => {
+    const answer = buildGuidedDifferentialAnswer(
+      '¿Qué diagnóstico diferencial debo considerar?',
+      {
+        displayName: 'Carlos Andrés Mendoza',
+        age: 58,
+        gender: 'M',
+        allergies: [],
+        chronicConditions: ['HTA', 'dislipidemia'],
+        currentMedications: ['losartán 50mg QD'],
+        consultations: [
+          {
+            date: new Date('2025-10-01T08:00:00Z'),
+            treatingPhysician: 'Dra. Mejía',
+            reasonForVisit: 'Cefalea de 3 días con náusea',
+            examFindings: 'TA 142/88 mmHg. Examen neurológico normal.',
+            diagnosis: 'Cefalea tensional secundaria a estrés',
+            treatment: 'Paracetamol 500mg c/8h por 3 días. Hidratación.',
+            notes: 'Sin signos de alarma.',
+          },
+        ],
+      },
+    );
+
+    expect(answer).not.toBeNull();
+    expect(answer).toContain('2025-10-01');
+    expect(answer).toContain('Cefalea tensional');
+    expect(answer).toContain('Migraña');
+    expect(answer).toContain('signos de alarma');
+    expect(answer).toContain(
+      'La decisión clínica final corresponde al médico tratante.',
+    );
+    expect(answer).not.toMatch(/Meier|hipogénic|intoxic/i);
+  });
+
+  it('no aplica si la pregunta no es de diagnóstico diferencial', () => {
+    const answer = buildGuidedDifferentialAnswer('Resume la historia.', {
+      displayName: 'Carlos Andrés Mendoza',
+      age: 58,
+      gender: 'M',
+      allergies: [],
+      chronicConditions: ['HTA'],
+      currentMedications: [],
+      consultations: [],
+    });
+
+    expect(answer).toBeNull();
   });
 });
