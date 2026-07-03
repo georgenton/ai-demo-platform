@@ -146,7 +146,7 @@ async function analyzeDocumentWithJsonFallback(
     rawText += chunk;
   }
 
-  const raw = parseJsonFromModelText(rawText);
+  const raw = normalizeJsonFallbackInput(parseJsonFromModelText(rawText));
   return parseAnalysisInput(docType, raw);
 }
 
@@ -192,6 +192,25 @@ function parseJsonFromModelText(text: string): unknown {
       );
     }
   }
+}
+
+function normalizeJsonFallbackInput(raw: unknown): unknown {
+  if (!isObject(raw) || !Array.isArray(raw.dimensions)) return raw;
+
+  return {
+    ...raw,
+    dimensions: raw.dimensions.map((dimension) => {
+      if (!isObject(dimension)) return dimension;
+      const value = dimension.value;
+      return {
+        ...dimension,
+        value:
+          typeof value === 'number' || typeof value === 'boolean'
+            ? String(value)
+            : value,
+      };
+    }),
+  };
 }
 
 function extractFirstJsonObject(text: string): string | null {
