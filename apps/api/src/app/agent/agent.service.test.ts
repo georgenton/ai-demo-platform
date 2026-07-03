@@ -163,6 +163,44 @@ describe('AgentService.streamAgent()', () => {
     });
   });
 
+  it('normaliza tablas académicas en minúscula cuando el LLM llama run_sql', async () => {
+    mockStreamWithTools
+      .mockReturnValueOnce(
+        asStream([
+          {
+            type: 'tool_use_complete',
+            id: 'toolu_1',
+            name: 'run_sql',
+            input: {
+              sql: 'SELECT COUNT(*) AS c FROM students s JOIN enrollments e ON e."studentId" = s.id',
+            },
+          },
+          { type: 'turn_end', stopReason: 'tool_use' },
+        ]),
+      )
+      .mockReturnValueOnce(
+        asStream([
+          { type: 'text_delta', text: 'Hay datos.' },
+          { type: 'turn_end', stopReason: 'end_turn' },
+        ]),
+      );
+
+    vi.mocked(executor.run).mockResolvedValueOnce({
+      ok: true,
+      rows: [{ c: '50' }],
+      rowCount: 1,
+      durationMs: 12,
+      truncated: false,
+    });
+
+    const events = await collect(service.streamAgent({ q: 'promedio' }));
+    const normalizedSql =
+      'SELECT COUNT(*) AS c FROM "Student" s JOIN "Enrollment" e ON e."studentId" = s.id';
+
+    expect(events).toContainEqual({ type: 'tool_call', sql: normalizedSql });
+    expect(executor.run).toHaveBeenCalledWith(normalizedSql);
+  });
+
   it('si SQLCoder pre-genera SQL, lo ejecuta antes del primer turno del LLM', async () => {
     vi.mocked(sqlGen.generateIfAvailable).mockResolvedValueOnce(
       'SELECT COUNT(*) AS total FROM "Student"',
@@ -249,6 +287,46 @@ describe('AgentService.streamAgent()', () => {
       turns: 1,
       tenantId: 'tenant-demo',
     });
+  });
+
+  it('normaliza tablas académicas en minúscula antes de ejecutar SQL pre-generado', async () => {
+    vi.mocked(sqlGen.generateIfAvailable).mockResolvedValueOnce(
+      'SELECT COUNT(*) AS total FROM student',
+    );
+
+    mockStreamWithTools.mockReturnValueOnce(
+      asStream([
+        { type: 'text_delta', text: 'Hay 50 estudiantes.' },
+        { type: 'turn_end', stopReason: 'end_turn' },
+      ]),
+    );
+
+    vi.mocked(executor.run).mockResolvedValueOnce({
+      ok: true,
+      rows: [{ total: '50' }],
+      rowCount: 1,
+      durationMs: 10,
+      truncated: false,
+    });
+
+    const events = await collect(
+      service.streamAgent(
+        { q: '¿Cuántos estudiantes hay?' },
+        'tenant-demo',
+        'private-mac',
+      ),
+    );
+
+    expect(events).toContainEqual({
+      type: 'tool_call',
+      sql: 'SELECT COUNT(*) AS total FROM "Student"',
+    });
+    expect(executor.run).toHaveBeenCalledWith(
+      'SELECT COUNT(*) AS total FROM "Student"',
+    );
+
+    const audit = mockAgentQueryCreate.mock.calls[0][0].data;
+    expect(audit.sql).toBe('SELECT COUNT(*) AS total FROM "Student"');
   });
 
   it('error de SQL: emite tool_error y manda isError=true al LLM', async () => {
