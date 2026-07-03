@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------------
 // PdfDropzone — drag&drop + click-to-pick para subir el PDF.
 // Cuando hay archivo elegido, muestra el nombre + tamaño formateado + botón
-// "sustituir". Solo permite mime application/pdf y máx 10 MB (validamos
-// del lado backend también con ParseFilePipe).
+// "sustituir". Solo permite mime application/pdf y el tamaño seguro que
+// atraviesa el proxy de Vercel sin 413.
 // -----------------------------------------------------------------------------
 
 'use client';
@@ -10,9 +10,11 @@
 import { useRef, useState } from 'react';
 
 import { Icon } from '@/components/ui';
+import {
+  NOTARIZE_SAFE_PDF_MAX_BYTES,
+  NOTARIZE_SAFE_PDF_MAX_LABEL,
+} from '@/lib/api';
 import { useT } from '@/lib/i18n';
-
-const MAX_BYTES = 10 * 1024 * 1024;
 
 interface Props {
   file: File | null;
@@ -29,6 +31,7 @@ function formatSize(bytes: number): string {
 export function PdfDropzone({ file, onChange, disabled = false }: Props) {
   const { t } = useT();
   const [dragging, setDragging] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function pick() {
@@ -38,8 +41,21 @@ export function PdfDropzone({ file, onChange, disabled = false }: Props) {
   function handleFiles(list: FileList | null) {
     if (!list || list.length === 0) return;
     const f = list[0];
-    if (f.type !== 'application/pdf') return;
-    if (f.size > MAX_BYTES) return;
+    if (f.type !== 'application/pdf') {
+      setValidationError(t('notarize.dropzone.invalidType'));
+      onChange(null);
+      return;
+    }
+    if (f.size > NOTARIZE_SAFE_PDF_MAX_BYTES) {
+      setValidationError(
+        t('notarize.dropzone.tooLarge', {
+          max: NOTARIZE_SAFE_PDF_MAX_LABEL,
+        }),
+      );
+      onChange(null);
+      return;
+    }
+    setValidationError(null);
     onChange(f);
   }
 
@@ -73,7 +89,10 @@ export function PdfDropzone({ file, onChange, disabled = false }: Props) {
         accept="application/pdf"
         hidden
         disabled={disabled}
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => {
+          handleFiles(e.target.files);
+          e.currentTarget.value = '';
+        }}
       />
 
       {file ? (
@@ -90,6 +109,7 @@ export function PdfDropzone({ file, onChange, disabled = false }: Props) {
             className="notarize-dropzone-replace"
             onClick={(e) => {
               e.stopPropagation();
+              setValidationError(null);
               pick();
             }}
             disabled={disabled}
@@ -106,6 +126,11 @@ export function PdfDropzone({ file, onChange, disabled = false }: Props) {
               ? t('notarize.dropzone.dragging')
               : t('notarize.dropzone.idle')}
           </div>
+        </div>
+      )}
+      {validationError && (
+        <div className="notarize-dropzone-alert" role="alert">
+          {validationError}
         </div>
       )}
     </div>
