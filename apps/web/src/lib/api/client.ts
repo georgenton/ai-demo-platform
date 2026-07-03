@@ -11,7 +11,10 @@
 //     parsing en cada componente.
 // -----------------------------------------------------------------------------
 
-import { getActiveLlmProvider } from '../llm/llm-provider-storage';
+import {
+  getActiveLlmProvider,
+  llmProviderHeader,
+} from '../llm/llm-provider-storage';
 
 import type {
   ApiErrorPayload,
@@ -81,7 +84,10 @@ export async function ingestText(
 ): Promise<IngestResponse> {
   const response = await fetch('/api/v1/ingest', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...llmProviderHeader(),
+    },
     body: JSON.stringify(body),
     signal,
   });
@@ -116,6 +122,9 @@ export async function ingestPdf(
 
   const response = await fetch('/api/v1/ingest/file', {
     method: 'POST',
+    headers: {
+      ...llmProviderHeader(),
+    },
     body: form,
     signal,
   });
