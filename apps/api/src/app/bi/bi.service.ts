@@ -37,6 +37,7 @@ import { BI_SCHEMA_DDL, BI_SYSTEM_PROMPT } from './prompts.js';
 import { sanitizeBiSql, SqlSafetyError } from './sql-safety.js';
 import {
   BI_TOOLS,
+  RENDER_CHART_TOOL,
   parseRenderChartInput,
   parseRunSqlInput,
 } from './tools/index.js';
@@ -194,7 +195,10 @@ export class BiService {
         }[] = [];
         let stopReason = 'other';
 
-        for await (const event of chat.streamWithTools(messages, BI_TOOLS, {
+        const toolsForTurn =
+          preGeneratedSql && lastRows ? [RENDER_CHART_TOOL] : BI_TOOLS;
+
+        for await (const event of chat.streamWithTools(messages, toolsForTurn, {
           provider: llmProvider,
         })) {
           if (event.type === 'text_delta') {
