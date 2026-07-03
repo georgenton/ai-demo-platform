@@ -34,4 +34,22 @@ describe('normalizeAgentSql', () => {
 
     expect(normalizeAgentSql(sql)).toBe(sql);
   });
+
+  it('normaliza fechas ISO usadas por error como term académico', () => {
+    const sql =
+      'SELECT c.name, COUNT(e.id) AS enrollment_count FROM "Course" c JOIN "Enrollment" e ON c.id = e."courseId" WHERE e.term = \'2025-01-01\' GROUP BY c.name ORDER BY enrollment_count DESC LIMIT 1';
+
+    expect(normalizeAgentSql(sql)).toBe(
+      'SELECT c.name, COUNT(e.id) AS enrollment_count FROM "Course" c JOIN "Enrollment" e ON c.id = e."courseId" WHERE e.term = \'2025-1\' GROUP BY c.name ORDER BY enrollment_count DESC LIMIT 1',
+    );
+  });
+
+  it('convierte fechas de segundo semestre a term YYYY-2', () => {
+    const sql =
+      "SELECT COUNT(*) FROM enrollment e WHERE e.term IN ('2025-01-01', '2025-07-01')";
+
+    expect(normalizeAgentSql(sql)).toBe(
+      "SELECT COUNT(*) FROM \"Enrollment\" e WHERE e.term IN ('2025-1', '2025-2')",
+    );
+  });
 });

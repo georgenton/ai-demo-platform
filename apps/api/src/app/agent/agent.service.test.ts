@@ -329,6 +329,43 @@ describe('AgentService.streamAgent()', () => {
     expect(audit.sql).toBe('SELECT COUNT(*) AS total FROM "Student"');
   });
 
+  it('normaliza fechas ISO usadas como term antes de ejecutar SQL pre-generado', async () => {
+    vi.mocked(sqlGen.generateIfAvailable).mockResolvedValueOnce(
+      'SELECT c.name, COUNT(e.id) AS enrollment_count FROM "Course" c JOIN "Enrollment" e ON c.id = e."courseId" WHERE e.term = \'2025-01-01\' GROUP BY c.name ORDER BY enrollment_count DESC LIMIT 1',
+    );
+
+    mockStreamWithTools.mockReturnValueOnce(
+      asStream([
+        { type: 'text_delta', text: 'La materia con más inscripciones es X.' },
+        { type: 'turn_end', stopReason: 'end_turn' },
+      ]),
+    );
+
+    vi.mocked(executor.run).mockResolvedValueOnce({
+      ok: true,
+      rows: [{ name: 'Bases de Datos', enrollment_count: '72' }],
+      rowCount: 1,
+      durationMs: 10,
+      truncated: false,
+    });
+
+    const events = await collect(
+      service.streamAgent(
+        { q: '¿Cuál es la materia con más inscripciones este semestre?' },
+        'tenant-demo',
+        'private-mac',
+      ),
+    );
+    const normalizedSql =
+      'SELECT c.name, COUNT(e.id) AS enrollment_count FROM "Course" c JOIN "Enrollment" e ON c.id = e."courseId" WHERE e.term = \'2025-1\' GROUP BY c.name ORDER BY enrollment_count DESC LIMIT 1';
+
+    expect(events).toContainEqual({ type: 'tool_call', sql: normalizedSql });
+    expect(executor.run).toHaveBeenCalledWith(normalizedSql);
+
+    const audit = mockAgentQueryCreate.mock.calls[0][0].data;
+    expect(audit.sql).toBe(normalizedSql);
+  });
+
   it('error de SQL: emite tool_error y manda isError=true al LLM', async () => {
     const callSnapshots: { messages: unknown[] }[] = [];
     const responses = [

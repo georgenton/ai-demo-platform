@@ -58,6 +58,8 @@ Esquema disponible (solo estas tablas):
 - "Student"    (id text, "fullName" text, email text, "enrolledAt" timestamp)
 - "Enrollment" (id text, "studentId" text, "courseId" text, term text, status "EnrollmentStatus", "createdAt" timestamp)
    FK: "studentId" → "Student".id, "courseId" → "Course".id
+   term ∈ ('2024-2', '2025-1', '2025-2'). term NO es fecha; nunca uses 'YYYY-MM-DD' para term.
+   Si el usuario dice "este semestre", "semestre actual" o similar, usa el último término disponible del dataset: '2025-2'.
    status ∈ ('enrolled', 'withdrawn', 'completed')
 - "Grade"      (id text, "enrollmentId" text, "examType" "ExamType", score float, "gradedAt" timestamp)
    FK: "enrollmentId" → "Enrollment".id
@@ -131,6 +133,9 @@ CREATE TABLE "Enrollment" (
   "studentId" TEXT NOT NULL REFERENCES "Student"(id),
   "courseId" TEXT NOT NULL REFERENCES "Course"(id),
   term TEXT NOT NULL,
+  CHECK (term IN ('2024-2', '2025-1', '2025-2')),
+  -- term is an academic code, not a date. Never use YYYY-MM-DD.
+  -- For "current semester" / "este semestre", use the latest available demo term: '2025-2'.
   status TEXT NOT NULL,  -- 'enrolled' | 'withdrawn' | 'completed'
   "createdAt" TIMESTAMP NOT NULL
 );

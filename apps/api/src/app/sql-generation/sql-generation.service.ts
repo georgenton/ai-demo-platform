@@ -228,6 +228,7 @@ ${schema}
 - Output ONLY the SQL — no explanation, no markdown, no semicolons.
 - Use double quotes for identifiers exactly as defined in the schema ("Student", "studentId", "BiPrestamo", "montoUsd").
 - PostgreSQL quoted identifiers are case-sensitive; do not lowercase table or column names from the schema.
+- When the schema documents allowed literal values or CHECK constraints, use those exact values; do not invent dates or enum values.
 - Use single quotes for string literals ('vigente', '2025-01-01').
 - Always alias aggregates with meaningful names (pct_mora, total_socios, cartera_usd).
 - Do NOT add a WHERE filter on tenantId — the backend injects it.
