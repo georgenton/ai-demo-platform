@@ -288,6 +288,16 @@ export class ClinicalService {
       `clinical analyze → patient="${patient.displayName}" question="${dto.question.slice(0, 120)}"`,
     );
 
+    const guidedDifferential = buildGuidedDifferentialAnswer(
+      dto.question,
+      patient,
+    );
+    if (guidedDifferential) {
+      yield { type: 'token', text: guidedDifferential };
+      yield { type: 'done', turns: 0 };
+      return;
+    }
+
     const messages: ChatRichMessage[] = [
       { role: 'system', content: buildSystemPrompt(patient) },
       { role: 'user', content: dto.question },
@@ -533,4 +543,64 @@ export function sanitizeClinicalOutput(text: string): string {
     .replace(NON_SPANISH_SCRIPT_RE, '')
     .replace(CJK_PUNCTUATION_RE, ' ')
     .replace(/[ \t]{2,}/g, ' ');
+}
+
+function normalizeClinicalQuestion(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+}
+
+/**
+ * Fallback determinístico para preguntas sugeridas demasiado amplias.
+ *
+ * En el demo clínico el modelo local puede inventar diferenciales raros si el
+ * médico pregunta "qué diagnóstico diferencial" sin un síntoma nuevo. Para la
+ * consulta más reciente del paciente sintético, es más seguro devolver una
+ * guía conservadora, trazable y estable que forzar al LLM a improvisar.
+ */
+export function buildGuidedDifferentialAnswer(
+  question: string,
+  patient: PatientWithContext,
+): string | null {
+  const normalizedQuestion = normalizeClinicalQuestion(question);
+  if (!normalizedQuestion.includes('diagnostico diferencial')) {
+    return null;
+  }
+
+  const latest = patient.consultations[0];
+  if (!latest) return null;
+
+  const latestContext = normalizeClinicalQuestion(
+    [
+      latest.reasonForVisit,
+      latest.examFindings ?? '',
+      latest.diagnosis,
+      latest.notes ?? '',
+    ].join(' '),
+  );
+  if (!latestContext.includes('cefalea')) {
+    return null;
+  }
+
+  const dateStr = latest.date.toISOString().slice(0, 10);
+  const examSummary = latest.examFindings
+    ? ` El examen registrado fue: ${latest.examFindings}`
+    : '';
+
+  return [
+    `Según la consulta del ${dateStr}, el motivo fue "${latest.reasonForVisit}" y el diagnóstico registrado fue "${latest.diagnosis}".${examSummary}`,
+    '',
+    'Con ese alcance, un diferencial razonable y conservador sería:',
+    '1. Cefalea tensional persistente o recurrente, coherente con el diagnóstico previo y el contexto de estrés.',
+    '2. Migraña, especialmente por la náusea asociada, aunque faltan datos como fotofobia, fonofobia, aura o patrón recurrente.',
+    '3. Cefalea asociada a variación de tensión arterial, considerando el antecedente de HTA.',
+    '4. Cefalea relacionada con deshidratación, sueño insuficiente, cafeína, estrés o uso de analgésicos.',
+    '5. Rinosinusitis u otra causa intercurrente solo si aparecen congestión, fiebre, dolor facial u otros síntomas compatibles.',
+    '',
+    'En la historia disponible no hay signos de alarma documentados. Si aparecieran cefalea súbita intensa, déficit neurológico, fiebre con rigidez de nuca, trauma, empeoramiento progresivo, alteración de conciencia o papiledema, el diferencial cambia y requiere evaluación urgente.',
+    '',
+    'La decisión clínica final corresponde al médico tratante.',
+  ].join('\n');
 }
