@@ -74,6 +74,14 @@ describe('SafeSqlExecutor (validation)', () => {
       expect(result.ok).toBe(true);
     });
 
+    it('acepta CTEs citadas con nombres PascalCase generadas por LLMs', async () => {
+      mockQueryRawUnsafe.mockResolvedValue([{ count: 9n }]);
+      const result = await executor.run(
+        'WITH "CalcII" AS (SELECT id FROM "Course" WHERE name = \'Cálculo II\') SELECT COUNT(*) FROM "CalcII"',
+      );
+      expect(result.ok).toBe(true);
+    });
+
     it('rechaza múltiples statements separados por ;', async () => {
       const result = await executor.run('SELECT 1; DROP TABLE "Student"');
       expect(result.ok).toBe(false);
