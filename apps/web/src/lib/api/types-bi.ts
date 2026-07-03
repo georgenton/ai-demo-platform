@@ -17,8 +17,10 @@ export type BiChartType = (typeof BI_CHART_TYPES)[number];
 export interface BiChartSpec {
   chartType: BiChartType;
   title: string;
+  recommendationReason: string;
   xAxis: { key: string; label: string };
   yAxis: ReadonlyArray<{ key: string; label: string }>;
+  zAxis?: { key: string; label: string };
   description?: string;
 }
 

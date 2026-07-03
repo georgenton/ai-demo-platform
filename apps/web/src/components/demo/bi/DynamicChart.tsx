@@ -8,6 +8,7 @@
 
 'use client';
 
+import type { CSSProperties } from 'react';
 import {
   Area,
   AreaChart,
@@ -27,13 +28,15 @@ import {
   YAxis,
 } from 'recharts';
 
+import { Icon } from '@/components/ui';
 import { useT } from '@/lib/i18n';
-import type { BiChartSpec } from '@/lib/api';
+import type { BiChartSpec, BiChartType } from '@/lib/api';
 
 import {
   SERIES_COLORS,
   coerceNumeric,
   formatAxisTick,
+  formatMetricValue,
   rowsToObjects,
 } from './charts/chart-utils';
 
@@ -49,7 +52,10 @@ export function DynamicChart({ spec, columns, rows }: Props) {
   const { t } = useT();
 
   // Convertir rows a objects + castear las columnas Y a Number.
-  const numericKeys = spec.yAxis.map((y) => y.key);
+  const numericKeys = [
+    ...spec.yAxis.map((y) => y.key),
+    ...(spec.zAxis ? [spec.zAxis.key] : []),
+  ];
   const data = coerceNumeric(rowsToObjects(columns, rows), numericKeys);
 
   if (data.length === 0) {
@@ -69,10 +75,27 @@ export function DynamicChart({ spec, columns, rows }: Props) {
       {spec.description && (
         <p className="bi-chart-description">{spec.description}</p>
       )}
+      <div className="bi-chart-recommendation">
+        <div className="bi-chart-recommendation-kicker">
+          <Icon name="sparkles" size={14} />
+          <span>
+            {t('bi.chartRecommendation.label', {
+              chartType: chartTypeLabel(spec.chartType, t),
+            })}
+          </span>
+        </div>
+        <p>
+          {spec.recommendationReason || t('bi.chartRecommendation.fallback')}
+        </p>
+      </div>
       <div className="bi-chart-body" style={{ height: CHART_HEIGHT }}>
-        <ResponsiveContainer width="100%" height="100%">
-          {renderChart(spec, data)}
-        </ResponsiveContainer>
+        {spec.chartType === 'heatmap' ? (
+          <HeatmapChart spec={spec} data={data} />
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            {renderChart(spec, data)}
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );
@@ -210,6 +233,137 @@ function renderChart(
     case 'heatmap':
     default:
       return <UnsupportedChart />;
+  }
+}
+
+function HeatmapChart({
+  spec,
+  data,
+}: {
+  spec: BiChartSpec;
+  data: Array<Record<string, unknown>>;
+}) {
+  const { t } = useT();
+  const xKey = spec.xAxis.key;
+  const yKey = spec.yAxis[0]?.key;
+  const valueKey = spec.zAxis?.key;
+  if (!yKey || !valueKey) return <UnsupportedChart />;
+
+  const xCategories = uniqueValues(data.map((row) => row[xKey]));
+  const yCategories = uniqueValues(data.map((row) => row[yKey]));
+  const values = new Map<string, number>();
+  let max = 0;
+  for (const row of data) {
+    const x = String(row[xKey] ?? '');
+    const y = String(row[yKey] ?? '');
+    const value = Number(row[valueKey] ?? 0);
+    const safeValue = Number.isFinite(value) ? value : 0;
+    values.set(heatmapKey(x, y), safeValue);
+    max = Math.max(max, safeValue);
+  }
+
+  const gridStyle: CSSProperties = {
+    gridTemplateColumns: `minmax(112px, 1.15fr) repeat(${Math.max(xCategories.length, 1)}, minmax(76px, 1fr))`,
+  };
+
+  return (
+    <div
+      className="bi-heatmap"
+      role="img"
+      aria-label={t('bi.heatmap.aria', {
+        x: spec.xAxis.label,
+        y: spec.yAxis[0]?.label ?? '',
+        value: spec.zAxis?.label ?? '',
+      })}
+    >
+      <div className="bi-heatmap-grid" style={gridStyle}>
+        <div className="bi-heatmap-corner" />
+        {xCategories.map((x) => (
+          <div key={x} className="bi-heatmap-col-head" title={x}>
+            {formatAxisTick(x)}
+          </div>
+        ))}
+        {yCategories.map((y) => (
+          <HeatmapRow
+            key={y}
+            y={y}
+            xCategories={xCategories}
+            values={values}
+            max={max}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HeatmapRow({
+  y,
+  xCategories,
+  values,
+  max,
+}: {
+  y: string;
+  xCategories: string[];
+  values: Map<string, number>;
+  max: number;
+}) {
+  return (
+    <>
+      <div className="bi-heatmap-row-head" title={y}>
+        {formatAxisTick(y)}
+      </div>
+      {xCategories.map((x) => {
+        const value = values.get(heatmapKey(x, y)) ?? 0;
+        const intensity = max > 0 ? value / max : 0;
+        const alpha = Math.max(0.08, intensity * 0.82);
+        const textIsLight = intensity > 0.58;
+        return (
+          <div
+            key={`${y}-${x}`}
+            className="bi-heatmap-cell"
+            title={`${y} · ${x}: ${formatMetricValue(value)}`}
+            style={{
+              backgroundColor: `rgba(15, 62, 106, ${alpha})`,
+              color: textIsLight ? '#fff' : 'var(--color-fg)',
+            }}
+          >
+            {formatMetricValue(value)}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function uniqueValues(values: unknown[]): string[] {
+  return Array.from(new Set(values.map((v) => String(v ?? '')))).filter(
+    Boolean,
+  );
+}
+
+function heatmapKey(x: string, y: string): string {
+  return `${x}\u0000${y}`;
+}
+
+function chartTypeLabel(
+  chartType: BiChartType,
+  t: ReturnType<typeof useT>['t'],
+): string {
+  switch (chartType) {
+    case 'line':
+      return t('bi.chartType.line');
+    case 'area':
+      return t('bi.chartType.area');
+    case 'pie':
+      return t('bi.chartType.pie');
+    case 'treemap':
+      return t('bi.chartType.treemap');
+    case 'heatmap':
+      return t('bi.chartType.heatmap');
+    case 'bar':
+    default:
+      return t('bi.chartType.bar');
   }
 }
 

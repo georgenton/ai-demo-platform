@@ -33,6 +33,11 @@ export const RENDER_CHART_TOOL: ChatTool = {
         description:
           'Título corto y descriptivo en español (ej. "Morosidad por agencia en últimos 12 meses").',
       },
+      recommendationReason: {
+        type: 'string',
+        description:
+          'Explicación breve en español de por qué este chartType es el mejor para estos datos. Ej: "Usé pie porque la pregunta pide composición de un total y hay menos de 8 categorías."',
+      },
       xAxis: {
         type: 'object',
         properties: {
@@ -58,7 +63,22 @@ export const RENDER_CHART_TOOL: ChatTool = {
           required: ['key', 'label'],
         },
         description:
-          'Una o varias series (multi-line/multi-bar). Para pie/treemap usar UNA sola.',
+          'Una o varias series (multi-line/multi-bar). Para pie/treemap usar UNA sola métrica. Para heatmap usar UNA sola dimensión vertical.',
+      },
+      zAxis: {
+        type: 'object',
+        properties: {
+          key: {
+            type: 'string',
+            description:
+              'Solo heatmap: nombre de la columna numérica que determina la intensidad.',
+          },
+          label: {
+            type: 'string',
+            description: 'Solo heatmap: etiqueta legible de la métrica.',
+          },
+        },
+        required: ['key', 'label'],
       },
       description: {
         type: 'string',
@@ -121,10 +141,33 @@ export function parseRenderChartInput(
       error: `${o.chartType} solo admite una serie en yAxis (la métrica). Usa otro chartType para multi-serie.`,
     };
   }
+  if (o.chartType === 'heatmap') {
+    if (o.yAxis.length !== 1) {
+      return {
+        error: 'heatmap requiere yAxis con exactamente una dimensión vertical.',
+      };
+    }
+    if (
+      !o.zAxis ||
+      typeof o.zAxis !== 'object' ||
+      typeof (o.zAxis as { key?: unknown }).key !== 'string' ||
+      typeof (o.zAxis as { label?: unknown }).label !== 'string'
+    ) {
+      return {
+        error:
+          'heatmap requiere zAxis con {key, label} para la métrica de intensidad.',
+      };
+    }
+  }
 
   return {
     chartType: o.chartType as BiChartType,
     title: o.title.trim(),
+    recommendationReason:
+      typeof o.recommendationReason === 'string' &&
+      o.recommendationReason.trim().length >= 8
+        ? o.recommendationReason.trim()
+        : defaultRecommendationReason(o.chartType as BiChartType),
     xAxis: {
       key: (o.xAxis as { key: string }).key,
       label: (o.xAxis as { label: string }).label,
@@ -133,6 +176,31 @@ export function parseRenderChartInput(
       key: (y as { key: string }).key,
       label: (y as { label: string }).label,
     })),
+    zAxis:
+      o.chartType === 'heatmap'
+        ? {
+            key: (o.zAxis as { key: string }).key,
+            label: (o.zAxis as { label: string }).label,
+          }
+        : undefined,
     description: typeof o.description === 'string' ? o.description : undefined,
   };
+}
+
+function defaultRecommendationReason(chartType: BiChartType): string {
+  switch (chartType) {
+    case 'line':
+      return 'Usé línea porque los datos siguen una evolución temporal y conviene ver la tendencia.';
+    case 'area':
+      return 'Usé área porque los datos muestran acumulados o volumen a través del tiempo.';
+    case 'pie':
+      return 'Usé pastel porque la pregunta pide composición de un total con pocas categorías.';
+    case 'treemap':
+      return 'Usé treemap porque la pregunta pide composición y permite comparar pesos relativos.';
+    case 'heatmap':
+      return 'Usé mapa de calor porque la pregunta cruza dos dimensiones y una métrica de intensidad.';
+    case 'bar':
+    default:
+      return 'Usé barras porque la pregunta compara categorías por una métrica.';
+  }
 }

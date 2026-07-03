@@ -5804,6 +5804,36 @@ html.presenting .app-shell > .sidebar {
   margin: 0 0 10px;
 }
 
+.bi-chart-recommendation {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  margin: 8px 0 10px;
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 8px;
+}
+
+.bi-chart-recommendation-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-brand);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bi-chart-recommendation p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--color-fg-muted);
+}
+
 .bi-ai-badge {
   font-size: 10.5px;
   font-weight: 700;
@@ -5826,6 +5856,64 @@ html.presenting .app-shell > .sidebar {
   height: 220px;
   font-size: 13.5px;
   color: var(--color-fg-muted);
+}
+
+.bi-heatmap {
+  height: 100%;
+  overflow: auto;
+  padding-bottom: 4px;
+}
+
+.bi-heatmap-grid {
+  display: grid;
+  gap: 4px;
+  min-width: 620px;
+  height: 100%;
+  align-content: start;
+}
+
+.bi-heatmap-corner,
+.bi-heatmap-col-head,
+.bi-heatmap-row-head,
+.bi-heatmap-cell {
+  border-radius: 6px;
+  min-height: 32px;
+}
+
+.bi-heatmap-col-head,
+.bi-heatmap-row-head {
+  display: flex;
+  align-items: center;
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  color: var(--color-fg-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bi-heatmap-col-head {
+  justify-content: center;
+  text-align: center;
+  padding: 6px 8px;
+}
+
+.bi-heatmap-row-head {
+  justify-content: flex-start;
+  padding: 6px 10px;
+}
+
+.bi-heatmap-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(15, 62, 106, 0.16);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+  padding: 6px 8px;
 }
 
 /* SQL block colapsable */

@@ -76,6 +76,8 @@ describe('BiService.chat()', () => {
             input: {
               chartType: 'bar',
               title: 'Cartera por producto',
+              recommendationReason:
+                'Usé barras porque compara productos por cartera.',
               xAxis: { key: 'productoTipo', label: 'Producto' },
               yAxis: [{ key: 'cartera_usd', label: 'Cartera USD' }],
             },
@@ -120,8 +122,11 @@ describe('BiService.chat()', () => {
       spec: {
         chartType: 'bar',
         title: 'Cartera por producto',
+        recommendationReason:
+          'Usé barras porque compara productos por cartera.',
         xAxis: { key: 'productoTipo', label: 'Producto' },
         yAxis: [{ key: 'cartera_usd', label: 'Cartera USD' }],
+        zAxis: undefined,
         description: undefined,
       },
     });

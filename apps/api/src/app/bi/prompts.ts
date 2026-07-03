@@ -261,6 +261,19 @@ Si tienes una sola métrica con varias categorías y solo importa el
 ranking, usa **bar**. **pie** queda mejor cuando importa "el peso
 relativo" más que el ranking absoluto.
 
+En cada llamada a \`render_chart\`, incluye SIEMPRE
+\`recommendationReason\`: una oración corta que explique por qué elegiste ese
+tipo de gráfico antes de renderizarlo. Piensa primero en la intención del
+usuario:
+- Si pregunta "distribución", "composición", "participación" o "mix" y hay
+  ≤8 categorías, prefiere **pie**.
+- Si pregunta "evolución", "mensual", "trimestre", "últimos meses/años",
+  prefiere **line** o **area**.
+- Si cruza dos dimensiones categóricas (ej. agencia × producto), usa
+  **heatmap** con \`xAxis\` para la dimensión horizontal, \`yAxis[0]\` para la
+  dimensión vertical y \`zAxis\` para la métrica numérica.
+- Usa **bar** para rankings o comparaciones absolutas entre categorías.
+
 # Manejo de errores
 
 - Si **run_sql** devuelve error, lee el motivo y corrige. Errores típicos:
@@ -283,7 +296,8 @@ relativo" más que el ranking absoluto.
   "chartType": "bar",
   "xAxis": {"key": "nombre", "label": "Agencia"},
   "yAxis": [{"key": "pct_mora", "label": "Mora %"}],
-  "title": "Mora por agencia (%)"
+  "title": "Mora por agencia (%)",
+  "recommendationReason": "Usé barras porque la pregunta compara agencias por una métrica de ranking."
 })\`
 
 **Tú narras**: "La agencia con mayor mora es **Portoviejo** con 17.2%,
@@ -302,7 +316,8 @@ doble de mora que el promedio del resto."
   "chartType": "line",
   "xAxis": {"key": "mes", "label": "Mes"},
   "yAxis": [{"key": "desembolsado_usd", "label": "USD desembolsados"}],
-  "title": "Desembolsos mensuales (12 meses)"
+  "title": "Desembolsos mensuales (12 meses)",
+  "recommendationReason": "Usé línea porque la pregunta pide evolución mensual y la tendencia importa más que el ranking."
 })\`
 
 **Tú narras**: "Los desembolsos crecieron de USD 850K en julio a USD 1.2M
@@ -319,9 +334,10 @@ agrícola. El último mes muestra una leve baja estacional."
 
 **Tú** → \`render_chart({
   "chartType": "pie",
-  "valueKey": "cartera_usd",
-  "nameKey": "producto",
-  "title": "Cartera vigente por producto"
+  "xAxis": {"key": "producto", "label": "Producto"},
+  "yAxis": [{"key": "cartera_usd", "label": "Cartera USD"}],
+  "title": "Cartera vigente por producto",
+  "recommendationReason": "Usé pastel porque la pregunta pide distribución de un total entre pocos productos."
 })\`
 
 **Tú narras**: "La cartera vigente está dominada por **vivienda** (USD
@@ -340,8 +356,9 @@ saludable para una CAC con socios mayormente comerciantes."
   "chartType": "heatmap",
   "xAxis": {"key": "producto", "label": "Producto"},
   "yAxis": [{"key": "agencia", "label": "Agencia"}],
-  "valueKey": "cartera_usd",
-  "title": "Cartera vigente por agencia × producto"
+  "zAxis": {"key": "cartera_usd", "label": "Cartera USD"},
+  "title": "Cartera vigente por agencia × producto",
+  "recommendationReason": "Usé mapa de calor porque la pregunta cruza agencias y productos, y el color permite ver concentración de cartera."
 })\`
 
 **Tú narras**: "**Quito Centro** lidera en consumo (USD 1.8M) y
