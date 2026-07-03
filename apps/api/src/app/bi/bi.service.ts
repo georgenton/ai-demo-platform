@@ -29,6 +29,10 @@ import { chat } from '@org/llm-adapter';
 import { SqlGenerationService } from '../sql-generation/sql-generation.service.js';
 
 import type { BiChatEvent, BiChartSpec } from './dto/bi.dto.js';
+import {
+  getCuratedBiPlan,
+  summarizeCuratedBiResult,
+} from './curated-bi-plans.js';
 import { BI_SCHEMA_DDL, BI_SYSTEM_PROMPT } from './prompts.js';
 import { sanitizeBiSql, SqlSafetyError } from './sql-safety.js';
 import {
@@ -54,6 +58,19 @@ Cuando ya tengas filas válidas:
 - No incluyas markdown de imagen, enlaces, HTML ni texto en otro idioma.
 - Después de \`render_chart\`, responde únicamente con 2-4 oraciones en español.`;
 
+function curatedChartPrompt(chartSpec: BiChartSpec): string {
+  return `
+
+# Chart sugerido por el backend
+
+Para esta pregunta, el backend ya eligió una visualización consistente para demo.
+Cuando llames \`render_chart\`, usa exactamente este spec:
+
+\`\`\`json
+${JSON.stringify(chartSpec)}
+\`\`\``;
+}
+
 @Injectable()
 export class BiService {
   private readonly logger = new Logger(BiService.name);
@@ -75,14 +92,19 @@ export class BiService {
     // ejecutamos el SQL antes de invocar al LLM general. El LLM general
     // (qwen) se queda con elegir el chart y narrar — sus dos tareas fáciles.
     // En anthropic el método devuelve null y el flujo sigue como siempre.
-    const preGeneratedSql = await this.sqlGen.generateIfAvailable({
-      provider: llmProvider,
-      schema: BI_SCHEMA_DDL,
-      question: input.message,
-      demoLabel: 'bi',
-    });
+    const curatedPlan = getCuratedBiPlan(input.message);
+    const preGeneratedSql =
+      curatedPlan?.sql ??
+      (await this.sqlGen.generateIfAvailable({
+        provider: llmProvider,
+        schema: BI_SCHEMA_DDL,
+        question: input.message,
+        demoLabel: 'bi',
+      }));
     const systemPrompt = preGeneratedSql
-      ? BI_SYSTEM_PROMPT + PREEXECUTED_SQL_PROMPT
+      ? BI_SYSTEM_PROMPT +
+        PREEXECUTED_SQL_PROMPT +
+        (curatedPlan ? curatedChartPrompt(curatedPlan.chartSpec) : '')
       : BI_SYSTEM_PROMPT;
 
     const messages: ChatRichMessage[] = [
@@ -91,6 +113,12 @@ export class BiService {
     ];
 
     let turns = 0;
+    let emittedChart = false;
+    let emittedFinalText = false;
+    let lastRows: {
+      columns: string[];
+      rows: unknown[][];
+    } | null = null;
 
     try {
       if (preGeneratedSql) {
@@ -136,6 +164,7 @@ export class BiService {
             rows: result.rows,
             rowCount: result.rows.length,
           };
+          lastRows = { columns: result.columns, rows: result.rows };
           messages.push({
             role: 'user',
             content: [
@@ -175,7 +204,6 @@ export class BiService {
             } else {
               assistantBlocks.push({ type: 'text', text: event.text });
             }
-            yield { type: 'token', text: event.text };
           } else if (event.type === 'tool_use_complete') {
             assistantBlocks.push({
               type: 'tool_use',
@@ -204,6 +232,7 @@ export class BiService {
                   rows: result.rows,
                   rowCount: result.rows.length,
                 };
+                lastRows = { columns: result.columns, rows: result.rows };
                 // El tool_result que devolvemos al LLM lleva las filas
                 // (recortadas a ROWS_LIMIT_FOR_LLM para no inflar el
                 // contexto cuando el query devuelve cientos de filas).
@@ -228,6 +257,7 @@ export class BiService {
                 });
               } else {
                 yield { type: 'chart', spec: parsed satisfies BiChartSpec };
+                emittedChart = true;
                 toolResults.push({
                   toolUseId: event.id,
                   content: 'OK — gráfico solicitado.',
@@ -246,12 +276,21 @@ export class BiService {
           }
         }
 
-        if (assistantBlocks.length === 0) {
-          assistantBlocks.push({ type: 'text', text: '' });
-        }
-        messages.push({ role: 'assistant', content: assistantBlocks });
+        const shouldContinueForTools =
+          stopReason === 'tool_use' && toolResults.length > 0;
 
-        if (stopReason === 'tool_use' && toolResults.length > 0) {
+        const blocksForHistory = shouldContinueForTools
+          ? assistantBlocks.filter(
+              (block): block is ToolUseBlock => block.type === 'tool_use',
+            )
+          : assistantBlocks;
+
+        if (blocksForHistory.length === 0) {
+          blocksForHistory.push({ type: 'text', text: '' });
+        }
+        messages.push({ role: 'assistant', content: blocksForHistory });
+
+        if (shouldContinueForTools) {
           messages.push({
             role: 'user',
             content: toolResults.map((tr) => ({
@@ -263,6 +302,17 @@ export class BiService {
           });
           continue;
         }
+
+        const finalText = cleanBiNarrative(
+          assistantBlocks
+            .filter((block): block is TextBlock => block.type === 'text')
+            .map((block) => block.text)
+            .join(''),
+        );
+        if (finalText) {
+          yield { type: 'token', text: finalText };
+          emittedFinalText = true;
+        }
         break;
       }
     } catch (err) {
@@ -270,6 +320,19 @@ export class BiService {
       this.logger.error(`bi chat failed: ${message}`);
       yield { type: 'error_event', message };
       return;
+    }
+
+    if (curatedPlan && lastRows && !emittedChart) {
+      yield { type: 'chart', spec: curatedPlan.chartSpec };
+    }
+
+    if (curatedPlan && lastRows && !emittedFinalText) {
+      const fallback = summarizeCuratedBiResult(
+        curatedPlan,
+        lastRows.columns,
+        lastRows.rows,
+      );
+      if (fallback) yield { type: 'token', text: fallback };
     }
 
     yield { type: 'done', conversationId, turns };
@@ -349,4 +412,15 @@ export class BiService {
       rows,
     };
   }
+}
+
+function cleanBiNarrative(raw: string): string {
+  return raw
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/[\u3400-\u9fff\uf900-\ufaff]+/g, '')
+    .replace(/\s+\n/g, '\n')
+    .replace(/\n\s+/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
