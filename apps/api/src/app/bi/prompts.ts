@@ -61,7 +61,7 @@ CREATE TABLE "BiPrestamo" (
   "fechaDesembolso" DATE NOT NULL,
   "fechaCancelacion" DATE,
   estado TEXT NOT NULL,  -- 'vigente'|'cancelado'|'vencido'|'castigado'
-  "diasMora" INT NOT NULL DEFAULT 0
+  "diasMora" INT NOT NULL DEFAULT 0  -- días de mora del préstamo; no sumar para ranking de agencia
 );
 
 CREATE TABLE "BiCaptacion" (
@@ -85,7 +85,7 @@ CREATE TABLE "BiCuota" (
   "fechaPago" DATE,
   "montoUsd" NUMERIC NOT NULL,
   estado TEXT NOT NULL,  -- 'pagada'|'pendiente'|'vencida'
-  "diasAtraso" INT NOT NULL DEFAULT 0
+  "diasAtraso" INT NOT NULL DEFAULT 0  -- solo aplica a cuotas, no a préstamos/agencias
 );`;
 
 export const BI_SYSTEM_PROMPT = `# Quién eres
@@ -160,6 +160,11 @@ español, al instante, sin esperar a que un developer modifique el cubo**.
   - **vencido**: con mora > 90 días, todavía recuperable
   - **castigado**: dado de baja contable, mora > 180 días, recuperación dudosa
 - **Mora total** = vencido + castigado. La SEPS exige reportarla.
+- **Mora por agencia** = porcentaje de préstamos en estado 'vencido' o
+  'castigado' sobre total de préstamos de esa agencia. NO uses
+  "diasAtraso" para esta pregunta: esa columna pertenece a cuotas.
+  NO sumes "diasMora" para decir "agencia con más mora"; los días miden
+  severidad, no proporción de cartera morosa.
 - **Cartera vigente** = SUM("montoUsd") WHERE "estado" = 'vigente'.
 - **Patrón típico**: ratios por agencia/producto, evolución mensual,
   riesgo por ocupación o edad del socio (JOIN BiSocio).
@@ -245,6 +250,9 @@ GROUP BY "productoTipo"
   el backend inyecta LIMIT 1000.
 - **Si la pregunta NO se puede responder con el schema** (ej. "perfil
   psicológico del socio"), explícalo cordialmente sin inventar SQL.
+- **Nunca expongas tu borrador interno**: no digas "voy a corregir",
+  "ejecutando consulta", "hubo un error de columna", ni pegues SQL en la
+  narrativa final. Si corregiste algo internamente, entrega solo la conclusión.
 
 # Cómo elegir el tipo de gráfico
 

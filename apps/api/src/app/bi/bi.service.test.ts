@@ -170,4 +170,128 @@ describe('BiService.chat()', () => {
       ],
     });
   });
+
+  it('usa plan curado para mora por agencia y no depende del SQL del LLM local', async () => {
+    mockQueryRawUnsafe.mockResolvedValueOnce([
+      {
+        nombre: 'Portoviejo',
+        pct_mora: '17.2',
+        prestamos_morosos: 28n,
+        total_prestamos: 163n,
+      },
+    ]);
+    mockStreamWithTools.mockImplementation(() =>
+      asStream([{ type: 'turn_end', stopReason: 'end_turn' }]),
+    );
+
+    const events = await collect(
+      service.chat(
+        'tenant-demo',
+        {
+          message: '¿Qué agencia tiene más mora?',
+        },
+        'private-mac',
+      ),
+    );
+
+    expect(sqlGen.generateIfAvailable).not.toHaveBeenCalled();
+    expect(mockQueryRawUnsafe).toHaveBeenCalledOnce();
+    const executedSql = mockQueryRawUnsafe.mock.calls[0][0] as string;
+    expect(executedSql).toContain("p.estado IN ('vencido','castigado')");
+    expect(executedSql).toContain('AS pct_mora');
+    expect(executedSql).not.toContain('diasAtraso');
+    expect(executedSql).not.toMatch(/SUM\([^)]*diasMora/i);
+    expect(events).toContainEqual({
+      type: 'chart',
+      spec: {
+        chartType: 'bar',
+        title: 'Mora por agencia (%)',
+        recommendationReason:
+          'Usé barras porque la pregunta compara agencias por nivel de mora.',
+        xAxis: { key: 'nombre', label: 'Agencia' },
+        yAxis: [{ key: 'pct_mora', label: 'Mora %' }],
+      },
+    });
+    expect(events).toContainEqual({
+      type: 'token',
+      text: expect.stringContaining('Portoviejo'),
+    });
+  });
+
+  it('no emite al frontend texto intermedio de turnos con tool_use', async () => {
+    mockQueryRawUnsafe.mockResolvedValueOnce([
+      { nombre: 'Portoviejo', pct_mora: '17.2' },
+    ]);
+
+    let turn = 0;
+    mockStreamWithTools.mockImplementation(() => {
+      turn += 1;
+      if (turn === 1) {
+        return asStream([
+          {
+            type: 'text_delta',
+            text: 'Lo siento, voy a corregir la columna y ejecutar SQL.',
+          },
+          {
+            type: 'tool_use_complete',
+            id: 'sql_1',
+            name: 'run_sql',
+            input: {
+              sql: 'SELECT a.nombre, ROUND(100.0 * COUNT(*) FILTER (WHERE p.estado IN (\'vencido\',\'castigado\')) / NULLIF(COUNT(*), 0), 2) AS pct_mora FROM "BiPrestamo" p JOIN "BiAgencia" a ON a.id = p."agenciaId" GROUP BY a.nombre ORDER BY pct_mora DESC LIMIT 10',
+            },
+          },
+          { type: 'turn_end', stopReason: 'tool_use' },
+        ]);
+      }
+      if (turn === 2) {
+        return asStream([
+          {
+            type: 'text_delta',
+            text: 'Ejecutando render_chart con el resultado anterior.',
+          },
+          {
+            type: 'tool_use_complete',
+            id: 'chart_1',
+            name: 'render_chart',
+            input: {
+              chartType: 'bar',
+              title: 'Mora por agencia (%)',
+              recommendationReason:
+                'Usé barras porque compara agencias por mora.',
+              xAxis: { key: 'nombre', label: 'Agencia' },
+              yAxis: [{ key: 'pct_mora', label: 'Mora %' }],
+            },
+          },
+          { type: 'turn_end', stopReason: 'tool_use' },
+        ]);
+      }
+      return asStream([
+        {
+          type: 'text_delta',
+          text: 'La agencia con mayor mora es Portoviejo con 17.2%.',
+        },
+        { type: 'turn_end', stopReason: 'end_turn' },
+      ]);
+    });
+
+    const events = await collect(
+      service.chat(
+        'tenant-demo',
+        {
+          message: 'ranking de riesgo por sucursal',
+        },
+        'private-mac',
+      ),
+    );
+
+    const visibleText = events
+      .filter((event) => event.type === 'token')
+      .map((event) => event.text)
+      .join('');
+    expect(visibleText).toBe(
+      'La agencia con mayor mora es Portoviejo con 17.2%.',
+    );
+    expect(visibleText).not.toContain('voy a corregir');
+    expect(visibleText).not.toContain('Ejecutando');
+  });
 });
