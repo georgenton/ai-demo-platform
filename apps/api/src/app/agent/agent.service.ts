@@ -39,6 +39,7 @@ import type {
   AgentHistoryResponse,
 } from './dto/agent-history.dto.js';
 import type { AgentQueryDto } from './dto/agent-query.dto.js';
+import { normalizeAgentSql } from './normalize-agent-sql.js';
 import { SafeSqlExecutor } from './safe-sql-executor.js';
 
 /**
@@ -161,12 +162,15 @@ export class AgentService {
     // En private-mac/onprem con SQL model configurado lo ejecutamos antes
     // del primer turno del LLM general. Así qwen queda a cargo de narrar,
     // no de inventar nombres de columnas.
-    const preGeneratedSql = await this.sqlGen.generateIfAvailable({
+    const sqlGeneratedByModel = await this.sqlGen.generateIfAvailable({
       provider: llmProvider,
       schema: SCHEMA_DDL,
       question: query.q,
       demoLabel: 'agent',
     });
+    const preGeneratedSql = sqlGeneratedByModel
+      ? normalizeAgentSql(sqlGeneratedByModel)
+      : null;
     const systemPrompt = preGeneratedSql
       ? SYSTEM_PROMPT + PREEXECUTED_SQL_PROMPT
       : SYSTEM_PROMPT;
@@ -310,7 +314,8 @@ export class AgentService {
             }
 
             const input = event.input as { sql?: unknown };
-            const sql = typeof input.sql === 'string' ? input.sql : '';
+            const sql =
+              typeof input.sql === 'string' ? normalizeAgentSql(input.sql) : '';
             // Audit: guardamos el último SQL que el LLM intentó (haya tenido
             // éxito o no — útil para diagnosticar fallos).
             lastSql = sql;
