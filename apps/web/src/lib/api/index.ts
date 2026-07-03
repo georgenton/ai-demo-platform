@@ -33,9 +33,12 @@ export {
 export { listDemos, getDemo } from './demos';
 export { subscribeToTutorChat, getTutorPricing } from './tutor';
 export {
-  uploadNotarize,
-  listNotarized,
   getNotarized,
+  listNotarized,
+  NOTARIZE_SAFE_PDF_MAX_BYTES,
+  NOTARIZE_SAFE_PDF_MAX_LABEL,
+  NOTARIZE_UPLOAD_TOO_LARGE_MESSAGE,
+  uploadNotarize,
   verifyNotarized,
 } from './notarize';
 export {

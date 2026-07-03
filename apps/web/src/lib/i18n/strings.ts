@@ -348,11 +348,14 @@ const STRINGS_ES = {
   'notarize.docType.capital_contribution.subtitle':
     'Derechos del socio, plazo de devolución y condiciones de retiro.',
   'notarize.step2.title': 'Sube el PDF',
-  'notarize.step2.hint': 'Máx 10 MB · solo PDF.',
+  'notarize.step2.hint': 'Máx 4 MB · solo PDF.',
   'notarize.dropzone.idle': 'Arrastra el PDF o haz clic para elegir',
   'notarize.dropzone.dragging': 'Suelta el PDF para subirlo',
   'notarize.dropzone.replace': 'Sustituir archivo',
   'notarize.dropzone.fileLabel': '{name} · {size}',
+  'notarize.dropzone.invalidType': 'Selecciona un archivo PDF.',
+  'notarize.dropzone.tooLarge':
+    'El PDF supera el límite de {max}. Comprime el archivo o prueba con uno más pequeño.',
   'notarize.step3.title': 'Modo de notarización',
   'notarize.step3.hint': 'Elige dónde queda la huella digital.',
   'notarize.mode.local.title': 'Solo interno',
@@ -1145,11 +1148,14 @@ const STRINGS_EN: Record<keyof typeof STRINGS_ES, string> = {
   'notarize.docType.capital_contribution.subtitle':
     'Member rights, withdrawal term and conditions.',
   'notarize.step2.title': 'Upload the PDF',
-  'notarize.step2.hint': 'Max 10 MB · PDF only.',
+  'notarize.step2.hint': 'Max 4 MB · PDF only.',
   'notarize.dropzone.idle': 'Drag the PDF or click to choose',
   'notarize.dropzone.dragging': 'Drop the PDF to upload it',
   'notarize.dropzone.replace': 'Replace file',
   'notarize.dropzone.fileLabel': '{name} · {size}',
+  'notarize.dropzone.invalidType': 'Select a PDF file.',
+  'notarize.dropzone.tooLarge':
+    'The PDF is larger than {max}. Compress it or try a smaller file.',
   'notarize.step3.title': 'Notarization mode',
   'notarize.step3.hint': 'Choose where the digital fingerprint lives.',
   'notarize.mode.local.title': 'Internal only',

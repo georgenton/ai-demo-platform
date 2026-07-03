@@ -7,11 +7,26 @@
 // -----------------------------------------------------------------------------
 
 import { ApiError, extractErrorMessage } from './client';
+import { llmProviderHeader } from '../llm/llm-provider-storage';
 import type {
   NotarizedDocument,
   NotarizeUploadInput,
   VerificationResponse,
 } from './types-notarize';
+
+/**
+ * Límite seguro del camino browser → Vercel Route Handler → Railway.
+ *
+ * El backend puede validar hasta 10 MB, pero en producción el upload pasa por
+ * una Vercel Function que rechaza bodies cercanos a 4.5 MB con HTTP 413 antes
+ * de llegar a Railway. Dejamos margen para overhead multipart.
+ */
+export const NOTARIZE_SAFE_PDF_MAX_BYTES = 4 * 1024 * 1024;
+export const NOTARIZE_SAFE_PDF_MAX_LABEL = '4 MB';
+
+export const NOTARIZE_UPLOAD_TOO_LARGE_MESSAGE =
+  `El PDF supera el límite de carga de ${NOTARIZE_SAFE_PDF_MAX_LABEL} para esta demo. ` +
+  'Comprime el archivo o prueba con un PDF más pequeño.';
 
 // ---------------------------------------------------------------------------
 // POST /api/v1/notarize — sube + notariza + analiza.
@@ -33,6 +48,10 @@ export async function uploadNotarize(
   input: NotarizeUploadInput,
   signal?: AbortSignal,
 ): Promise<NotarizedDocument> {
+  if (input.file.size > NOTARIZE_SAFE_PDF_MAX_BYTES) {
+    throw new ApiError(NOTARIZE_UPLOAD_TOO_LARGE_MESSAGE, 413);
+  }
+
   const form = new FormData();
   form.append('file', input.file);
   form.append('docType', input.docType);
@@ -41,11 +60,17 @@ export async function uploadNotarize(
   // No seteamos Content-Type — fetch genera el header con boundary correcto.
   const response = await fetch('/api/v1/notarize', {
     method: 'POST',
+    headers: {
+      ...llmProviderHeader(),
+    },
     body: form,
     signal,
   });
 
   if (!response.ok) {
+    if (response.status === 413) {
+      throw new ApiError(NOTARIZE_UPLOAD_TOO_LARGE_MESSAGE, 413);
+    }
     const { message, payload } = await extractErrorMessage(response);
     throw new ApiError(message, response.status, payload);
   }

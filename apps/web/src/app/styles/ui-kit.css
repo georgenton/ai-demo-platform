@@ -4071,6 +4071,12 @@ html.presenting .app-shell > .sidebar {
 .notarize-dropzone-replace:hover {
   background: var(--color-surface-hover);
 }
+.notarize-dropzone-alert {
+  margin-top: 12px;
+  color: var(--color-danger);
+  font-size: 13px;
+  font-weight: 600;
+}
 
 /* Error inline ---------------------------------------------------------- */
 .notarize-error {
