@@ -12,7 +12,11 @@
 // -----------------------------------------------------------------------------
 
 import { chat } from '@org/llm-adapter';
-import type { ChatProvider, ChatRichMessage } from '@org/llm-adapter';
+import type {
+  ChatMessage,
+  ChatProvider,
+  ChatRichMessage,
+} from '@org/llm-adapter';
 
 import type {
   DocumentAnalysis,
@@ -87,12 +91,63 @@ export async function analyzeDocument(
   }
 
   if (toolInput === null) {
+    if (shouldUseJsonFallback(llmProvider)) {
+      return analyzeDocumentWithJsonFallback(
+        docType,
+        systemPrompt,
+        excerpt,
+        llmProvider,
+      );
+    }
+
     throw new Error(
       'analyzeDocument: el LLM terminó sin llamar `submit_analysis`. Intenta de nuevo.',
     );
   }
 
   return parseAnalysisInput(docType, toolInput);
+}
+
+/**
+ * Fallback para providers OpenAI-compatible locales que pueden responder texto
+ * pero no siempre emiten `tool_calls` reales. Mantiene el mismo shape final
+ * (`DocumentAnalysis`) y se valida con el mismo parser estricto.
+ */
+async function analyzeDocumentWithJsonFallback(
+  docType: NotarizedDocTypeDto,
+  systemPrompt: string,
+  excerpt: string,
+  llmProvider?: ChatProvider,
+): Promise<DocumentAnalysis> {
+  const messages: ChatMessage[] = [
+    {
+      role: 'system',
+      content:
+        systemPrompt +
+        '\n\nMODO COMPATIBILIDAD JSON: no tienes herramientas disponibles. ' +
+        'Ignora cualquier instrucción anterior que diga llamar una función. ' +
+        'Debes responder EXCLUSIVAMENTE un objeto JSON válido, sin markdown, ' +
+        'sin explicación adicional y sin texto antes o después. El JSON debe ' +
+        'tener exactamente esta forma: {"dimensions":[{"key":"...","label":"...","value":"..."}],"risks":[{"severity":"info","title":"...","description":"..."}],"recommendations":["..."],"reasoning":"..."}.',
+    },
+    {
+      role: 'user',
+      content:
+        'Analiza este documento y devuelve SOLO el JSON solicitado:\n\n```\n' +
+        excerpt +
+        '\n```',
+    },
+  ];
+
+  let rawText = '';
+  for await (const chunk of chat.completeStream(messages, {
+    provider: llmProvider,
+  })) {
+    rawText += chunk;
+  }
+
+  const raw = parseJsonFromModelText(rawText);
+  return parseAnalysisInput(docType, raw);
 }
 
 // ---------------------------------------------------------------------------
@@ -102,6 +157,73 @@ export async function analyzeDocument(
 function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
   return s.slice(0, max) + '\n\n[texto truncado por longitud]';
+}
+
+function shouldUseJsonFallback(llmProvider?: ChatProvider): boolean {
+  const provider = llmProvider ?? process.env.CHAT_PROVIDER;
+  return (
+    provider === 'private-mac' ||
+    provider === 'private-onprem' ||
+    provider === 'openai-compat'
+  );
+}
+
+function parseJsonFromModelText(text: string): unknown {
+  const trimmed = text.trim();
+  const unfenced = trimmed
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+
+  try {
+    return JSON.parse(unfenced);
+  } catch {
+    const candidate = extractFirstJsonObject(unfenced);
+    if (!candidate) {
+      throw new Error(
+        'parseJsonFromModelText: el fallback JSON no devolvió un objeto JSON válido.',
+      );
+    }
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      throw new Error(
+        'parseJsonFromModelText: el fallback JSON devolvió JSON malformado.',
+      );
+    }
+  }
+}
+
+function extractFirstJsonObject(text: string): string | null {
+  const start = text.indexOf('{');
+  if (start < 0) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === '{') depth += 1;
+    if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
 }
 
 /**

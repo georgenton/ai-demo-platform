@@ -8,12 +8,15 @@
 //   - Texto largo se trunca (no excede MAX_TEXT_CHARS).
 // -----------------------------------------------------------------------------
 
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockStream } = vi.hoisted(() => ({ mockStream: vi.fn() }));
+const { mockCompleteStream, mockStream } = vi.hoisted(() => ({
+  mockCompleteStream: vi.fn(),
+  mockStream: vi.fn(),
+}));
 
 vi.mock('@org/llm-adapter', () => ({
-  chat: { streamWithTools: mockStream },
+  chat: { completeStream: mockCompleteStream, streamWithTools: mockStream },
 }));
 
 import { analyzeDocument } from './analyze.js';
@@ -25,6 +28,11 @@ function makeStreamThatEmits(events: unknown[]) {
 }
 
 describe('analyzeDocument', () => {
+  beforeEach(() => {
+    mockCompleteStream.mockReset();
+    mockStream.mockReset();
+  });
+
   it('parsea correctamente el tool_use_complete y devuelve DocumentAnalysis', async () => {
     mockStream.mockImplementation(
       makeStreamThatEmits([
@@ -78,6 +86,59 @@ describe('analyzeDocument', () => {
     await expect(analyzeDocument('loan', 'texto del préstamo')).rejects.toThrow(
       /sin llamar/,
     );
+  });
+
+  it('usa fallback JSON para private-mac cuando el LLM no llama submit_analysis', async () => {
+    mockStream.mockImplementation(
+      makeStreamThatEmits([
+        { type: 'text_delta', text: 'Puedo analizar el documento.' },
+        { type: 'turn_end', stopReason: 'end_turn' },
+      ]),
+    );
+    mockCompleteStream.mockImplementation(
+      makeStreamThatEmits([
+        '```json\n',
+        JSON.stringify({
+          dimensions: [
+            {
+              key: 'fecha',
+              label: 'Fecha de la asamblea',
+              value: '2026-07-03',
+            },
+          ],
+          risks: [
+            {
+              severity: 'info',
+              title: 'Sin hallazgos críticos',
+              description:
+                'El documento contiene datos mínimos para el análisis.',
+            },
+          ],
+          recommendations: ['Validar firmas antes de archivar el acta.'],
+          reasoning: 'El modelo local devolvió JSON directo.',
+        }),
+        '\n```',
+      ]),
+    );
+
+    const result = await analyzeDocument(
+      'assembly_minutes',
+      'texto del acta',
+      'private-mac',
+    );
+
+    expect(result.dimensions[0]).toEqual({
+      key: 'fecha',
+      label: 'Fecha de la asamblea',
+      value: '2026-07-03',
+    });
+    expect(result.risks[0].severity).toBe('info');
+    expect(result.recommendations).toEqual([
+      'Validar firmas antes de archivar el acta.',
+    ]);
+    expect(mockCompleteStream).toHaveBeenCalledWith(expect.any(Array), {
+      provider: 'private-mac',
+    });
   });
 
   it('rechaza shape inválido (falta dimensions)', async () => {
