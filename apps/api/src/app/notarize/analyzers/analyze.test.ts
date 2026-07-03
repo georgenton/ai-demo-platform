@@ -105,6 +105,11 @@ describe('analyzeDocument', () => {
               label: 'Fecha de la asamblea',
               value: '2026-07-03',
             },
+            {
+              key: 'quorum_present',
+              label: 'Quórum presente',
+              value: 10,
+            },
           ],
           risks: [
             {
@@ -131,6 +136,11 @@ describe('analyzeDocument', () => {
       key: 'fecha',
       label: 'Fecha de la asamblea',
       value: '2026-07-03',
+    });
+    expect(result.dimensions[1]).toEqual({
+      key: 'quorum_present',
+      label: 'Quórum presente',
+      value: '10',
     });
     expect(result.risks[0].severity).toBe('info');
     expect(result.recommendations).toEqual([
