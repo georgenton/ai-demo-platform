@@ -52,4 +52,22 @@ describe('normalizeAgentSql', () => {
       "SELECT COUNT(*) FROM \"Enrollment\" e WHERE e.term IN ('2025-1', '2025-2')",
     );
   });
+
+  it('cita columnas camelCase cuando el modelo las emite como alias.courseId', () => {
+    const sql =
+      'SELECT c.name FROM "Enrollment" e JOIN "Course" c ON e.courseId = c.id JOIN grade g ON g.enrollmentId = e.id';
+
+    expect(normalizeAgentSql(sql)).toBe(
+      'SELECT c.name FROM "Enrollment" e JOIN "Course" c ON e."courseId" = c.id JOIN "Grade" g ON g."enrollmentId" = e.id',
+    );
+  });
+
+  it('quita LOWER() alrededor de examType porque es enum en Postgres', () => {
+    const sql =
+      'SELECT COUNT(*) FROM "Grade" g WHERE LOWER(g."examType") = \'final\'';
+
+    expect(normalizeAgentSql(sql)).toBe(
+      'SELECT COUNT(*) FROM "Grade" g WHERE g."examType" = \'final\'',
+    );
+  });
 });

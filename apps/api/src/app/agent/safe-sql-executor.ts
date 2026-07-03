@@ -172,6 +172,7 @@ export class SafeSqlExecutor {
   }
 
   private checkAllowedTables(sql: string): SqlExecResult {
+    const cteAliases = this.extractCteAliases(sql);
     // Buscamos identificadores citados con doble-comilla — Prisma genera las
     // tablas con CamelCase y las cita siempre así en sus migraciones.
     // (Un alias `FROM Student s` sin comillas también lo cubrimos abajo.)
@@ -189,7 +190,9 @@ export class SafeSqlExecutor {
     // De los referenciados, los que parezcan tablas (PascalCase) deben estar
     // en la allowlist. Identificadores en lowercase típicamente son columnas
     // (`createdAt`, `studentId`...) y los ignoramos.
-    const tableLike = [...referenced].filter((id) => /^[A-Z]/.test(id));
+    const tableLike = [...referenced].filter(
+      (id) => /^[A-Z]/.test(id) && !cteAliases.has(id),
+    );
     const forbidden = tableLike.filter((t) => !ALLOWED_TABLES.has(t));
 
     if (forbidden.length > 0) {
@@ -201,6 +204,19 @@ export class SafeSqlExecutor {
       };
     }
     return { ok: true } as SqlExecOk;
+  }
+
+  private extractCteAliases(sql: string): Set<string> {
+    if (!/^\s*WITH\b/i.test(sql)) return new Set();
+    const aliases = new Set<string>();
+    const re =
+      /(?:WITH|,)\s+(?:"([^"]+)"|([A-Za-z_][A-Za-z0-9_]*))\s+AS\s*\(/gi;
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(sql)) !== null) {
+      const name = match[1] ?? match[2];
+      if (name) aliases.add(name);
+    }
+    return aliases;
   }
 
   /**

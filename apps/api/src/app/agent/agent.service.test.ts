@@ -289,6 +289,40 @@ describe('AgentService.streamAgent()', () => {
     });
   });
 
+  it('usa SQL canónico para preguntas sugeridas antes de llamar SQLCoder', async () => {
+    mockStreamWithTools.mockReturnValueOnce(
+      asStream([
+        { type: 'text_delta', text: 'Hay 50 estudiantes.' },
+        { type: 'turn_end', stopReason: 'end_turn' },
+      ]),
+    );
+
+    vi.mocked(executor.run).mockResolvedValueOnce({
+      ok: true,
+      rows: [{ total_estudiantes: '50' }],
+      rowCount: 1,
+      durationMs: 10,
+      truncated: false,
+    });
+
+    const events = await collect(
+      service.streamAgent(
+        { q: '¿Cuántos estudiantes hay en total?' },
+        'tenant-demo',
+        'private-mac',
+      ),
+    );
+
+    expect(sqlGen.generateIfAvailable).not.toHaveBeenCalled();
+    expect(events).toContainEqual({
+      type: 'tool_call',
+      sql: 'SELECT COUNT(*) AS total_estudiantes FROM "Student"',
+    });
+    expect(executor.run).toHaveBeenCalledWith(
+      'SELECT COUNT(*) AS total_estudiantes FROM "Student"',
+    );
+  });
+
   it('normaliza tablas académicas en minúscula antes de ejecutar SQL pre-generado', async () => {
     vi.mocked(sqlGen.generateIfAvailable).mockResolvedValueOnce(
       'SELECT COUNT(*) AS total FROM student',
@@ -351,7 +385,7 @@ describe('AgentService.streamAgent()', () => {
 
     const events = await collect(
       service.streamAgent(
-        { q: '¿Cuál es la materia con más inscripciones este semestre?' },
+        { q: '¿Cuál es la materia con más inscripciones en 2025-1?' },
         'tenant-demo',
         'private-mac',
       ),

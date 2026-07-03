@@ -21,6 +21,17 @@ const ACADEMIC_TABLE_ALIASES = new Map<string, string>([
   ['grades', 'Grade'],
 ]);
 
+const ACADEMIC_QUOTED_COLUMNS = new Set([
+  'courseId',
+  'createdAt',
+  'enrolledAt',
+  'enrollmentId',
+  'examType',
+  'fullName',
+  'gradedAt',
+  'studentId',
+]);
+
 /**
  * Normaliza referencias de tabla académicas no citadas.
  *
@@ -43,7 +54,19 @@ export function normalizeAgentSql(sql: string): string {
       return `${keyword} "${canonical}"`;
     },
   );
-  return normalizeAcademicTermLiterals(normalizedTables);
+  const normalizedColumns = normalizeUnquotedAcademicColumns(normalizedTables);
+  const normalizedTerms = normalizeAcademicTermLiterals(normalizedColumns);
+  return normalizeLowerEnumComparisons(normalizedTerms);
+}
+
+function normalizeUnquotedAcademicColumns(sql: string): string {
+  return sql.replace(
+    /\b([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)(?!")\b/g,
+    (match, qualifier: string, column: string) => {
+      if (!ACADEMIC_QUOTED_COLUMNS.has(column)) return match;
+      return `${qualifier}."${column}"`;
+    },
+  );
 }
 
 function normalizeAcademicTermLiterals(sql: string): string {
@@ -78,6 +101,17 @@ function normalizeAcademicTermLiterals(sql: string): string {
 
 function academicTermFromDate(year: string, month: string): string {
   return `${year}-${Number(month) <= 6 ? '1' : '2'}`;
+}
+
+function normalizeLowerEnumComparisons(sql: string): string {
+  const examTypeRef = String.raw`((?:(?:"[A-Za-z_][A-Za-z0-9_]*"|[A-Za-z_][A-Za-z0-9_]*)\.)?"?examType"?)`;
+  const re = new RegExp(
+    String.raw`LOWER\s*\(\s*${examTypeRef}\s*\)\s*=\s*'([^']+)'`,
+    'gi',
+  );
+  return sql.replace(re, (_match, lhs: string, value: string) => {
+    return `${lhs} = '${value.toLowerCase()}'`;
+  });
 }
 
 function extractCteAliases(sql: string): Set<string> {

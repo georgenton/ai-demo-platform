@@ -34,6 +34,7 @@ import type {
 import { SqlGenerationService } from '../sql-generation/sql-generation.service.js';
 
 import type { AgentEvent } from './agent-events.js';
+import { canonicalAgentSqlForQuestion } from './canonical-agent-sql.js';
 import type {
   AgentHistoryQueryDto,
   AgentHistoryResponse,
@@ -167,12 +168,14 @@ export class AgentService {
     // En private-mac/onprem con SQL model configurado lo ejecutamos antes
     // del primer turno del LLM general. Así qwen queda a cargo de narrar,
     // no de inventar nombres de columnas.
-    const sqlGeneratedByModel = await this.sqlGen.generateIfAvailable({
-      provider: llmProvider,
-      schema: SCHEMA_DDL,
-      question: query.q,
-      demoLabel: 'agent',
-    });
+    const sqlGeneratedByModel =
+      canonicalAgentSqlForQuestion(query.q) ??
+      (await this.sqlGen.generateIfAvailable({
+        provider: llmProvider,
+        schema: SCHEMA_DDL,
+        question: query.q,
+        demoLabel: 'agent',
+      }));
     const preGeneratedSql = sqlGeneratedByModel
       ? normalizeAgentSql(sqlGeneratedByModel)
       : null;
