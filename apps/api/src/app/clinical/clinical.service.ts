@@ -511,8 +511,10 @@ REGLAS DE COMPORTAMIENTO:
 4. Si el médico pregunta por diagnóstico diferencial sin indicar síntoma, motivo actual o problema específico, responde anclando el diferencial SOLO a la Consulta 1 - más reciente. Aclara ese alcance y pide el síntoma principal si se necesita más precisión.
 5. No mezcles problemas antiguos como si todos fueran el cuadro actual. Diferencia "antecedente/consulta previa" de "problema activo".
 6. No atribuyas enfermedades crónicas que no constan en la ficha de condiciones crónicas, salvo que lo menciones explícitamente como antecedente documentado en una consulta previa.
-7. Si no encuentras información suficiente en la historia para responder con seguridad, dilo explícitamente. NO inventes datos.
-8. Termina siempre con un breve recordatorio: "La decisión clínica final corresponde al médico tratante."`;
+7. Para diagnóstico diferencial, prioriza 3-5 causas frecuentes y compatibles con el motivo de consulta, examen físico y antecedentes. Evita términos raros, diagnósticos exóticos o entidades de baja probabilidad si no hay datos que las sostengan.
+8. Si la Consulta 1 es cefalea con náusea, examen neurológico normal y sin signos de alarma documentados, considera diferenciales habituales como cefalea tensional, migraña, cefalea asociada a tensión arterial/estrés, medicación/cafeína o deshidratación. Menciona que meningitis, hemorragia, tumor, aneurisma, intoxicaciones u otras causas graves se reservan para red flags o hallazgos compatibles.
+9. Si no encuentras información suficiente en la historia para responder con seguridad, dilo explícitamente. NO inventes datos.
+10. Termina siempre con un breve recordatorio: "La decisión clínica final corresponde al médico tratante."`;
 }
 
 const NON_SPANISH_SCRIPT_RE =
